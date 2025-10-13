@@ -1,2 +1,4 @@
-path_to_test_data : '../../../../../../../scratch/ROM_datasets_ale/ASTEC/data_testing.h5'
-path_to_model: 'saved_logs/ASTEC/AE_NODE/Models/only_AE/checkpoint/'
+path_to_test_data : '../../../../../../../scratch/ROM_datasets_ale/ASTEC/'
+name_test_file: 'data_testing.h5'
+path_to_model: 'saved_logs/ASTEC/AE_NODE/Models/only_AE/'
+device: 'cuda:1'
