@@ -1,9 +1,0 @@
-path_to_hdf5 : '../../../../../../scratch/ROM_datasets_ale/ASTEC/'
-indeces_training : [1]
-indeces_validation : [1]
-indeces_testing : [3]
-t_W : 200 #temporal window for time subsets of time series
-save_dictionary_per_time_lengths : false
-which_normalization : 'min_max' #min_max or mean_std
-testing: false
-
