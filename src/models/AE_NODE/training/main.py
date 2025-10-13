@@ -4,13 +4,10 @@ import torch as tc
 import yaml
 import shutil
 import importlib
+from src.common_functions import load_config
 
 #set type of tensors
 tc.set_default_dtype(tc.float32)
-
-def load_config(config_path: str):
-    with open(config_path, 'r') as file:
-        return yaml.safe_load(file)
 
 def main():
  

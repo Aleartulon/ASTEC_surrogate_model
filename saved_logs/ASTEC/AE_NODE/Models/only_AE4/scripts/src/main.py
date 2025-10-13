@@ -4,13 +4,10 @@ import torch as tc
 import yaml
 import shutil
 import importlib
+from src.common_functions import load_config
 
 #set type of tensors
 tc.set_default_dtype(tc.float32)
-
-def load_config(config_path: str):
-    with open(config_path, 'r') as file:
-        return yaml.safe_load(file)
 
 def main():
  
@@ -22,7 +19,6 @@ def main():
     config_training['PATH'] = config_training['physics_model']+ config_training['model'] +'/Models/' + config_training['description']
 
     #encode information in txt files and delete path where losses are saved to avoid having data from different runs
-    os.makedirs(config_training['PATH']+'/scripts/bin',exist_ok=True)
     
     if os.path.exists(config_training['PATH'] +'/runs'):
         shutil.rmtree(config_training['PATH']+'/runs') 

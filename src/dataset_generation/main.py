@@ -3,34 +3,32 @@ import sys
 import torch as tc
 import yaml
 import shutil
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from src.support_functions import load_config
-from src.astec_class import Astec_Dataset
+from src.common_functions import load_config
+from src.dataset_generation.astec_class import Astec_Dataset
 
 def main():
-    information = load_config('configs/information.yaml')
-    astec_dataset = Astec_Dataset(information)
-    
-    print('---------- INFORMATION ----------')
-    for key, value in information.items():
+    config_dataset = load_config('configs/config_dataset.yaml')
+    astec_dataset = Astec_Dataset(config_dataset)
+    print('---------- config_dataset ----------')
+    for key, value in config_dataset.items():
         print(key, ' : ', value)
         
-    testing = information['testing']
+    testing = config_dataset['testing']
     
     if testing:
         #build test data
         print('--------------------------------Build testing dataset--------------------------------')
-        astec_dataset.build_testing_dataset(information['indeces_testing'])
+        astec_dataset.build_testing_dataset(config_dataset['indeces_testing'])
     
     else:
         
         #build training data
         print('--------------------------------Build training dataset--------------------------------')
-        astec_dataset.build_training_dataset(information['indeces_training'], 'training')
+        astec_dataset.build_training_dataset(config_dataset['indeces_training'], 'training')
         
         #build validation data
         print('--------------------------------Build validation dataset--------------------------------')
-        astec_dataset.build_training_dataset(information['indeces_validation'], 'validation')
+        astec_dataset.build_training_dataset(config_dataset['indeces_validation'], 'validation')
 
 if __name__ == '__main__':
     main()

@@ -3,10 +3,6 @@ import h5py
 import numpy as np
 import json
 import torch as tc
-
-def load_config(config_path: str):
-    with open(config_path, 'r') as file:
-        return yaml.safe_load(file)
     
 def make_faces_array(x): #assumes the input x has dimensions (B,T,C,140)
     shape_x = np.shape(x)

@@ -4,21 +4,21 @@ import torch.nn.functional as F
 from torch import nn
 
 class Encoder(nn.Module):
-    def __init__(self, global_information:dict, model_information:dict):
+    def __init__(self, config_training:dict, model_information:dict):
         super().__init__()
         model_information['auto_encoding']['final_reduction_and_initial_increase']['input_dimension_encoder'] = 0
         for i in model_information['auto_encoding']:
             if i != 'final_reduction_and_initial_increase' and i != 'auto_encoder_boundaries': #boundaries are not processed together with inner variables (?)
                 model_information['auto_encoding']['final_reduction_and_initial_increase']['input_dimension_encoder'] += model_information['auto_encoding'][i]['output_dimension_encoder']
                 
-        self.device = global_information['device']
-        self.encoder_scalar_variables = Fully_Connected_Encoder(global_information, model_information['auto_encoding']['auto_encoder_scalar']).to(self.device)
-        self.encoder_plenum_variables = Fully_Connected_Encoder(global_information, model_information['auto_encoding']['auto_encoder_plenum']).to(self.device)
-        self.encoder_boundaries_variables = Fully_Connected_Encoder(global_information, model_information['auto_encoding']['auto_encoder_boundaries']).to(self.device)
-        self.encoder_core_variables = Convolutional_Encoder(global_information, model_information['auto_encoding']['auto_encoder_core']).to(self.device)
-        self.encoder_vessel_variables = Convolutional_Encoder(global_information, model_information['auto_encoding']['auto_encoder_vessel']).to(self.device)
-        self.encoder_faces_variables = Convolutional_Encoder(global_information, model_information['auto_encoding']['auto_encoder_faces']).to(self.device)
-        self.final_reduction = Fully_Connected_Encoder(global_information, model_information['auto_encoding']['final_reduction_and_initial_increase']).to(self.device)
+        self.device = config_training['device']
+        self.encoder_scalar_variables = Fully_Connected_Encoder(config_training, model_information['auto_encoding']['auto_encoder_scalar']).to(self.device)
+        self.encoder_plenum_variables = Fully_Connected_Encoder(config_training, model_information['auto_encoding']['auto_encoder_plenum']).to(self.device)
+        self.encoder_boundaries_variables = Fully_Connected_Encoder(config_training, model_information['auto_encoding']['auto_encoder_boundaries']).to(self.device)
+        self.encoder_core_variables = Convolutional_Encoder(config_training, model_information['auto_encoding']['auto_encoder_core']).to(self.device)
+        self.encoder_vessel_variables = Convolutional_Encoder(config_training, model_information['auto_encoding']['auto_encoder_vessel']).to(self.device)
+        self.encoder_faces_variables = Convolutional_Encoder(config_training, model_information['auto_encoding']['auto_encoder_faces']).to(self.device)
+        self.final_reduction = Fully_Connected_Encoder(config_training, model_information['auto_encoding']['final_reduction_and_initial_increase']).to(self.device)
         self.lambda_regularization = model_information['lambda_regularization']
         
     def forward(self, fields:list, boundaries: tc.tensor = None):
@@ -62,7 +62,7 @@ class Encoder(nn.Module):
             return tc.tensor(0.0, device=latent_fields[0].device)
     
 class Fully_Connected_Encoder(nn.Module):
-    def __init__(self, global_information:dict, fully_connected_information:dict):
+    def __init__(self, config_training:dict, fully_connected_information:dict):
         super().__init__()
         
         self.input_dimension = fully_connected_information['input_dimension_encoder']
@@ -93,7 +93,7 @@ class Fully_Connected_Encoder(nn.Module):
         return x
 
 class Convolutional_Encoder(nn.Module):
-    def __init__(self, global_information:dict, convolutional_information:dict):
+    def __init__(self, config_training:dict, convolutional_information:dict):
       
         super().__init__()
       
@@ -141,16 +141,16 @@ class Convolutional_Encoder(nn.Module):
         return x
     
 class Decoder(nn.Module):
-    def __init__(self, global_information:dict, model_information:dict):
+    def __init__(self, config_training:dict, model_information:dict):
         super().__init__()
-        self.device = global_information['device']
-        self.initial_increase = Fully_Connected_Decoder(global_information, model_information['auto_encoding']['final_reduction_and_initial_increase']).to(self.device)
-        self.decoder_scalar_variables = Fully_Connected_Decoder(global_information, model_information['auto_encoding']['auto_encoder_scalar']).to(self.device)
-        self.decoder_plenum_variables = Fully_Connected_Decoder(global_information, model_information['auto_encoding']['auto_encoder_plenum']).to(self.device)
-        self.decoder_boundaries_variables = Fully_Connected_Decoder(global_information, model_information['auto_encoding']['auto_encoder_boundaries']).to(self.device)
-        self.decoder_core_variables = Convolutional_Decoder(global_information, model_information['auto_encoding']['auto_encoder_core']).to(self.device)
-        self.decoder_vessel_variables = Convolutional_Decoder(global_information, model_information['auto_encoding']['auto_encoder_vessel']).to(self.device)
-        self.decoder_faces_variables = Convolutional_Decoder(global_information, model_information['auto_encoding']['auto_encoder_faces']).to(self.device)
+        self.device = config_training['device']
+        self.initial_increase = Fully_Connected_Decoder(config_training, model_information['auto_encoding']['final_reduction_and_initial_increase']).to(self.device)
+        self.decoder_scalar_variables = Fully_Connected_Decoder(config_training, model_information['auto_encoding']['auto_encoder_scalar']).to(self.device)
+        self.decoder_plenum_variables = Fully_Connected_Decoder(config_training, model_information['auto_encoding']['auto_encoder_plenum']).to(self.device)
+        self.decoder_boundaries_variables = Fully_Connected_Decoder(config_training, model_information['auto_encoding']['auto_encoder_boundaries']).to(self.device)
+        self.decoder_core_variables = Convolutional_Decoder(config_training, model_information['auto_encoding']['auto_encoder_core']).to(self.device)
+        self.decoder_vessel_variables = Convolutional_Decoder(config_training, model_information['auto_encoding']['auto_encoder_vessel']).to(self.device)
+        self.decoder_faces_variables = Convolutional_Decoder(config_training, model_information['auto_encoding']['auto_encoder_faces']).to(self.device)
         self.indeces = self.get_indeces_reconstruction_latent_vectors(model_information)
                 
     def get_indeces_reconstruction_latent_vectors(self, model_information:dict):
@@ -185,7 +185,7 @@ class Decoder(nn.Module):
         return [reconstructed_scalar_variables, reconstructed_core_variables, reconstructed_vessel_variables, reconstructed_plenum_variables , reconstructed_faces_variables], reconstructed_boundaries_variables
     
 class Fully_Connected_Decoder(nn.Module):
-    def __init__(self, global_information:dict, fully_connected_information:dict):
+    def __init__(self, config_training:dict, fully_connected_information:dict):
         super().__init__()
         self.list_of_neurons = fully_connected_information['list_of_neurons_decoder']
         self.number_of_layers = len(self.list_of_neurons)
@@ -214,7 +214,7 @@ class Fully_Connected_Decoder(nn.Module):
         return x
 
 class Convolutional_Decoder(nn.Module):
-    def __init__(self, global_information:dict, convolutional_information:dict):
+    def __init__(self, config_training:dict, convolutional_information:dict):
       
         super().__init__()
         self.first_channel = convolutional_information['filters_encoder'][-1]
@@ -258,7 +258,7 @@ class Convolutional_Decoder(nn.Module):
         return x
     
 class F_Latent(nn.Module): 
-    def __init__(self, global_information:dict, model_information:dict):
+    def __init__(self, config_training:dict, model_information:dict):
         super().__init__()
         self.param_dim = model_information['auto_encoding']['auto_encoder_boundaries']['output_dimension_encoder']
         self.relu = nn.ReLU()

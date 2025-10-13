@@ -1,0 +1,10 @@
+structure.md
+src/__pycache__
+*.pyc
+__pycache__/
+.DS_Store
+.ipynb_checkpoints
+*.sh
+*.out
+testing_pipeline-old.ipynb
+/saved_logs

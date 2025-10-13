@@ -1,4 +1,4 @@
-from src.support_functions import *
+from src.dataset_generation.support_functions import *
 import h5py
 import numpy as np
 import torch as tc
@@ -6,12 +6,12 @@ import pickle
 
 
 class Astec_Dataset():
-    def __init__(self , information: dict):
+    def __init__(self , config_dataset: dict):
         
-        self.path_to_hdf5 = information['path_to_hdf5']
-        self.t_W = information['t_W']
-        self.save_dictionary_per_time_lengths = information['save_dictionary_per_time_lengths']
-        self.which_normalization = information['which_normalization']
+        self.path_to_hdf5 = config_dataset['path_to_hdf5']
+        self.t_W = config_dataset['t_W']
+        self.save_dictionary_per_time_lengths = config_dataset['save_dictionary_per_time_lengths']
+        self.which_normalization = config_dataset['which_normalization']
         
     def build_training_dataset(self, indeces, purpose_of_data):
         self.purpose_of_data = purpose_of_data
