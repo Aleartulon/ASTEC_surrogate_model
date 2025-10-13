@@ -1,5 +1,5 @@
 physics_model : 'saved_logs/ASTEC/' # this is the Path to a directory for the training on a given dataset
-description : '/only_AE4/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
+description : '/only_AE/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
 data_path : '../../../../scratch/ROM_datasets_ale/ASTEC/' #path of training and validation data
 model: 'AE_NODE'
 epochs: 5000 #maximum number of epochs

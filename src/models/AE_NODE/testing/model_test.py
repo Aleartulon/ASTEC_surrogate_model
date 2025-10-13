@@ -1,7 +1,7 @@
 import torch as tc
 import os
 import sys
-from ...ASTEC_surrogate.architecture import Encoder, Decoder, F_Latent, Fully_Connected_Encoder, Convolutional_Encoder
+from ..training.architecture import Encoder, Decoder, F_Latent, Fully_Connected_Encoder, Convolutional_Encoder
 
 
 class Model_Test:
@@ -11,7 +11,6 @@ class Model_Test:
         self.path_to_model = information['path_to_model']
         directory_images = self.path_to_model+'/Images/'
         os.makedirs(directory_images, exist_ok=True)
-        sys.path.append(self.path_to_model + '/scripts/src/')
         
     def test(self):
         return 0
