@@ -61,5 +61,57 @@ class ASTEC_Dataset(Dataset):
         
         return self.size
     
+    
+def standard_and_inverse_normalization_field(x: list, maxima_or_mean: dict, minima_or_std:dict, normalization: bool, inverse: bool):
+    x_denormalized = []
+    
+    for _, i in enumerate(x):
+        # Create a mask for values that are not -1
+        mask = (i != -1)
+        if i.size(-1) == 5 and len(i.size()) == 3:
+            maximum_or_mean = maxima_or_mean['dictionary_of_input_variables_1'][None,None,:]
+            minimum_or_std = minima_or_std['dictionary_of_input_variables_1'][None,None,:]
+
+        elif i.size(-1) == 3:
+            maximum_or_mean = maxima_or_mean['dictionary_of_input_variables_36'][None,None,:,None,None]
+            minimum_or_std = minima_or_std['dictionary_of_input_variables_36'][None,None,:,None,None]
+            
+        elif i.size(-1) == 5 and len(i.size()) == 5:
+            maximum_or_mean = maxima_or_mean['dictionary_of_input_variables_76'][None,None,:,None,None]
+            minimum_or_std = minima_or_std['dictionary_of_input_variables_76'][None,None,:,None,None]
+        
+        elif i.size(-1) == 18:
+            maximum_or_mean = maxima_or_mean['dictionary_of_input_variables_76'][None,None,:]
+            minimum_or_std = minima_or_std['dictionary_of_input_variables_76'][None,None,:]
+            
+        elif i.size(-1) == 9:
+            maximum_or_mean = maxima_or_mean['dictionary_of_input_variables_140'][None,None,:,None,None]
+            minimum_or_std = minima_or_std['dictionary_of_input_variables_140'][None,None,:,None,None]
+            
+        elif i.size(-1) == 6:
+            maximum_or_mean = maxima_or_mean['boundary_conditions_and_time'][None,None,:-1]
+            minimum_or_std = minima_or_std['boundary_conditions_and_time'][None,None,:-1]
+            
+        else:
+            raise TypeError("Something is wrong with data structure")  
+    
+        if normalization == 'min_max':
+            if inverse:
+                denorm = (i * (maximum_or_mean - minimum_or_std) + minimum_or_std)
+                x_denormalized.append(tc.where(mask, denorm, i))
+            else:
+                norm = ((i - minimum_or_std)/(maximum_or_mean - minimum_or_std))
+                x_denormalized.append(tc.where(mask, norm, i))
+                
+        elif normalization == 'mean_std':
+            if inverse:
+                denorm = (i * minimum_or_std + maximum_or_mean)
+                x_denormalized.append(tc.where(mask, denorm, i))
+            else:
+                norm = ((i - maximum_or_mean)/minimum_or_std)
+                x_denormalized.append(tc.where(mask, norm, i))
+            
+    return x_denormalized
+    
 
       

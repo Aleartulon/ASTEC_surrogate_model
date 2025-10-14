@@ -131,7 +131,7 @@ class Astec_Dataset():
                     mesh = normalized_data[:,:,:,1:].reshape(shape[0],shape[1],shape[2],15,5)
                     normalized_data = mesh
                     normalized_dict['lower_plenum'] = lower_plenum
-                elif shape[-1] == 6 or shape[-1] == 13 and len(shape) !=2:
+                elif shape[-1] == 7 or shape[-1] == 13 and len(shape) !=2:
                     normalized_data = np.reshape(normalized_data, (shape[0],shape[1],shape[2]))
                 normalized_dict[key] = normalized_data
             else:
@@ -143,8 +143,32 @@ class Astec_Dataset():
         
         dictionary_per_trajectory = extract_input_output_bc_variables(self.path_to_hdf5, indeces, True) #build dictionary of data divided by lenghts of time series
         dictionary_per_trajectory = self.make_channels_for_dictionary_per_time_lengths(dictionary_per_trajectory) #build dictionary of data divided by lenghts of time series and make channels per spatial domain
+        dictionary_per_trajectory = self.reshape_testing_dataset(dictionary_per_trajectory) #reshape dictionary
                 
         #save dictionary_per_time_lengths to hdf5s if self.save_dictionary_per_time_lengths is true
         with h5py.File(self.path_to_hdf5+'/data_testing.h5', 'w') as f:
             dict_to_hdf5(dictionary_per_trajectory, f) 
+            
+    def reshape_testing_dataset(self, dictionary_per_trajectory):
+        reshaped_dict = {}
+        trajectories = dictionary_per_trajectory.keys()
+        for trajectory in trajectories:
+            variables = dictionary_per_trajectory[trajectory].keys()
+            for variable in variables:
+                original_data = dictionary_per_trajectory[trajectory][variable]
+                shape = np.shape(original_data)
+                if shape[-1] == 140:
+                    original_data = make_faces_array(original_data)
+                elif shape[-1] == 36:
+                    original_data = np.reshape(original_data, (shape[0],shape[1],shape[2],12,3))
+                elif shape[-1] == 76:
+                    lower_plenum = original_data[:,:,:,0]
+                    mesh = original_data[:,:,:,1:].reshape(shape[0],shape[1],shape[2],15,5)
+                    original_data = mesh
+                    reshaped_dict.setdefault(trajectory, {})['lower_plenum'] = lower_plenum
+                elif shape[-1] == 7 or shape[-1] == 13 and len(shape) !=2:
+                    original_data = np.reshape(original_data, (shape[0],shape[1],shape[2]))
+                reshaped_dict.setdefault(trajectory, {})[variable] = original_data
+                
+        return reshaped_dict
                 

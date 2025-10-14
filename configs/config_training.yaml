@@ -1,5 +1,5 @@
 physics_model : 'saved_logs/ASTEC/' # this is the Path to a directory for the training on a given dataset
-description : '/only_AE/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
+description : '/t/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
 data_path : '../../../../scratch/ROM_datasets_ale/ASTEC/' #path of training and validation data
 model: 'AE_NODE'
 epochs: 5000 #maximum number of epochs
@@ -10,7 +10,7 @@ batch_size: 2 #batch size
 number_of_workers: 8
 checkpoint: false  # if true uses existing checkpoint
 device : 'cuda:2' #device where to train
-normalization: 'mean_std' # min_max or mean_std
+which_normalization: 'mean_std' # min_max or mean_std
 normalization_field : True # if true, maxima of each dimension of the solution fields are found. If not, dimension 1,2, etc are the maxima of dimension 1,2, etc of the solution field (only one if it is a scalar field)
 normalization_bc : False #if True, minima of each dimension of the vector of parameters are found. If not, dimension 1,2, etc are the minima of dimension 1,2, etc of the parameter vector
 

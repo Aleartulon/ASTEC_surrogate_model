@@ -41,7 +41,7 @@ class AE_NODE:
             self.maxima_or_mean[key] = tc.tensor(self.maxima_or_mean[key], device = self.device)
             self.minima_or_std[key] = tc.tensor(self.minima_or_std[key], device = self.device)
             
-        self.normalization = config_training['normalization']
+        self.which_normalization = config_training['which_normalization']
 
         #define the ENCODER, the function f of the latent dynamics and the Decoder 
         self.encoder = Encoder(config_training, model_information)

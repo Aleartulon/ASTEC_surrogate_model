@@ -49,13 +49,13 @@ class Training_Losses():
         else:
             first = self.MSE(reconstructed_variables, fields, length_of_padding) * loss_coeff[0]
             
-            reconstructed_variables = self.inverse_normalization_field(reconstructed_variables)
-            reconstructed_boundaries = self.inverse_normalization_field([reconstructed_boundaries])[0]
+            reconstructed_variables = standard_and_inverse_normalization_field(reconstructed_variables, self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)
+            reconstructed_boundaries = standard_and_inverse_normalization_field([reconstructed_boundaries], self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)[0]
             
-            fields = self.inverse_normalization_field(fields)
-            boundaries = self.inverse_normalization_field([boundaries])[0]
-            
-            second = self.MSE(reconstructed_variables,fields , length_of_padding, reconstructed_boundaries, boundaries, is_denormalized_validation = True) * loss_coeff[0]
+            fields = standard_and_inverse_normalization_field(fields, self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)
+            boundaries = standard_and_inverse_normalization_field([boundaries], self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)[0]
+
+            second = self.MSE(reconstructed_variables, fields, length_of_padding, reconstructed_boundaries, boundaries, is_denormalized_validation = True) * loss_coeff[0]
             l1 = [first, second]
             
         return latent_vector_fields, latent_boundaries, l1, regularization_latent
@@ -149,7 +149,7 @@ class Training_Losses():
                     next_latent, _ , _ = self.encoder(initial_condition)
 
             if (not train):
-                fields = self.inverse_normalization_field(fields)
+                fields = standard_and_inverse_normalization_field(fields, self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)
             
             step = 0
             for count in range(number_of_time_steps-1):
@@ -164,7 +164,7 @@ class Training_Losses():
                     step+=1
                 if (not train):
                     output_decoder, _ = self.decoder(next_latent)
-                    denorm_latent = self.inverse_normalization_field(output_decoder)
+                    denorm_latent = standard_and_inverse_normalization_field(output_decoder, self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)
                     fields_at_correct_time_step = [tensor[:, count+1, ...] for tensor in fields]
                     l_final += self.MSE(denorm_latent, fields_at_correct_time_step) #the boundary should not be taken into account here
             return l2_AR/step * coeff, l_final/(number_of_time_steps-1)
@@ -250,49 +250,6 @@ class Training_Losses():
         e2 = latent_vector_fields + final_sum * dt
         return e2
     
-    def inverse_normalization_field(self, x: list):
-        x_denormalized = []
-        
-        for count, i in enumerate(x):
-            # Create a mask for values that are not -1
-            mask = (i != -1)
-            if i.size(-1) == 5 and len(i.size()) == 3:
-                maximum_or_mean = self.maxima_or_mean['dictionary_of_input_variables_1'][None,None,:]
-                minimum_or_std = self.minima_or_std['dictionary_of_input_variables_1'][None,None,:]
-
-            elif i.size(-1) == 3:
-                maximum_or_mean = self.maxima_or_mean['dictionary_of_input_variables_36'][None,None,:,None,None]
-                minimum_or_std = self.minima_or_std['dictionary_of_input_variables_36'][None,None,:,None,None]
-                
-            elif i.size(-1) == 5 and len(i.size()) == 5:
-                maximum_or_mean = self.maxima_or_mean['dictionary_of_input_variables_76'][None,None,:,None,None]
-                minimum_or_std = self.minima_or_std['dictionary_of_input_variables_76'][None,None,:,None,None]
-            
-            elif i.size(-1) == 18:
-                maximum_or_mean = self.maxima_or_mean['dictionary_of_input_variables_76'][None,None,:]
-                minimum_or_std = self.minima_or_std['dictionary_of_input_variables_76'][None,None,:]
-                
-            elif i.size(-1) == 9:
-                maximum_or_mean = self.maxima_or_mean['dictionary_of_input_variables_140'][None,None,:,None,None]
-                minimum_or_std = self.minima_or_std['dictionary_of_input_variables_140'][None,None,:,None,None]
-                
-            elif i.size(-1) == 6:
-                maximum_or_mean = self.maxima_or_mean['boundary_conditions_and_time'][None,None,:-1]
-                minimum_or_std = self.minima_or_std['boundary_conditions_and_time'][None,None,:-1]
-                
-            else:
-                raise TypeError("Something is wrong with data structure")  
-        
-            if self.normalization == 'min_max':
-                    denorm = i * (maximum_or_mean - minimum_or_std) + minimum_or_std
-                    x_denormalized.append(tc.where(mask, denorm, i))
-                    
-            elif self.normalization == 'mean_std':
-                
-                denorm = (i * minimum_or_std + maximum_or_mean).double() #double is necessary to avoid nan errors with large numbers
-                x_denormalized.append(tc.where(mask, denorm, i))
-            
-        return x_denormalized
     
     def L2_relative_loss_general(self, inp:tc.tensor, target:tc.tensor, latent:bool):
 
@@ -326,14 +283,17 @@ class Training_Losses():
     def MSE(self, input: list, target: list, length_of_padding: tc.tensor, reconstructed_boundaries: tc.tensor = None, boundaries: tc.tensor = None, is_denormalized_validation = False):
         mse = []
         if tc.any(length_of_padding != 0.0):
-            for count, i in enumerate(input):     
+            for count, i in enumerate(input):   
+                if is_denormalized_validation:
+                    i = i.double()
+                    target[count] = target[count].double()
                 loss = nn.MSELoss(reduction='none')
                 element_loss = loss(i, target[count]) 
                 mask = self.create_padding_mask( size_of_tensor=i.size(), length_of_padding=length_of_padding) 
                 masked_loss = element_loss * mask
                 if is_denormalized_validation:
                     masked_target = ((target[count] * mask)**2).mean()
-                    mse_value = (masked_loss/masked_target).sum() / (mask.sum() * i.size(2))
+                    mse_value = (masked_loss.double()/masked_target.double()).sum() / (mask.sum() * i.size(2))
                     mse.append(mse_value)
                 else:
                     mse_value = masked_loss.sum() / (mask.sum() * i.size(2))
@@ -355,6 +315,9 @@ class Training_Losses():
         else:
             loss = nn.MSELoss()
             for count, i in enumerate(input):
+                if is_denormalized_validation:
+                    i = i.double()
+                    target[count] = target[count].double()
                 mse_value = loss(i,target[count])
                 if is_denormalized_validation:
                     mse_value = mse_value/(target[count]**2).mean()

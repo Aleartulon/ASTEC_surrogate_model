@@ -5,5 +5,6 @@ indeces_testing : [3]
 t_W : 200 #temporal window for time subsets of time series
 save_dictionary_per_time_lengths : false
 which_normalization : 'min_max' #min_max or mean_std
-testing: false
+number_of_workers : 8
+testing: true
 
