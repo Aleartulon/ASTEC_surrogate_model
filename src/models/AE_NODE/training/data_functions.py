@@ -3,6 +3,7 @@ import torch as tc
 import numpy as np
 import h5py
 from torch.utils.data import Dataset
+from torch import nn
     
 def save_checkpoint(enco, f , dec, optimizer, scheduler, epoch, loss, loss_coeff_2, start_backprop,full_training_count,filepath):
   
@@ -66,9 +67,8 @@ def standard_and_inverse_normalization_field(x: list, maxima_or_mean: dict, mini
     x_denormalized = []
     
     for _, i in enumerate(x):
-        # Create a mask for values that are not -1
-        mask = (i != -1)
-        if i.size(-1) == 5 and len(i.size()) == 3:
+        
+        if i.size(-1) == 4 and len(i.size()) == 3:
             maximum_or_mean = maxima_or_mean['dictionary_of_input_variables_1'][None,None,:]
             minimum_or_std = minima_or_std['dictionary_of_input_variables_1'][None,None,:]
 
@@ -98,20 +98,87 @@ def standard_and_inverse_normalization_field(x: list, maxima_or_mean: dict, mini
         if normalization == 'min_max':
             if inverse:
                 denorm = (i * (maximum_or_mean - minimum_or_std) + minimum_or_std)
-                x_denormalized.append(tc.where(mask, denorm, i))
+                x_denormalized.append(denorm)
             else:
                 norm = ((i - minimum_or_std)/(maximum_or_mean - minimum_or_std))
-                x_denormalized.append(tc.where(mask, norm, i))
+                x_denormalized.append(denorm)
                 
         elif normalization == 'mean_std':
             if inverse:
                 denorm = (i * minimum_or_std + maximum_or_mean)
-                x_denormalized.append(tc.where(mask, denorm, i))
+                x_denormalized.append(denorm)
             else:
                 norm = ((i - maximum_or_mean)/minimum_or_std)
-                x_denormalized.append(tc.where(mask, norm, i))
+                x_denormalized.append(denorm)
             
     return x_denormalized
+
+def create_padding_mask(size_of_tensor: list, length_of_padding: tc.tensor, device: tc.device):
+        
+        mask = tc.zeros(size_of_tensor, device = device)
+        columns = tc.arange(size_of_tensor[1])
+        where_to_fill = columns>=length_of_padding
+        where_to_fill = where_to_fill[(...,) + (None,) * (len(size_of_tensor)-2)].expand(size_of_tensor).to(device)
+        mask = mask.masked_fill(where_to_fill, 1.0)
+        
+        return mask
+
+
+def MSE(input: list, target: list, length_of_padding: tc.tensor = None, reconstructed_boundaries: tc.tensor = None, boundaries: tc.tensor = None, is_denormalized_validation = False):
+    mse = []
+    device = input[0].device
+    if (length_of_padding is not None) and tc.any(length_of_padding != 0.0):
+        for count, i in enumerate(input):   
+            if is_denormalized_validation:
+                i = i.double()
+                target[count] = target[count].double()
+            loss = nn.MSELoss(reduction='none')
+            element_loss = loss(i, target[count]) 
+            mask = create_padding_mask( size_of_tensor=i.size(), length_of_padding=length_of_padding, device = device) 
+            masked_loss = element_loss * mask
+            if is_denormalized_validation:
+                masked_target = ((target[count] * mask)**2).mean()
+                mse_value = (masked_loss.double()/masked_target.double()).sum() / (mask.sum() * i.size(2))
+                mse.append(mse_value)
+            else:
+                mse_value = masked_loss.sum() / (mask.sum() * i.size(2))
+                mse.append(mse_value)
+    
+        if reconstructed_boundaries is not None:
+            element_loss = loss(reconstructed_boundaries, boundaries) 
+            mask = create_padding_mask( size_of_tensor=reconstructed_boundaries.size(), length_of_padding=length_of_padding, device = device) 
+            masked_loss = element_loss * mask
+            
+            if is_denormalized_validation:
+                masked_target = ((boundaries * mask)**2).mean()
+                mse_value = (masked_loss/masked_target).sum() / (mask.sum() * reconstructed_boundaries.size(2))
+                mse.append(mse_value)
+            else:
+                mse_value = masked_loss.sum() / (mask.sum() * reconstructed_boundaries.size(2))
+                mse.append(mse_value)
+                
+    else:
+        loss = nn.MSELoss()
+        for count, i in enumerate(input):
+            if is_denormalized_validation:
+                i = i.double()
+                target[count] = target[count].double()
+            mse_value = loss(i,target[count])
+            if is_denormalized_validation:
+                mse_value = mse_value/(target[count]**2).mean()
+            mse.append(mse_value)
+                
+        if reconstructed_boundaries is not None:
+            mse_value = loss(reconstructed_boundaries, boundaries)
+            if is_denormalized_validation:
+                mse_value = mse_value/(boundaries**2).mean()
+            mse.append(mse_value) 
+            
+    if is_denormalized_validation:  #for training and testing
+        return tc.stack(mse)
+    
+    elif not is_denormalized_validation: #for training 
+        return tc.stack(mse).mean()
     
 
       

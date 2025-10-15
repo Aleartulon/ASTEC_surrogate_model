@@ -1,6 +1,4 @@
 #Data information
-training_keys : 'keys_training.npy'
-validation_keys : 'keys_validation.npy'
 data_training_file : 'data_training_normalized_t_W_500.h5'
 data_validation_file : 'data_validation_normalized_t_W_500.h5'
 #Training information
@@ -21,7 +19,7 @@ lambda_regularization: 0.0 #coefficients in front of the regularization term for
 auto_encoding:
   #Auto-Encoder scalar variables
   auto_encoder_scalar:
-    input_dimension_encoder: 5
+    input_dimension_encoder: 4
     output_dimension_encoder: 2 #dimension of the latent space
     list_of_neurons_encoder: [50,30]
     last_activation_encoder: false

@@ -8,6 +8,7 @@ from src.common_functions import load_config
 import h5py
 from src.dataset_generation.support_functions import normalize_fields
 from src.models.AE_NODE.training.data_functions import standard_and_inverse_normalization_field
+from src.models.AE_NODE.testing.support_functions import *
 
 class Model_Test:
     def __init__(self , information: dict):
@@ -58,21 +59,42 @@ class Model_Test:
         
     def autoencoding(self):
         
-        error_per_trajectory_per_field = {}
+        error_per_trajectory_per_field = {'MSE_normalized' : {}}
+        reconstructed_fields_per_trajectory = {}
         latent_vectors_per_trajectory_per_field = {}
         final_latent_vector_per_trajectory = {}
         
         #access each trajectory and encode each one
         for trajectory in self.trajectories:
             fields, boundary_conditions, time = self.access_trajectory(trajectory)
+            
             #normalize before autoencoding
             fields = standard_and_inverse_normalization_field(fields, self.maxima_or_mean, self.minima_or_std, self.which_normalization, inverse = False)
+            boundary_conditions = standard_and_inverse_normalization_field(boundary_conditions, self.maxima_or_mean, self.minima_or_std, self.which_normalization, inverse = False)[0]
+
             #auto-encode
-            latent_in_variables, latent_boundaries_variables, regularization_latent = self.encoder(fields, boundary_conditions)
-            fields, reconstructed_boundaries_variables = self.decoder(latent_in_variables, latent_boundaries_variables)
+            final_latent_vector, latent_in_variables, latent_boundaries_variables, _ = self.encoder(fields, boundary_conditions)
+            reconstructed_fields, reconstructed_boundary_conditions = self.decoder(final_latent_vector, latent_boundaries_variables)
+            
+            #give back proper shape. Not necessary if always one trajectory per time is passed but better to be general
+            for count, i in enumerate(reconstructed_fields):
+                size = i.size()
+                reconstructed_fields[count] = tc.reshape(reconstructed_fields[count], ((fields[0].size()[0],fields[0].size()[1]) + size[1:]))
+            reconstructed_boundary_conditions = tc.reshape(reconstructed_boundary_conditions, ((boundary_conditions.size()[0],boundary_conditions.size()[1]) + reconstructed_boundary_conditions.size()[1:]))
             
             #de-normalize
-        
+            reconstructed_fields = standard_and_inverse_normalization_field(reconstructed_fields, self.maxima_or_mean, self.minima_or_std, self.which_normalization, inverse = True)
+            reconstructed_boundary_conditions = standard_and_inverse_normalization_field(reconstructed_boundary_conditions, self.maxima_or_mean, self.minima_or_std, self.which_normalization, inverse = True)[0]
+            fields = standard_and_inverse_normalization_field(fields, self.maxima_or_mean, self.minima_or_std, self.which_normalization, inverse = True)
+            boundary_conditions = standard_and_inverse_normalization_field(boundary_conditions, self.maxima_or_mean, self.minima_or_std, self.which_normalization, inverse = True)[0]
+            
+            #compute errors
+            compute_errors_autoencoder(trajectory, error_per_trajectory_per_field, reconstructed_fields, reconstructed_boundary_conditions, fields, boundary_conditions)
+            print(error_per_trajectory_per_field)
+            #fill in dictionaries for analysis
+            fill_in_dictionaries_autoencoder_step(reconstructed_fields_per_trajectory, latent_vectors_per_trajectory_per_field,  final_latent_vector_per_trajectory,
+                                                 reconstructed_fields, reconstructed_boundary_conditions, latent_in_variables,  final_latent_vector)
+            
     def load_checkpoint_on_models(self):
         checkpoint = tc.load(self.path_to_model+'/checkpoint/check.pt', map_location=self.device, weights_only=False)
         

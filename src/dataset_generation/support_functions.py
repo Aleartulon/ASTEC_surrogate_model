@@ -70,8 +70,6 @@ def build_dictionary_of_variables():
                             
                             'm_cum_H2': [],
                             'm_tot_cor': [],
-                            
-                            'm_tot_deb': [],
                             'FP_A_heat': [],
                             'sat_core_mesh': []
                         },
@@ -95,7 +93,7 @@ def fill_dictionary_of_variables(output_dict:dict, name:str, f:h5py._hl.files.Fi
     # Existing variables
     output_dict[name]['dictionary_of_input_variables_1']['m_cum_H2'].append(np.array(f['vessel/general/m_cum_H2'][:])[0:index_stop])
     output_dict[name]['dictionary_of_input_variables_1']['m_tot_cor'].append(np.array(f['vessel/general/m_tot_cor'][:])[0:index_stop])
-    output_dict[name]['dictionary_of_input_variables_1']['m_tot_deb'].append(np.array(f['vessel/general/m_tot_deb'][:])[0:index_stop])
+    #output_dict[name]['dictionary_of_input_variables_1']['m_tot_deb'].append(np.array(f['vessel/general/m_tot_deb'][:])[0:index_stop]) #it is always nan for some reason
     #output_dict[index_stop]['dictionary_of_input_variables_1']['T_CAVCOR'].append(np.array(f['other/global/sensor_values'][:, 286])[0:index_stop]) #this changes only after vessel rupture
     
     
@@ -175,7 +173,7 @@ def fill_dictionary_of_variables(output_dict:dict, name:str, f:h5py._hl.files.Fi
     
     output_dict[name]['vessel_to_primary']['time'].append(DT)
 
-def extract_input_output_bc_variables(path, array_of_datasets:list, testing:bool):
+def extract_input_output_bc_variables(path, array_of_datasets:list):
     output_dict = {}
     for i in array_of_datasets:
         with h5py.File(path+'/'+str(i)+'.h5', 'r') as f:
@@ -186,13 +184,9 @@ def extract_input_output_bc_variables(path, array_of_datasets:list, testing:bool
             else:
                 index_stop = len(f['dimensions/time_points'][:])
                 
-            if not testing:
-                if index_stop not in output_dict:
-                    output_dict[index_stop] = build_dictionary_of_variables()
-                fill_dictionary_of_variables(output_dict, index_stop, f, index_stop)
-            else:
-                output_dict[i] = build_dictionary_of_variables()
-                fill_dictionary_of_variables(output_dict, i, f, index_stop)
+            output_dict[i] = build_dictionary_of_variables()
+            fill_dictionary_of_variables(output_dict, i, f, index_stop)
+                
             
     return output_dict
 
@@ -217,12 +211,6 @@ def get_normalization_statistics(dictionary_of_sliced_windows:dict, type_of_norm
             maximum = np.nanmax(dictionary_of_sliced_windows[key].astype(np.float64),axis = (0,) + tuple(np.arange(2,len(shape))))
             minima_or_std[key] = minimum
             maxima_or_mean[key] = maximum
-
-        for key in maxima_or_mean:
-            for count, i in enumerate(maxima_or_mean[key]):
-                if i == minima_or_std[key][count] or np.isnan(maxima_or_mean[key][count]): #for when all the values are NaN (but padding makes normalization see zeros...)
-                    maxima_or_mean[key][count] = 1.0
-                    minima_or_std[key][count] = 0.0
                     
     elif type_of_normalization == 'mean_std':
         for key in hdf5_keys:
@@ -232,110 +220,61 @@ def get_normalization_statistics(dictionary_of_sliced_windows:dict, type_of_norm
             minima_or_std[key] = std
             maxima_or_mean[key] = mean
 
-        for key in maxima_or_mean:
-            for count, i in enumerate(maxima_or_mean[key]):
-                if i == minima_or_std[key][count] or np.isnan(maxima_or_mean[key][count]): #for when all the values are NaN (but padding makes normalization see zeros...)
-                    maxima_or_mean[key][count] = 0.0
-                    minima_or_std[key][count] = 1.0
     else:
         raise TypeError("Type of normalization not known. It can either be min_max or mean_std")                 
     return maxima_or_mean, minima_or_std
 
-def normalize_fields(fields: list, ma_means: dict, mi_stds: dict, type_of_normalization: str):
-    size = np.shape(fields)
+def normalize_fields(field: np.array, maximum_or_mean: dict, minimum_or_std: dict, normalization: str):
+    size = np.shape(field)
     
-    if type_of_normalization == 'min_max':
-        if size[-1] == 7:
-            minimum = mi_stds['boundary_conditions_and_time']
-            maximum = ma_means['boundary_conditions_and_time']
-            minimum = minimum[None,None,:]
-            maximum = maximum[None,None,:]
-        elif size[-1] == 5:
-            minimum = mi_stds['dictionary_of_input_variables_1']
-            maximum = ma_means['dictionary_of_input_variables_1']
-            minimum = minimum[None,None,:]
-            maximum = maximum[None,None,:]
-
-        elif size[-1] == 140:
-            minimum = mi_stds['dictionary_of_input_variables_140']
-            maximum = ma_means['dictionary_of_input_variables_140']
-            minimum = minimum[None,None,:, None]
-            maximum = maximum[None,None,:, None]
-
-        elif size[-1] == 36:
-            minimum = mi_stds['dictionary_of_input_variables_36']
-            maximum = ma_means['dictionary_of_input_variables_36']
-            minimum = minimum[None,None,:, None]
-            maximum = maximum[None,None,:, None]
-
-        elif size[-1] == 76:
-            minimum = mi_stds['dictionary_of_input_variables_76']
-            maximum = ma_means['dictionary_of_input_variables_76']
-            minimum = minimum[None,None,:, None]
-            maximum = maximum[None,None,:, None]
-            
-        else:
-            raise TypeError(f"Something is wrong with data")
-     
-        # Create a mask for NaN values - use torch.isnan and ensure bool dtype
-        nan_mask = tc.isnan(fields)
+    if size[-1] == 7:
         
-        # Apply normalization
-        normalized = (fields - minimum) / (maximum - minimum)
+        maximum_or_mean = maximum_or_mean['boundary_conditions_and_time']
+        minimum_or_std = minimum_or_std['boundary_conditions_and_time']
+        maximum_or_mean = maximum_or_mean[None,None,:]
+        minimum_or_std = minimum_or_std[None,None,:]
         
-        #put 0.0 where NaN. It makes sense for m_debris_1_vessel and m_debris_0_vessel
-        normalized = normalized.masked_fill(nan_mask, 0.0)
-        fields = normalized
-        
-    elif type_of_normalization == 'mean_std':
-        if size[-1] == 7:
-            std = mi_stds['boundary_conditions_and_time']
-            mean = ma_means['boundary_conditions_and_time']
-            std = std[None,None,:]
-            mean = mean[None,None,:]
-        elif size[-1] == 5:
-            std = mi_stds['dictionary_of_input_variables_1']
-            mean = ma_means['dictionary_of_input_variables_1']
-            std = std[None,None,:]
-            mean = mean[None,None,:]
+    elif size[-1] == 4:
+        maximum_or_mean = maximum_or_mean['dictionary_of_input_variables_1']
+        minimum_or_std = minimum_or_std['dictionary_of_input_variables_1']
+        maximum_or_mean = maximum_or_mean[None,None,:]
+        minimum_or_std = minimum_or_std[None,None,:]
 
-        elif size[-1] == 140:
-            std = mi_stds['dictionary_of_input_variables_140']
-            mean = ma_means['dictionary_of_input_variables_140']
-            std = std[None,None,:, None]
-            mean = mean[None,None,:, None]
+    elif size[-1] == 140:
+        maximum_or_mean = maximum_or_mean['dictionary_of_input_variables_140']
+        minimum_or_std = minimum_or_std['dictionary_of_input_variables_140']
+        maximum_or_mean = maximum_or_mean[None,None,:, None]
+        minimum_or_std = minimum_or_std[None,None,:, None]
 
-        elif size[-1] == 36:
-            std = mi_stds['dictionary_of_input_variables_36']
-            mean = ma_means['dictionary_of_input_variables_36']
-            std = std[None,None,:, None]
-            mean = mean[None,None,:, None]
+    elif size[-1] == 36:
+        maximum_or_mean = maximum_or_mean['dictionary_of_input_variables_36']
+        minimum_or_std = minimum_or_std['dictionary_of_input_variables_36']
+        maximum_or_mean = maximum_or_mean[None,None,:, None]
+        minimum_or_std = minimum_or_std[None,None,:, None]
 
-        elif size[-1] == 76:
-            std = mi_stds['dictionary_of_input_variables_76']
-            mean = ma_means['dictionary_of_input_variables_76']
-            std = std[None,None,:, None]
-            mean = mean[None,None,:, None]
+    elif size[-1] == 76:
+        maximum_or_mean = maximum_or_mean['dictionary_of_input_variables_76']
+        minimum_or_std = minimum_or_std['dictionary_of_input_variables_76']
+        maximum_or_mean = maximum_or_mean[None,None,:, None]
+        minimum_or_std = minimum_or_std[None,None,:, None]
         
-        else:
-            raise TypeError(f"Something is wrong with data")
-
-        # Create a mask for NaN values - use torch.isnan and ensure bool dtype
-        nan_mask = tc.isnan(fields)
-        
-        # Apply normalization
-        normalized = (fields - mean) / std
-        
-        #put 0.0 where NaN. It makes sense for m_debris_1_vessel and m_debris_0_vessel
-        normalized = normalized.masked_fill(nan_mask, 0.0) 
-        fields = normalized
-            
-    elif type_of_normalization == 'none':
-        return fields
+    else:
+        raise TypeError(f"Something is wrong with data")
     
+    if normalization == 'min_max':
+        
+        field = ((field - minimum_or_std)/(maximum_or_mean - minimum_or_std))
+            
+    elif normalization == 'mean_std':
+        
+        fields = ((field - maximum_or_mean)/minimum_or_std)
+        
+    elif normalization == 'none':
+        return field
+
     else:
         raise ValueError(f"Missing value") 
-    
-    return fields
+        
+    return field
 
 

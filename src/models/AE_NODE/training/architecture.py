@@ -42,12 +42,13 @@ class Encoder(nn.Module):
         latent_faces_variables = self.encoder_faces_variables(faces_variables)
         
         #concatenate latent variables without latent_boundaries_variables
+        latent_in_variables_separated = [latent_scalar_variables, latent_plenum_variables, latent_core_variables, latent_vessel_variables, latent_faces_variables] #useful at testing
         latent_in_variables = tc.concatenate((latent_scalar_variables, latent_plenum_variables, latent_core_variables, latent_vessel_variables, latent_faces_variables), axis = -1)
         regularization_latent = self.l1_latent_regularization(latent_in_variables, self.lambda_regularization, latent_boundaries_variables) #regularization latent space 
-        latent_in_variables = self.final_reduction(latent_in_variables) #final reduced vector of inner fields
+        final_latent = self.final_reduction(latent_in_variables) #final reduced vector of inner fields
         
         
-        return latent_in_variables, latent_boundaries_variables, regularization_latent
+        return final_latent, latent_in_variables_separated, latent_boundaries_variables, regularization_latent
     
     def l1_latent_regularization(self, latent_fields: list, lambda_l1: float, latent_boundaries: tc.tensor = None):
         

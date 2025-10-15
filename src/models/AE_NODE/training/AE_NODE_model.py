@@ -100,6 +100,7 @@ class AE_NODE:
         for fields, _, _, _ in self.validation_loader:
             self.number_of_different_domains = len(fields)+1
             break
+        
         self.RK = {
                 '1' : tc.tensor([[0,0],[0,1]]),
                 '2' : tc.tensor([[0,0,0],[1,1,0],[0, 1/2,1/2]]),

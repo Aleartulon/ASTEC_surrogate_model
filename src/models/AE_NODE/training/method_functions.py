@@ -1,5 +1,4 @@
 from src.models.AE_NODE.training.data_functions import *
-from torch import nn
 import time 
 
 class Training_Losses():
@@ -35,7 +34,7 @@ class Training_Losses():
 
     def auto_encoding_loss(self, fields:list , boundaries:tc.tensor,length_of_padding:tc.tensor ,loss_coeff:list, train:bool):
         
-        latent_vector_fields, latent_boundaries, regularization_latent = self.encoder(fields, boundaries)
+        latent_vector_fields, _ , latent_boundaries, regularization_latent = self.encoder(fields, boundaries)
         reconstructed_variables, reconstructed_boundaries = self.decoder(latent_vector_fields, latent_boundaries)
         
         # separate the reconstruction of boundaries and fields
@@ -45,9 +44,9 @@ class Training_Losses():
         reconstructed_boundaries = tc.reshape(reconstructed_boundaries, ((boundaries.size()[0],boundaries.size()[1]) + reconstructed_boundaries.size()[1:]))
 
         if train:
-            l1 = self.MSE(reconstructed_variables, fields, length_of_padding, reconstructed_boundaries, boundaries) * loss_coeff[0]
+            l1 = MSE(reconstructed_variables, fields, length_of_padding, reconstructed_boundaries, boundaries) * loss_coeff[0]
         else:
-            first = self.MSE(reconstructed_variables, fields, length_of_padding) * loss_coeff[0]
+            first = MSE(reconstructed_variables, fields, length_of_padding) * loss_coeff[0]
             
             reconstructed_variables = standard_and_inverse_normalization_field(reconstructed_variables, self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)
             reconstructed_boundaries = standard_and_inverse_normalization_field([reconstructed_boundaries], self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)[0]
@@ -55,7 +54,7 @@ class Training_Losses():
             fields = standard_and_inverse_normalization_field(fields, self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)
             boundaries = standard_and_inverse_normalization_field([boundaries], self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)[0]
 
-            second = self.MSE(reconstructed_variables, fields, length_of_padding, reconstructed_boundaries, boundaries, is_denormalized_validation = True) * loss_coeff[0]
+            second = MSE(reconstructed_variables, fields, length_of_padding, reconstructed_boundaries, boundaries, is_denormalized_validation = True) * loss_coeff[0]
             l1 = [first, second]
             
         return latent_vector_fields, latent_boundaries, l1, regularization_latent
@@ -143,10 +142,10 @@ class Training_Losses():
             l2_AR = tc.tensor(0., device = self.device)
 
             if (number_of_time_steps-1-self.start_backprop[1]) == 0:
-                next_latent, _ , _ = self.encoder(initial_condition)
+                next_latent, _, _ , _ = self.encoder(initial_condition)
             else:
                 with tc.no_grad():
-                    next_latent, _ , _ = self.encoder(initial_condition)
+                    next_latent, _ , _ , _ = self.encoder(initial_condition)
 
             if (not train):
                 fields = standard_and_inverse_normalization_field(fields, self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)
@@ -166,13 +165,13 @@ class Training_Losses():
                     output_decoder, _ = self.decoder(next_latent)
                     denorm_latent = standard_and_inverse_normalization_field(output_decoder, self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)
                     fields_at_correct_time_step = [tensor[:, count+1, ...] for tensor in fields]
-                    l_final += self.MSE(denorm_latent, fields_at_correct_time_step) #the boundary should not be taken into account here
+                    l_final += MSE(denorm_latent, fields_at_correct_time_step) #the boundary should not be taken into account here
             return l2_AR/step * coeff, l_final/(number_of_time_steps-1)
         
         elif self.start_backprop[0] == 1: #Encode ic and evolve in latent but TBPP
 
             place_holder = tc.zeros((number_batches,number_of_time_steps-self.start_backprop[1], true_latent.size()[-1]), device = self.device)
-            next_latent = self.encoder(input_encoder[:,0,...])
+            next_latent, _, _, _ = self.encoder(input_encoder[:,0,...])
             place_holder[:,0,:] = next_latent.clone()
             with tc.no_grad():
                 for i in range(number_of_time_steps-self.start_backprop[1]-1):
@@ -181,7 +180,7 @@ class Training_Losses():
 
             place_holder = tc.reshape(place_holder,(number_batches*(number_of_time_steps-self.start_backprop[1]),true_latent.size()[-1]))
             l2_AR_1 = tc.tensor(0.0,device=self.device)
-            next_latent = self.encoder(input_encoder[:,0,...])
+            next_latent, _, _, _ = self.encoder(input_encoder[:,0,...])
             
             for i in range(self.start_backprop[1]-1):
                 next_latent = self.processor_First_Order( next_latent, dt[:,i,:], latent_boundaries[:,i,:])
@@ -199,12 +198,12 @@ class Training_Losses():
         elif self.start_backprop[0] == 2: # Encode full field self.start_backprop[1] steps in advance and from there TBPP
 
             l2_AR_1 = tc.tensor(0.0,device=self.device)
-            next_latent = self.encoder(input_encoder[:,0,...])
+            next_latent, _, _, _ = self.encoder(input_encoder[:,0,...])
             for i in range(self.start_backprop[1]-1):
                 next_latent = self.processor_First_Order(next_latent, dt[:,i,:], latent_boundaries[:,i,:])
                 l2_AR_1 += self.L2_relative_loss_general(next_latent, true_latent[:,i+1,:], True)
 
-            place_holder = self.encoder(input_encoder)
+            place_holder, _, _, _ = self.encoder(input_encoder)
 
             for i in range(self.start_backprop[1]): 
                 place_holder = self.processor_First_Order( place_holder, dt[:,i:number_of_time_steps-self.start_backprop[1]+i,:].flatten().unsqueeze(-1) , latent_boundaries[:,i:number_of_time_steps-self.start_backprop[1]+i,:].reshape(-1, latent_boundaries.size(-1)))
@@ -268,70 +267,4 @@ class Training_Losses():
             L2_relative = tc.mean(tc.linalg.vector_norm(inp - target, dim=-1) / tc.max(norm, eps))
             return L2_relative
         
-        
-    def create_padding_mask(self, size_of_tensor: list, length_of_padding: tc.tensor):
-        
-        mask = tc.zeros(size_of_tensor, device = self.device)
-        columns = tc.arange(size_of_tensor[1])
-        where_to_fill = columns>=length_of_padding
-        where_to_fill = where_to_fill[(...,) + (None,) * (len(size_of_tensor)-2)].expand(size_of_tensor).to(self.device)
-        mask = mask.masked_fill(where_to_fill, 1.0)
-        
-        return mask
-
-
-    def MSE(self, input: list, target: list, length_of_padding: tc.tensor, reconstructed_boundaries: tc.tensor = None, boundaries: tc.tensor = None, is_denormalized_validation = False):
-        mse = []
-        if tc.any(length_of_padding != 0.0):
-            for count, i in enumerate(input):   
-                if is_denormalized_validation:
-                    i = i.double()
-                    target[count] = target[count].double()
-                loss = nn.MSELoss(reduction='none')
-                element_loss = loss(i, target[count]) 
-                mask = self.create_padding_mask( size_of_tensor=i.size(), length_of_padding=length_of_padding) 
-                masked_loss = element_loss * mask
-                if is_denormalized_validation:
-                    masked_target = ((target[count] * mask)**2).mean()
-                    mse_value = (masked_loss.double()/masked_target.double()).sum() / (mask.sum() * i.size(2))
-                    mse.append(mse_value)
-                else:
-                    mse_value = masked_loss.sum() / (mask.sum() * i.size(2))
-                    mse.append(mse_value)
-        
-            if reconstructed_boundaries is not None:
-                element_loss = loss(reconstructed_boundaries, boundaries) 
-                mask = self.create_padding_mask( size_of_tensor=reconstructed_boundaries.size(), length_of_padding=length_of_padding) 
-                masked_loss = element_loss * mask
-                
-                if is_denormalized_validation:
-                    masked_target = ((boundaries * mask)**2).mean()
-                    mse_value = (masked_loss/masked_target).sum() / (mask.sum() * reconstructed_boundaries.size(2))
-                    mse.append(mse_value)
-                else:
-                    mse_value = masked_loss.sum() / (mask.sum() * reconstructed_boundaries.size(2))
-                    mse.append(mse_value)
-                    
-        else:
-            loss = nn.MSELoss()
-            for count, i in enumerate(input):
-                if is_denormalized_validation:
-                    i = i.double()
-                    target[count] = target[count].double()
-                mse_value = loss(i,target[count])
-                if is_denormalized_validation:
-                    mse_value = mse_value/(target[count]**2).mean()
-                mse.append(mse_value)
-                    
-            if reconstructed_boundaries is not None:
-                mse_value = loss(reconstructed_boundaries, boundaries)
-                if is_denormalized_validation:
-                    mse_value = mse_value/(boundaries**2).mean()
-                mse.append(mse_value) 
-                
-        if is_denormalized_validation:  
-               
-            return tc.stack(mse)
-        else:
-            return tc.stack(mse).mean()
     
