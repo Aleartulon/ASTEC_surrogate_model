@@ -17,7 +17,7 @@ class Astec_Dataset():
         self.purpose_of_data = purpose_of_data
         self.dictionary_per_simulation = extract_input_output_bc_variables(self.path_to_hdf5, indeces) #build dictionary of data divided by number of simulation
         self.dictionary_per_simulation = self.make_channels_for_dictionary_per_simulation(self.dictionary_per_simulation) #build dictionary of data divided by simulations and make channels per spatial domain
-        self.dictionary_per_simulation = self.substitute_NaN_with_zeros(self.dictionary_per_simulation)
+        self.dictionary_per_simulation = self.substitute_NaN_with_zeros(self.dictionary_per_simulation) #substitute with zeros the NaN values
         
         #save dictionary_per_simulation to hdf5s if self.save_dictionary_per_time_lengths is true
         if self.save_dictionary_per_time_lengths:

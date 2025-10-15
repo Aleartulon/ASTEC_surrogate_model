@@ -200,25 +200,25 @@ def dict_to_hdf5(dictionary, h5file, path=''):
             # Save the data
             h5file[f"{path}/{key}"] = value
             
-def get_normalization_statistics(dictionary_of_sliced_windows:dict, type_of_normalization:str):
+def get_normalization_statistics(dictionary_unified:dict, type_of_normalization:str):
     maxima_or_mean = {}
     minima_or_std = {}
-    hdf5_keys = list(dictionary_of_sliced_windows.keys())
+    shapes = list(dictionary_unified.keys())
     if type_of_normalization == 'min_max':
-        for key in hdf5_keys:
-            shape = np.shape(dictionary_of_sliced_windows[key])
-            minimum = np.nanmin(dictionary_of_sliced_windows[key].astype(np.float64),axis = (0,) + tuple(np.arange(2,len(shape))))
-            maximum = np.nanmax(dictionary_of_sliced_windows[key].astype(np.float64),axis = (0,) + tuple(np.arange(2,len(shape))))
-            minima_or_std[key] = minimum
-            maxima_or_mean[key] = maximum
+        for shape in shapes:
+            size = np.shape(dictionary_unified[shape])
+            minimum = np.min(dictionary_unified[shape].astype(np.float64),axis = (0,) + tuple(np.arange(2,len(size))))
+            maximum = np.max(dictionary_unified[shape].astype(np.float64),axis = (0,) + tuple(np.arange(2,len(size))))
+            minima_or_std[shape] = minimum
+            maxima_or_mean[shape] = maximum
                     
     elif type_of_normalization == 'mean_std':
-        for key in hdf5_keys:
-            shape = np.shape(dictionary_of_sliced_windows[key])
-            mean = np.nanmean(dictionary_of_sliced_windows[key].astype(np.float64), axis=(0,) + tuple(np.arange(2, len(shape))))
-            std = np.nanstd(dictionary_of_sliced_windows[key].astype(np.float64), axis=(0,) + tuple(np.arange(2, len(shape))))
-            minima_or_std[key] = std
-            maxima_or_mean[key] = mean
+        for shape in shapes:
+            size = np.shape(dictionary_unified[shape])
+            mean = np.mean(dictionary_unified[shape].astype(np.float64), axis=(0,) + tuple(np.arange(2, len(size))))
+            std = np.std(dictionary_unified[shape].astype(np.float64), axis=(0,) + tuple(np.arange(2, len(size))))
+            minima_or_std[shape] = std
+            maxima_or_mean[shape] = mean
 
     else:
         raise TypeError("Type of normalization not known. It can either be min_max or mean_std")                 
@@ -267,7 +267,7 @@ def normalize_fields(field: np.array, maximum_or_mean: dict, minimum_or_std: dic
             
     elif normalization == 'mean_std':
         
-        fields = ((field - maximum_or_mean)/minimum_or_std)
+        field = ((field - maximum_or_mean)/minimum_or_std)
         
     elif normalization == 'none':
         return field

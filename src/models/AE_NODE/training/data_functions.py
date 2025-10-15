@@ -101,7 +101,7 @@ def standard_and_inverse_normalization_field(x: list, maxima_or_mean: dict, mini
                 x_denormalized.append(denorm)
             else:
                 norm = ((i - minimum_or_std)/(maximum_or_mean - minimum_or_std))
-                x_denormalized.append(denorm)
+                x_denormalized.append(norm)
                 
         elif normalization == 'mean_std':
             if inverse:
@@ -109,7 +109,7 @@ def standard_and_inverse_normalization_field(x: list, maxima_or_mean: dict, mini
                 x_denormalized.append(denorm)
             else:
                 norm = ((i - maximum_or_mean)/minimum_or_std)
-                x_denormalized.append(denorm)
+                x_denormalized.append(norm)
             
     return x_denormalized
 
