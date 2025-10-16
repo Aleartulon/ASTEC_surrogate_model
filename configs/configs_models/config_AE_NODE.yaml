@@ -8,7 +8,7 @@ k: 4 # stage of the Runge-Kutta solver for the latent dynamics
 AR_strength: 0.0005 #initial coeffient of the loss function term L_i^{A,k_2}
 TBPP_dynamic: [1, 30, 40]  # [if 1 k_2 increases dynamically from k_2=1, number of epochs after which k_2 is increased by 1, max rvalue of k_2]
 start_backprop: [1]  # Backpropagation strategy: look at function 'advance_from_ic' to see the 3 different options.
-time_of_AE: 10 # number of initial epochs where only the AutoEncoder is trained, i.e., loss_coeff_TF_AR_together = [1, 0, 0, 0]. In parallel of this a linear warm-up of the learning rate is performed
+time_of_AE: 1 # number of initial epochs where only the AutoEncoder is trained, i.e., loss_coeff_TF_AR_together = [1, 0, 0, 0]. In parallel of this a linear warm-up of the learning rate is performed
 time_only_TF : 0 #number of initial epochs after warm up where only TF and not AR approach is used
 clipping: [0, 2.5] #[if 1 clipping is applied to f, maximum norm allowed to gradients]
 is_coupled : [false, 'AE'] #if true the AutoEncoder (AE) is trained coupled with the NODE. if false, if 'AE' the AE is trained, if 'NODE' the NODE is trained.

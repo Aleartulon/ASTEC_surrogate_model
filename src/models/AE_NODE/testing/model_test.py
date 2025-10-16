@@ -59,7 +59,7 @@ class Model_Test:
         
     def autoencoding(self):
         
-        error_per_trajectory_per_field = {'MSE_normalized' : {}}
+        error_per_trajectory_per_field = {'MSE_default':{}, 'MSE_normalized' : {}}
         reconstructed_fields_per_trajectory = {}
         latent_vectors_per_trajectory_per_field = {}
         final_latent_vector_per_trajectory = {}
@@ -67,10 +67,7 @@ class Model_Test:
         #access each trajectory and encode each one
         for trajectory in self.trajectories:
             fields, boundary_conditions, time = self.access_trajectory(trajectory)
-            
-            #normalize before autoencoding
-            fields = standard_and_inverse_normalization_field(fields, self.maxima_or_mean, self.minima_or_std, self.which_normalization, inverse = False)
-            boundary_conditions = standard_and_inverse_normalization_field(boundary_conditions, self.maxima_or_mean, self.minima_or_std, self.which_normalization, inverse = False)[0]
+            #no need to normalize because daa is already normalized in the testing
 
             #auto-encode
             final_latent_vector, latent_in_variables, latent_boundaries_variables, _ = self.encoder(fields, boundary_conditions)
@@ -81,18 +78,19 @@ class Model_Test:
                 size = i.size()
                 reconstructed_fields[count] = tc.reshape(reconstructed_fields[count], ((fields[0].size()[0],fields[0].size()[1]) + size[1:]))
             reconstructed_boundary_conditions = tc.reshape(reconstructed_boundary_conditions, ((boundary_conditions.size()[0],boundary_conditions.size()[1]) + reconstructed_boundary_conditions.size()[1:]))
+            compute_errors_autoencoder(trajectory, error_per_trajectory_per_field, reconstructed_fields, reconstructed_boundary_conditions, fields, boundary_conditions, 'MSE_default')
             
             #de-normalize
             reconstructed_fields = standard_and_inverse_normalization_field(reconstructed_fields, self.maxima_or_mean, self.minima_or_std, self.which_normalization, inverse = True)
-            reconstructed_boundary_conditions = standard_and_inverse_normalization_field(reconstructed_boundary_conditions, self.maxima_or_mean, self.minima_or_std, self.which_normalization, inverse = True)[0]
+            reconstructed_boundary_conditions = standard_and_inverse_normalization_field([reconstructed_boundary_conditions], self.maxima_or_mean, self.minima_or_std, self.which_normalization, inverse = True)[0]
             fields = standard_and_inverse_normalization_field(fields, self.maxima_or_mean, self.minima_or_std, self.which_normalization, inverse = True)
-            boundary_conditions = standard_and_inverse_normalization_field(boundary_conditions, self.maxima_or_mean, self.minima_or_std, self.which_normalization, inverse = True)[0]
-            
+            boundary_conditions = standard_and_inverse_normalization_field([boundary_conditions], self.maxima_or_mean, self.minima_or_std, self.which_normalization, inverse = True)[0]
             #compute errors
-            compute_errors_autoencoder(trajectory, error_per_trajectory_per_field, reconstructed_fields, reconstructed_boundary_conditions, fields, boundary_conditions)
+            compute_errors_autoencoder(trajectory, error_per_trajectory_per_field, reconstructed_fields, reconstructed_boundary_conditions, fields, boundary_conditions, 'MSE_normalized')
             print(error_per_trajectory_per_field)
+            
             #fill in dictionaries for analysis
-            fill_in_dictionaries_autoencoder_step(reconstructed_fields_per_trajectory, latent_vectors_per_trajectory_per_field,  final_latent_vector_per_trajectory,
+            fill_in_dictionaries_autoencoder_step(trajectory, reconstructed_fields_per_trajectory, latent_vectors_per_trajectory_per_field,  final_latent_vector_per_trajectory,
                                                  reconstructed_fields, reconstructed_boundary_conditions, latent_in_variables,  final_latent_vector)
             
     def load_checkpoint_on_models(self):

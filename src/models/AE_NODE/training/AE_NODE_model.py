@@ -92,10 +92,10 @@ class AE_NODE:
         
         #create datasets and dataloader for training and validation 
         dataset_training = ASTEC_Dataset(self.data_training_path)
-        self.training_loader = DataLoader(dataset_training, batch_size = self.batch_size, num_workers=config_training['number_of_workers'], shuffle=True,drop_last=False,pin_memory=True)
+        self.training_loader = DataLoader(dataset_training, batch_size = self.batch_size, num_workers=config_training['number_of_workers'], shuffle=True,drop_last=True,pin_memory=True)
         
         dataset_validation = ASTEC_Dataset(self.data_validation_path)
-        self.validation_loader = DataLoader(dataset_validation, batch_size = self.batch_size, num_workers=config_training['number_of_workers'], shuffle=True,drop_last=False,pin_memory=True)
+        self.validation_loader = DataLoader(dataset_validation, batch_size = self.batch_size, num_workers=config_training['number_of_workers'], shuffle=True,drop_last=True,pin_memory=True)
         
         for fields, _, _, _ in self.validation_loader:
             self.number_of_different_domains = len(fields)+1

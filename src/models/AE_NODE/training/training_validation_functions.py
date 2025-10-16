@@ -11,7 +11,8 @@ class Training():
         self.training_losses = Training_Losses(self)
     
     def train_epoch(self, loss_coefficients):
-        l1_loss = 0
+        l1_loss = np.zeros(self.number_of_different_domains)
+        count_elements = np.zeros(self.number_of_different_domains)
         l2_TF_loss = 0
         l2_AR_loss = 0
         l3_loss = 0
@@ -24,31 +25,32 @@ class Training():
             
         for fields, boundary_conditions, dt, length_of_padding in self.training_loader:
             
-            l1,l2_TF,l2_AR,l3, _,regularization_latent  = self.training_losses.loss_sup_mixed(fields, boundary_conditions, dt, length_of_padding, loss_coefficients, True)
-            
-            (l1+l2_TF+l2_AR+l3+regularization_latent).backward()
+            l1,l2_TF,l2_AR,l3, _,regularization_latent, counting_elements  = self.training_losses.loss_sup_mixed(fields, boundary_conditions, dt, length_of_padding, loss_coefficients, True)
+            weighted_l1 = tc.sum(l1 * counting_elements)/tc.sum(counting_elements)
+            (weighted_l1+l2_TF+l2_AR+l3+regularization_latent).backward()
             if self.clipping[0]:
                 tc.nn.utils.clip_grad_norm_(self.f.parameters(), max_norm=self.clipping[1])
                 
             self.optim.step()
             self.optim.zero_grad() 
     
-                
-            loss += (l1+l2_TF+l2_AR+l3).detach().cpu().item()
-            
-            l1_loss += l1.detach().cpu().item()
+            loss += (weighted_l1 + l2_TF+l2_AR+l3).detach().cpu().item()
+            l1_loss += (l1 * counting_elements).detach().cpu().numpy()
+            count_elements += counting_elements.detach().cpu().numpy()
             l2_TF_loss += l2_TF.detach().cpu().item()
             l2_AR_loss += l2_AR.detach().cpu().item()
             l3_loss += l3.detach().cpu().item()
+            
             regularization_loss += regularization_latent.detach().cpu().item()
             count += 1
         
-        return l1_loss/count, l2_TF_loss/count, l2_AR_loss/count ,l3_loss/count, regularization_loss/count, loss/count
+        return l1_loss/count_elements, l2_TF_loss/count, l2_AR_loss/count ,l3_loss/count, regularization_loss/count, loss/count
         
 
     def valid_epoch(self, loss_coefficients):
         
-        l1_loss = 0
+        l1_loss = np.zeros(self.number_of_different_domains)
+        count_elements = np.zeros(self.number_of_different_domains)
         l2_TF_loss = 0
         l2_AR_loss = 0
         l3_loss = 0
@@ -65,19 +67,21 @@ class Training():
             
         with tc.no_grad():
             for fields, boundary_conditions, dt, length_of_padding in self.validation_loader:
-                l1,l2_TF,l2_AR,l3, l_final, regularization_latent  = self.training_losses.loss_sup_mixed(fields, boundary_conditions, dt, length_of_padding, loss_coefficients, False)
-                    
-                loss += (l1[0]+l2_TF+l2_AR+l3).detach().cpu().item()
+                l1,l2_TF,l2_AR,l3, l_final, regularization_latent, counting_elements  = self.training_losses.loss_sup_mixed(fields, boundary_conditions, dt, length_of_padding, loss_coefficients, False)
+                weighted_l1 = tc.sum(l1[0] * counting_elements)/tc.sum(counting_elements)
+                count_elements += counting_elements.detach().cpu().numpy()
+                
+                loss += (weighted_l1 + l2_TF + l2_AR + l3).detach().cpu().item()
                 l_real +=  l_final.detach().item()
-                l1_loss += l1[0].detach().cpu().item()
-                l1_loss_unnorm += l1[1].detach().cpu().numpy()
+                l1_loss += (l1[0] * counting_elements).detach().cpu().numpy()
+                l1_loss_unnorm += (l1[1] * counting_elements).detach().cpu().numpy()
                 l2_TF_loss += l2_TF.detach().cpu().item()
                 l2_AR_loss += l2_AR.detach().cpu().item()
                 l3_loss += l3.detach().cpu().item()
                 regularization_loss += regularization_latent.detach().cpu().item()
                 count += 1
                 
-        return l1_loss/count, l1_loss_unnorm/count, l2_TF_loss/count, l2_AR_loss/count , l3_loss/count, l_real/count, regularization_loss/count , loss/count
+        return l1_loss/count_elements, l1_loss_unnorm/count_elements, l2_TF_loss/count, l2_AR_loss/count , l3_loss/count, l_real/count, regularization_loss/count , loss/count
 
 
     def training(self):
@@ -99,14 +103,14 @@ class Training():
             early_stopping = 0 
             full_training_count = 1
 
-            train_l1 = np.zeros(self.epochs)
+            train_l1 = np.zeros((self.epochs, self.number_of_different_domains))
             train_l2_TF = np.zeros(self.epochs)
             train_l2_AR = np.zeros(self.epochs)
             train_l3 = np.zeros(self.epochs)
             train_regularization = np.zeros(self.epochs)
             train_loss_tot = np.zeros(self.epochs)
 
-            valid_l1 = np.zeros(self.epochs)
+            valid_l1 = np.zeros((self.epochs, self.number_of_different_domains))
             valid_l1_unnorm = np.zeros((self.epochs, self.number_of_different_domains))
             valid_l2_TF = np.zeros(self.epochs)
             valid_l2_AR = np.zeros(self.epochs)
@@ -222,8 +226,8 @@ class Training():
                 elif not self.is_coupled[0] and self.is_coupled[1] == 'NODE':
                     valid_loss_data = valid_real_data + valid_l2_TF_data + valid_l2_AR_data + valid_l3_data
 
-                if valid_loss_data < loss_value: #careful valid loss tot!!
-                    loss_value = valid_loss_data
+                if np.mean(valid_loss_data) < loss_value: #careful valid loss tot!!
+                    loss_value = np.mean(valid_loss_data)
                     print('Models saved!')
                     save_checkpoint(self.encoder, self.f , self.decoder, self.optim, self.scheduler, i, loss_value, loss_coeff_2 , self.start_backprop, full_training_count,self.PATH+'/checkpoint/check.pt')
                     early_stopping = 0

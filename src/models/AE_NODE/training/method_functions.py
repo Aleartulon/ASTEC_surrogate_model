@@ -18,19 +18,20 @@ class Training_Losses():
         #First loss: invertibility of autoencoder enc-dec-enc
         
         if self.is_coupled[0] == True or (self.is_coupled[0] == False and self.is_coupled[1] == 'AE'):
-            latent_vector_fields, latent_boundaries, l1, regularization_latent = self.auto_encoding_loss(fields, boundary_conditions, length_of_padding, loss_coeff, train)
+            latent_vector_fields, latent_boundaries, l1, regularization_latent, counting_elements = self.auto_encoding_loss(fields, boundary_conditions, length_of_padding, loss_coeff, train)
             
         elif (self.is_coupled[0] == False and self.is_coupled[1] == 'NODE'):
             with tc.no_grad():
-                latent_vector_fields, latent_boundaries, l1, regularization_latent = self.auto_encoding_loss(fields, boundary_conditions, length_of_padding, loss_coeff, train)
+                latent_vector_fields, latent_boundaries, l1, regularization_latent, counting_elements = self.auto_encoding_loss(fields, boundary_conditions, length_of_padding, loss_coeff, train)
 
         if self.is_coupled[0] == True or (self.is_coupled[0] == False and self.is_coupled[1] == 'NODE'):
             l2_TF, l2_AR, l3, l_final = self.latent_dynamics_loss(fields, latent_vector_fields, latent_boundaries, original_size, train, dt, loss_coeff)
+            
         elif (self.is_coupled[0] == False and self.is_coupled[1] == 'AE'):
             with tc.no_grad():
                 l2_TF, l2_AR, l3, l_final = self.latent_dynamics_loss(fields, latent_vector_fields, latent_boundaries, original_size, train, dt, loss_coeff)
 
-        return l1, l2_TF, l2_AR, l3, l_final, regularization_latent
+        return l1, l2_TF, l2_AR, l3, l_final, regularization_latent, counting_elements
 
     def auto_encoding_loss(self, fields:list , boundaries:tc.tensor,length_of_padding:tc.tensor ,loss_coeff:list, train:bool):
         
@@ -44,20 +45,18 @@ class Training_Losses():
         reconstructed_boundaries = tc.reshape(reconstructed_boundaries, ((boundaries.size()[0],boundaries.size()[1]) + reconstructed_boundaries.size()[1:]))
 
         if train:
-            l1 = MSE(reconstructed_variables, fields, length_of_padding, reconstructed_boundaries, boundaries) * loss_coeff[0]
-        else:
-            first = MSE(reconstructed_variables, fields, length_of_padding) * loss_coeff[0]
+            l1, counting_elements = MSE(reconstructed_variables, fields, length_of_padding, reconstructed_boundaries, boundaries) * loss_coeff[0]
             
+        else:
+            first, counting_elements = MSE(reconstructed_variables, fields, length_of_padding, reconstructed_boundaries, boundaries) * loss_coeff[0]
             reconstructed_variables = standard_and_inverse_normalization_field(reconstructed_variables, self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)
             reconstructed_boundaries = standard_and_inverse_normalization_field([reconstructed_boundaries], self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)[0]
-            
             fields = standard_and_inverse_normalization_field(fields, self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)
             boundaries = standard_and_inverse_normalization_field([boundaries], self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)[0]
-
-            second = MSE(reconstructed_variables, fields, length_of_padding, reconstructed_boundaries, boundaries, is_denormalized_validation = True) * loss_coeff[0]
+            second, _ = MSE(reconstructed_variables, fields, length_of_padding, reconstructed_boundaries, boundaries, is_denormalized_validation = True) * loss_coeff[0]
             l1 = [first, second]
             
-        return latent_vector_fields, latent_boundaries, l1, regularization_latent
+        return latent_vector_fields, latent_boundaries, l1, regularization_latent, counting_elements
 
     def latent_dynamics_loss(self, fields:list, latent_vector_fields:tc.tensor, latent_boundaries:tc.tensor, original_size:tuple, train:bool, dt:tc.tensor, loss_coeff:list):
         number_batches = original_size[0]

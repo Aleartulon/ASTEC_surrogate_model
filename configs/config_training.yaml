@@ -3,7 +3,7 @@ description : '/AE_NODE/' #for a given dataset, one can train with different hyp
 data_path : '../../../../scratch/ROM_datasets_ale/ASTEC/' #path of training and validation data
 model: 'AE_NODE'
 epochs: 5000 #maximum number of epochs
-learning_rate: 0.0015 #initial learning rate
+learning_rate: 0.001 #initial learning rate
 gamma_lr: 0.999 # gamma of  tc.optim.lr_scheduler.ExponentialLR()
 early_stopping: 200
 batch_size: 2 #batch size
