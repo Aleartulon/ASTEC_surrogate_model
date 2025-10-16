@@ -127,56 +127,45 @@ def create_padding_mask(size_of_tensor: list, length_of_padding: tc.tensor, devi
 
 
 def MSE(input: list, target: list, length_of_padding: tc.tensor = None, reconstructed_boundaries: tc.tensor = None, boundaries: tc.tensor = None, is_denormalized_validation = False):
-    mse = []
+    device = input[0].device
+    loss_no_reduction = nn.MSELoss(reduction='none')
+    loss = nn.MSELoss()
+    
+    mse = tc.tensor([], device = device)
     mse_per_variable = []
     counting_elements = []
     
-    device = input[0].device
-    if (length_of_padding is not None) and tc.any(length_of_padding != 0.0):
-        for count, i in enumerate(input):   
+    if reconstructed_boundaries is not None:
+        input = input + [reconstructed_boundaries]
+        target = target + [boundaries]
+        
+    if is_denormalized_validation:
+        for count, i in enumerate(input):
             if is_denormalized_validation:
                 i = i.double()
                 target[count] = target[count].double()
-            loss = nn.MSELoss(reduction='none')
-            element_loss = loss(i, target[count]) 
-            mask = create_padding_mask( size_of_tensor=i.size(), length_of_padding=length_of_padding, device = device) 
-            masked_loss = element_loss * mask
+        
+    if (length_of_padding is not None) and tc.any(length_of_padding != 0.0):
+        for count, i in enumerate(input):  
+            size = i.size() 
+            
+            element_loss = loss_no_reduction(i, target[count]) 
+            mask = create_padding_mask( size_of_tensor=i.size(), length_of_padding=length_of_padding, device = device).bool()
+            masked_loss = element_loss[mask] #flattened vector of values not masked
             if is_denormalized_validation:
-                masked_target = ((target[count] * mask)**2).mean()
-                mse_per_variable.append((masked_loss.double()/masked_target.double()).sum() / mask.sum())
-                mse.append((masked_loss.double()/masked_target.double()).flatten())
-            else:
-                mse_per_variable.append((masked_loss.sum() / mask.sum()).flatten())
-                mse.append(masked_loss.flatten())
+                masked_target = ((target[count])**2)[mask].mean()
+                mse_per_variable.append((masked_loss/masked_target).sum() / mask.sum())
+                mse = tc.concatenate([mse, masked_loss/masked_target]) #only send the ones not masked to mse
                 
-            counting_elements.append(mask.sum())
-            
-        if reconstructed_boundaries is not None:
-            element_loss = loss(reconstructed_boundaries, boundaries) 
-            mask = create_padding_mask( size_of_tensor=reconstructed_boundaries.size(), length_of_padding=length_of_padding, device = device) 
-            masked_loss = element_loss * mask
-            
-            if is_denormalized_validation:
-                masked_target = ((boundaries * mask)**2).mean()
-                mse_per_variable.append(((masked_loss/masked_target).sum() / mask.sum()))
-                mse.append((masked_loss/masked_target).flatten())
             else:
-                mse_per_variable.append((masked_loss.sum() / mask.sum()))
-                mse.append(masked_loss.flatten())
+                mse_per_variable.append(masked_loss.sum() / mask.sum())
+                mse = tc.concatenate([mse, masked_loss])
                 
             counting_elements.append(mask.sum())
                 
     else:
-        
-        loss_no_reduction = nn.MSELoss(reduction='none')
-        loss = nn.MSELoss()
-        
         for count, i in enumerate(input):
             size = i.size()
-            
-            if is_denormalized_validation:
-                i = i.double()
-                target[count] = target[count].double()
             normal_mse = loss(i,target[count])
             not_reduced_mse = loss_no_reduction(i,target[count])
             
@@ -185,25 +174,14 @@ def MSE(input: list, target: list, length_of_padding: tc.tensor = None, reconstr
                 not_reduced_mse = (not_reduced_mse / (target[count]**2).mean()).flatten()
                 
             mse_per_variable.append(normal_mse)
-            mse.append(not_reduced_mse.flatten())
+            mse = tc.concatenate([mse,not_reduced_mse.flatten()])
             
             counting_elements.append(np.prod(size))
                 
-        if reconstructed_boundaries is not None:
-            normal_mse = loss(reconstructed_boundaries,boundaries)
-            not_reduced_mse = loss_no_reduction(reconstructed_boundaries,boundaries)
-            
-            if is_denormalized_validation:
-                normal_mse = normal_mse/(boundaries**2).mean()
-                not_reduced_mse = not_reduced_mse/(boundaries**2).mean()
-            mse_per_variable.append(normal_mse)
-            mse.append(not_reduced_mse.flatten())
-            
-            counting_elements.append(np.prod(boundaries.size()))
-            
-    print(mse.mean())
-    print(tc.stack(mse_per_variable)) 
-    return mse, tc.stack(mse_per_variable), tc.tensor(counting_elements, device = device)
+    #print('mse_per_variable',mse_per_variable)
+    mse_per_variable = tc.stack(mse_per_variable)
+    counting_elements = tc.tensor(counting_elements, device = device)
+    return mse.mean(), mse_per_variable
     
 
       
