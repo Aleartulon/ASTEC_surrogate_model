@@ -15,7 +15,7 @@ class Astec_Dataset():
         
     def build_training_dataset(self, indeces, purpose_of_data):
         self.purpose_of_data = purpose_of_data
-        self.dictionary_per_simulation = extract_input_output_bc_variables(self.path_to_hdf5, indeces) #build dictionary of data divided by number of simulation
+        self.dictionary_per_simulation, _ = extract_input_output_bc_variables(self.path_to_hdf5, indeces) #build dictionary of data divided by number of simulation
         self.dictionary_per_simulation = self.make_channels_for_dictionary_per_simulation(self.dictionary_per_simulation) #build dictionary of data divided by simulations and make channels per spatial domain
         self.dictionary_per_simulation = self.substitute_NaN_with_zeros(self.dictionary_per_simulation) #substitute with zeros the NaN values
         
@@ -175,7 +175,7 @@ class Astec_Dataset():
         with open(self.path_to_hdf5 + '/minima_or_std.pkl', 'rb') as file:
             minima_or_std = pickle.load(file)
         
-        dictionary_per_trajectory = extract_input_output_bc_variables(self.path_to_hdf5, indeces) #build dictionary of data divided by numbers of simulations
+        dictionary_per_trajectory, self.time_of_simulations = extract_input_output_bc_variables(self.path_to_hdf5, indeces) #build dictionary of data divided by numbers of simulations
         dictionary_per_trajectory = self.make_channels_for_dictionary_per_simulation(dictionary_per_trajectory) #build dictionary of data divided by numbers of simulation and make channels per spatial domain
         dictionary_per_trajectory = self.substitute_NaN_with_zeros(dictionary_per_trajectory)
         dictionary_per_trajectory = self.normalize_testing_dataset(dictionary_per_trajectory, maxima_or_mean, minima_or_std) #normalize testing dataset according to training statistics
@@ -212,7 +212,7 @@ class Astec_Dataset():
     def reshape_testing_dataset(self, dictionary_per_trajectory):
         reshaped_dict = {}
         trajectories = dictionary_per_trajectory.keys()
-        for trajectory in trajectories:
+        for count, trajectory in enumerate(trajectories):
             variables = dictionary_per_trajectory[trajectory].keys()
             for variable in variables:
                 original_data = dictionary_per_trajectory[trajectory][variable]
@@ -229,6 +229,7 @@ class Astec_Dataset():
                 elif shape[-1] == 7 or shape[-1] == 13 and len(shape) !=2:
                     original_data = np.reshape(original_data, (shape[0],shape[1],shape[2]))
                 reshaped_dict.setdefault(trajectory, {})[variable] = original_data
-                
+            
+            reshaped_dict.setdefault(trajectory, {})['Time'] = self.time_of_simulations[count]
         return reshaped_dict
                 

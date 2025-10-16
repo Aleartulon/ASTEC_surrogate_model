@@ -166,15 +166,15 @@ def fill_dictionary_of_variables(output_dict:dict, name:str, f:h5py._hl.files.Fi
         
     next_time_step = f['dimensions/time_points'][:][1:index_stop]
     previous_time_step = f['dimensions/time_points'][:][0:index_stop-1]
-    next_time_step = np.concatenate([next_time_step,[0.0]])
-    previous_time_step = np.concatenate([previous_time_step,[0.0]])
     
     DT = next_time_step - previous_time_step
+    DT = np.concatenate([next_time_step - previous_time_step, [DT[-1]]])
     
     output_dict[name]['vessel_to_primary']['time'].append(DT)
 
 def extract_input_output_bc_variables(path, array_of_datasets:list):
     output_dict = {}
+    time_of_simulations = []
     for i in array_of_datasets:
         with h5py.File(path+'/'+str(i)+'.h5', 'r') as f:
             vessel_rupture_time = f['other/global/vessel_rupture_time'][:][-1]
@@ -183,12 +183,11 @@ def extract_input_output_bc_variables(path, array_of_datasets:list):
                 index_stop = len(f['dimensions/time_points'][:][0:index_stop])
             else:
                 index_stop = len(f['dimensions/time_points'][:])
-                
+            time_of_simulations.append(f['dimensions/time_points'][:][0:index_stop])   
             output_dict[i] = build_dictionary_of_variables()
             fill_dictionary_of_variables(output_dict, i, f, index_stop)
-                
-            
-    return output_dict
+    
+    return output_dict, time_of_simulations
 
 def dict_to_hdf5(dictionary, h5file, path=''):
     """Recursively save dictionary to HDF5 file."""
@@ -211,6 +210,9 @@ def get_normalization_statistics(dictionary_unified:dict, type_of_normalization:
             maximum = np.max(dictionary_unified[shape].astype(np.float64),axis = (0,) + tuple(np.arange(2,len(size))))
             minima_or_std[shape] = minimum
             maxima_or_mean[shape] = maximum
+        
+        maxima_or_mean['boundary_conditions_and_time'][-1] = 1.0 #no normalization of dt
+        minima_or_std['boundary_conditions_and_time'][-1] = 0.0
                     
     elif type_of_normalization == 'mean_std':
         for shape in shapes:
@@ -219,9 +221,15 @@ def get_normalization_statistics(dictionary_unified:dict, type_of_normalization:
             std = np.std(dictionary_unified[shape].astype(np.float64), axis=(0,) + tuple(np.arange(2, len(size))))
             minima_or_std[shape] = std
             maxima_or_mean[shape] = mean
+            
+        maxima_or_mean['boundary_conditions_and_time'][-1] = 0.0 #no normalization of dt
+        minima_or_std['boundary_conditions_and_time'][-1] = 1.0
+    
 
     else:
-        raise TypeError("Type of normalization not known. It can either be min_max or mean_std")                 
+        raise TypeError("Type of normalization not known. It can either be min_max or mean_std")  
+    
+                   
     return maxima_or_mean, minima_or_std
 
 def normalize_fields(field: np.array, maximum_or_mean: dict, minimum_or_std: dict, normalization: str):
