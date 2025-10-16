@@ -21,6 +21,7 @@ class Model_Test:
         self.directory_images = self.path_to_model+'/Images/'
         os.makedirs(self.directory_images, exist_ok=True)
         self.device = information['device']
+        self.trajectory_to_be_plotted = information['trajectory_to_be_plotted']
         
         #get normalization
         
@@ -144,155 +145,96 @@ class Model_Test:
             time = tc.tensor(np.array(f[trajectory]['Time']), dtype=tc.float32, device = self.device)
 
         return [dictionary_of_input_variables_1, dictionary_of_input_variables_36, dictionary_of_input_variables_76, lower_plenum, dictionary_of_input_variables_140], boundary_conditions, time #keep boundary conditions separated for ease
+    
+    def plot_scalar_values(self, trajectory, Time, reconstructed_fields, denormalized_fields, 
+                                directory_images, shape_index = 0, variable_index = 0,field_name='m_cum_H2', ylabel='m_cum_H2',
+                                figsize=(5, 5), fontsize=16):
 
+        plt.figure(figsize=figsize)
+        plt.plot(Time[trajectory].cpu()/ 3600.0, reconstructed_fields[trajectory][shape_index][:, :, variable_index].cpu()[0], 
+                label='AutoEncoder prediction')
+        plt.plot(Time[trajectory].cpu()/ 3600.0, denormalized_fields[trajectory][shape_index][:, :, variable_index].cpu()[0], 
+                label='Ground truth')
+        plt.xlabel('Time, h', fontsize=fontsize)
+        plt.ylabel(ylabel, fontsize=fontsize)
+        plt.legend(fontsize=fontsize)
+        plt.title(f'Trajectory number {trajectory}')
+        plt.savefig(f'{directory_images}/{trajectory}_{field_name}.svg', dpi=300, bbox_inches='tight')
+        plt.close()
+    
+    def plot_core_and_vessel_values(self, trajectory, Time, reconstructed_fields, denormalized_fields, directory_images, field_name='state_fuel', shape_index = 0, variable_index=0, time_indices=[0, 100, 1000, 20000], figsize=(20, 8), fontsize=16):
+       
+        fig, axs = plt.subplots(2, len(time_indices), figsize=figsize)
+        
+        # Collect all image data to determine common vmin/vmax
+        all_data = []
+        for count, i in enumerate(time_indices):
+            all_data.append(reconstructed_fields[trajectory][shape_index][0, time_indices[count], variable_index].cpu())
+            all_data.append(denormalized_fields[trajectory][shape_index][0, time_indices[count], variable_index].cpu())
+        
+        # Find global min and max
+        vmin = min([data.min() for data in all_data])
+        vmax = max([data.max() for data in all_data])
+        
+        # Plot with consistent color scale
+        for count, i in enumerate(time_indices):
+            axs[0, count].imshow(reconstructed_fields[trajectory][1][0, time_indices[count], variable_index].cpu(),
+                                vmin=vmin, vmax=vmax)
+            im = axs[1, count].imshow(denormalized_fields[trajectory][1][0, time_indices[count], variable_index].cpu(),
+                                    vmin=vmin, vmax=vmax)
+            axs[0, count].set_title(f't = {Time[trajectory][i]/3600:.2g} h', fontsize=fontsize)
+            axs[1, count].set_title(f't = {Time[trajectory][i]/3600:.2g} h', fontsize=fontsize)
+        axs[0, 0].set_ylabel('Prediction', fontsize=fontsize, fontweight='bold')
+        axs[1, 0].set_ylabel('Ground truth', fontsize=fontsize, fontweight='bold')
+        
+        # Add a single colorbar for all subplots
+        fig.colorbar(im, ax=axs, location='right', shrink=0.8)
+        fig.suptitle(f'Trajectory number {trajectory}, {field_name}', fontsize=fontsize)
+        plt.savefig(f'{directory_images}/{trajectory}_{field_name}.svg', dpi=300, bbox_inches='tight')
+        plt.close()
+            
     def generate_pictures_autoencoding(self, error_per_trajectory_per_field:dict, reconstructed_fields_per_trajectory:dict, latent_vectors_per_trajectory_per_field:dict, final_latent_vector_per_trajectory:dict, denormalized_fields_per_trajectory:dict, Time:dict):
-        trajectory = '1'
         
         # generate figure of dictionary_of_input_variables_1 
-        plt.figure(figsize = (5,5))
-        plt.plot(Time[trajectory].cpu(), reconstructed_fields_per_trajectory[trajectory][0][:,:,0].cpu()[0], label = 'AutoEncoder prediction')
-        plt.plot(Time[trajectory].cpu(), denormalized_fields_per_trajectory[trajectory][0][:,:,0].cpu()[0], label = 'Ground truth')
-        plt.xlabel('Time, s', fontsize = 16)
-        plt.ylabel('m_cum_H2', fontsize = 16)
-        plt.legend(fontsize = 16)
-        plt.title('Trajectory number '+ trajectory)
-        plt.savefig(self.directory_images +'/'+trajectory+'_m_cum_H2.svg', dpi=300, bbox_inches='tight')
         
-        plt.figure(figsize = (5,5))
-        plt.plot(Time[trajectory].cpu(), reconstructed_fields_per_trajectory[trajectory][0][:,:,1].cpu()[0], label = 'AutoEncoder prediction')
-        plt.plot(Time[trajectory].cpu(), denormalized_fields_per_trajectory[trajectory][0][:,:,1].cpu()[0], label = 'Ground truth')
-        plt.xlabel('Time, s', fontsize = 16)
-        plt.ylabel('m_tot_cor', fontsize = 16)
-        plt.legend(fontsize = 16)
-        plt.title('Trajectory number '+ trajectory)
-        plt.savefig(self.directory_images +'/'+trajectory+'m_tot_cor.svg', dpi=300, bbox_inches='tight')
-        
-        plt.figure(figsize = (5,5))
-        plt.plot(Time[trajectory].cpu(), reconstructed_fields_per_trajectory[trajectory][0][:,:,2].cpu()[0], label = 'AutoEncoder prediction')
-        plt.plot(Time[trajectory].cpu(), denormalized_fields_per_trajectory[trajectory][0][:,:,2].cpu()[0], label = 'Ground truth')
-        plt.xlabel('Time, s', fontsize = 16)
-        plt.ylabel('FP_A_heat', fontsize = 16)
-        plt.legend(fontsize = 16)
-        plt.title('Trajectory number '+ trajectory)
-        plt.savefig(self.directory_images +'/'+trajectory+'FP_A_heat.svg', dpi=300, bbox_inches='tight')
-        
-        plt.figure(figsize = (5,5))
-        plt.plot(Time[trajectory].cpu(), reconstructed_fields_per_trajectory[trajectory][0][:,:,3].cpu()[0], label = 'AutoEncoder prediction')
-        plt.plot(Time[trajectory].cpu(), denormalized_fields_per_trajectory[trajectory][0][:,:,3].cpu()[0], label = 'Ground truth')
-        plt.xlabel('Time, s', fontsize = 16)
-        plt.ylabel('sat_core_mesh', fontsize = 16)
-        plt.legend(fontsize = 16)
-        plt.title('Trajectory number '+ trajectory)
-        plt.savefig(self.directory_images +'/'+trajectory+'sat_core_mesh.svg', dpi=300, bbox_inches='tight')
+        self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, self.directory_images, shape_index = 0, variable_index = 0 ,field_name = 'm_cum_H2', ylabel =  'm_cum_H2', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, self.directory_images, shape_index = 0, variable_index =1 , field_name = 'm_tot_cor', ylabel = 'm_tot_cor', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, self.directory_images, shape_index = 0, variable_index = 2 , field_name = 'FP_A_heat', ylabel = 'FP_A_heat', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, self.directory_images, shape_index = 0, variable_index =3 , field_name = 'sat_core_mesh', ylabel = 'sat_core_mesh', figsize=(5, 5), fontsize=16)
         
         # generate figure of core 
-        print(np.shape(reconstructed_fields_per_trajectory[trajectory][1].cpu()))
-        fig, axs = plt.subplots(2, 4, figsize=(8, 8))
-        time_indeces = [0, 100, 1000, 20000]
-
-        # Collect all image data to determine common vmin/vmax
-        all_data = []
-        for count, i in enumerate(time_indeces):
-            all_data.append(reconstructed_fields_per_trajectory[trajectory][1][0, time_indeces[count], 0].cpu())
-            all_data.append(denormalized_fields_per_trajectory[trajectory][1][0, time_indeces[count], 0].cpu())
-
-        # Find global min and max
-        vmin = min([data.min() for data in all_data])
-        vmax = max([data.max() for data in all_data])
-
-        # Plot with consistent color scale
-        for count, i in enumerate(time_indeces):
-            axs[0, count].imshow(reconstructed_fields_per_trajectory[trajectory][1][0, time_indeces[count], 0].cpu(), 
-                                vmin=vmin, vmax=vmax)
-            im = axs[1, count].imshow(denormalized_fields_per_trajectory[trajectory][1][0, time_indeces[count], 0].cpu(), 
-                                    vmin=vmin, vmax=vmax)
-
-        # Add a single colorbar for all subplots
-        fig.colorbar(im, ax=axs, location='right', shrink=0.8)
-
-        fig.suptitle('Trajectory number ' + trajectory, fontsize=16)
-        plt.savefig(self.directory_images + '/' + trajectory + 'T_comp_fuel.svg', dpi=300, bbox_inches='tight')
         
-        ##################################################
+        self.plot_core_and_vessel_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, self.directory_images, field_name='T_comp_fuel', shape_index = 1, variable_index=0, time_indices=[0, 1000, 10000, 20000], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, self.directory_images, field_name='T_comp_clad', shape_index = 1, variable_index=1, time_indices=[0, 1000, 10000, 20000], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, self.directory_images, field_name='state_fuel', shape_index = 1, variable_index=2, time_indices=[0, 1000, 10000, 20000], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, self.directory_images, field_name='state_clad', shape_index = 1, variable_index=3, time_indices=[0, 1000, 10000, 20000], figsize=(10, 8), fontsize=16)
         
-        fig, axs = plt.subplots(2, 4, figsize=(8, 8))
-        time_indeces = [0, 100, 1000, 20000]
-
-        # Collect all image data to determine common vmin/vmax
-        all_data = []
-        for count, i in enumerate(time_indeces):
-            all_data.append(reconstructed_fields_per_trajectory[trajectory][1][0, time_indeces[count], 1].cpu())
-            all_data.append(denormalized_fields_per_trajectory[trajectory][1][0, time_indeces[count], 1].cpu())
-
-        # Find global min and max
-        vmin = min([data.min() for data in all_data])
-        vmax = max([data.max() for data in all_data])
-
-        # Plot with consistent color scale
-        for count, i in enumerate(time_indeces):
-            axs[0, count].imshow(reconstructed_fields_per_trajectory[trajectory][1][0, time_indeces[count], 1].cpu(), 
-                                vmin=vmin, vmax=vmax)
-            im = axs[1, count].imshow(denormalized_fields_per_trajectory[trajectory][1][0, time_indeces[count], 1].cpu(), 
-                                    vmin=vmin, vmax=vmax)
-
-        # Add a single colorbar for all subplots
-        fig.colorbar(im, ax=axs, location='right', shrink=0.8)
-
-        fig.suptitle('Trajectory number ' + trajectory, fontsize=16)
-        plt.savefig(self.directory_images + '/' + trajectory + 'T_comp_clad.svg', dpi=300, bbox_inches='tight')
+        # generate figure of the vessel
         
-        ##################################################
+        self.plot_core_and_vessel_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, self.directory_images, field_name='P_vessel', shape_index = 2, variable_index=0, time_indices=[0, 1000, 10000, 20000], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, self.directory_images, field_name='T_gas_vessel', shape_index = 2, variable_index=1, time_indices=[0, 1000, 10000, 20000], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, self.directory_images, field_name='T_liq_vessel', shape_index = 2, variable_index=2, time_indices=[0, 1000, 10000, 20000], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, self.directory_images, field_name='x_alfa_vessel', shape_index = 2, variable_index=3, time_indices=[0, 1000, 10000, 20000], figsize=(10, 8), fontsize=16)
         
-        fig, axs = plt.subplots(2, 4, figsize=(8, 8))
-        time_indeces = [0, 100, 1000, 20000]
-
-        # Collect all image data to determine common vmin/vmax
-        all_data = []
-        for count, i in enumerate(time_indeces):
-            all_data.append(reconstructed_fields_per_trajectory[trajectory][1][0, time_indeces[count], 2].cpu())
-            all_data.append(denormalized_fields_per_trajectory[trajectory][1][0, time_indeces[count], 2].cpu())
-
-        # Find global min and max
-        vmin = min([data.min() for data in all_data])
-        vmax = max([data.max() for data in all_data])
-
-        # Plot with consistent color scale
-        for count, i in enumerate(time_indeces):
-            axs[0, count].imshow(reconstructed_fields_per_trajectory[trajectory][1][0, time_indeces[count], 2].cpu(), 
-                                vmin=vmin, vmax=vmax)
-            im = axs[1, count].imshow(denormalized_fields_per_trajectory[trajectory][1][0, time_indeces[count], 2].cpu(), 
-                                    vmin=vmin, vmax=vmax)
-
-        # Add a single colorbar for all subplots
-        fig.colorbar(im, ax=axs, location='right', shrink=0.8)
-
-        fig.suptitle('Trajectory number ' + trajectory, fontsize=16)
-        plt.savefig(self.directory_images + '/' + trajectory + 'state_fuel.svg', dpi=300, bbox_inches='tight')
+        # generate figure of lower plenum
         
-        ##################################################
+        self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, self.directory_images, shape_index = 3, variable_index = 0 ,field_name = 'P_lower_plenum', ylabel =  'P_lower_plenum', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, self.directory_images, shape_index = 3, variable_index =1 , field_name = 'T_gas_lower_plenum', ylabel = 'T_gas_lower_plenum', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, self.directory_images, shape_index = 3, variable_index = 2 , field_name = 'T_liq_lower_plenum', ylabel = 'T_liq_lower_plenum', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, self.directory_images, shape_index = 3, variable_index =3 , field_name = 'x_alfa_lower_plenum', ylabel = 'x_alfa_lower_plenum', figsize=(5, 5), fontsize=16)
         
-        fig, axs = plt.subplots(2, 4, figsize=(8, 8))
-        time_indeces = [0, 100, 1000, 20000]
-
-        # Collect all image data to determine common vmin/vmax
-        all_data = []
-        for count, i in enumerate(time_indeces):
-            all_data.append(reconstructed_fields_per_trajectory[trajectory][1][0, time_indeces[count], 3].cpu())
-            all_data.append(denormalized_fields_per_trajectory[trajectory][1][0, time_indeces[count], 3].cpu())
-
-        # Find global min and max
-        vmin = min([data.min() for data in all_data])
-        vmax = max([data.max() for data in all_data])
-
-        # Plot with consistent color scale
-        for count, i in enumerate(time_indeces):
-            axs[0, count].imshow(reconstructed_fields_per_trajectory[trajectory][1][0, time_indeces[count], 3].cpu(), 
-                                vmin=vmin, vmax=vmax)
-            im = axs[1, count].imshow(denormalized_fields_per_trajectory[trajectory][1][0, time_indeces[count], 3].cpu(), 
-                                    vmin=vmin, vmax=vmax)
-
-        # Add a single colorbar for all subplots
-        fig.colorbar(im, ax=axs, location='right', shrink=0.8)
-
-        fig.suptitle('Trajectory number ' + trajectory, fontsize=16)
-        plt.savefig(self.directory_images + '/' + trajectory + 'state_clad.svg', dpi=300, bbox_inches='tight')
+        # generate figure of faces
+        
+        self.plot_core_and_vessel_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, self.directory_images, field_name='Q_m_liq_face', shape_index = 4, variable_index=0, time_indices=[0, 1000, 10000, 20000], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, self.directory_images, field_name='V_gas_face', shape_index = 4, variable_index=1, time_indices=[0, 1000, 10000, 20000], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, self.directory_images, field_name='V_liq_face', shape_index = 4, variable_index=2, time_indices=[0, 1000, 10000, 20000], figsize=(10, 8), fontsize=16)
+        
+        #generate figures for boundary conditions
+        
+        self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, self.directory_images, shape_index = 5, variable_index = 0 ,field_name = 'Q_H20_connection_v_to_p', ylabel =  'Q_H20_connection_v_to_p', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, self.directory_images, shape_index = 5, variable_index =1 , field_name = 'Q_steam_connection_v_to_p', ylabel = 'Q_steam_connection_v_to_p', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, self.directory_images, shape_index = 5, variable_index = 2 , field_name = 'm_H20_connection_v_to_p', ylabel = 'm_H20_connection_v_to_p', figsize=(5, 5), fontsize=16)
+        
+        self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, self.directory_images, shape_index = 5, variable_index = 3 ,field_name = 'Q_H20_connection_p_to_v', ylabel =  'Q_H20_connection_p_to_v', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, self.directory_images, shape_index = 5, variable_index =4 , field_name = 'Q_steam_connection_p_to_v', ylabel = 'Q_steam_connection_p_to_v', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, self.directory_images, shape_index = 5, variable_index = 5 , field_name = 'm_H20_connection_p_to_v', ylabel = 'm_H20_connection_p_to_v', figsize=(5, 5), fontsize=16)
