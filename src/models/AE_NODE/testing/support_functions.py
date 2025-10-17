@@ -15,10 +15,12 @@ def compute_errors_autoencoder(trajectory: str, error_per_trajectory_per_field :
         error_per_trajectory_per_field['MSE_normalized'][trajectory] = MSE_normalized
     
 def fill_in_dictionaries_autoencoder_step(trajectory:str, reconstructed_fields_per_trajectory:dict, latent_vectors_per_trajectory_per_field:dict,  final_latent_vector_per_trajectory:dict, denormalized_fields_per_trajectory:dict,
-                                                 reconstructed_fields:list, reconstructed_boundary_conditions:tc.tensor, latent_in_variables:list,  final_latent_vector:tc.tensor, fields: list, boundary_conditions:list):
+                                                 reconstructed_fields:list, reconstructed_boundary_conditions:tc.tensor, latent_in_variables:list, latent_boundaries_variables:tc.tensor, final_latent_vector:tc.tensor, fields: list, boundary_conditions:list):
     
     reconstructed_fields.append(reconstructed_boundary_conditions)
     fields.append(boundary_conditions)
+    latent_in_variables.append(latent_boundaries_variables)
+    
     reconstructed_fields_per_trajectory[trajectory] = reconstructed_fields
     latent_vectors_per_trajectory_per_field[trajectory] = latent_in_variables
     final_latent_vector_per_trajectory[trajectory] = final_latent_vector

@@ -185,8 +185,9 @@ class Astec_Dataset():
         for number_of_simulation in dictionary_per_trajectory:
             shapes = list(dictionary_per_trajectory[number_of_simulation].keys())
             for shape in shapes:
-                if np.isnan(dictionary_per_trajectory[number_of_simulation][shape]).any() or not np.isfinite(dictionary_per_trajectory[number_of_simulation][shape]).any():
-                    raise TypeError(f"There are still NaN values in final data, check please in simulation {number_of_simulation}, shape {shape}")
+                if shape != 'Operator_actions':
+                    if np.isnan(dictionary_per_trajectory[number_of_simulation][shape]).any() or not np.isfinite(dictionary_per_trajectory[number_of_simulation][shape]).any():
+                        raise TypeError(f"There are still NaN values in final data, check please in simulation {number_of_simulation}, shape {shape}")
             
         #check shapes
         print('')
@@ -231,5 +232,17 @@ class Astec_Dataset():
                 reshaped_dict.setdefault(trajectory, {})[variable] = original_data
             
             reshaped_dict.setdefault(trajectory, {})['Time'] = self.time_of_simulations[count]
+            op_acts = self.get_operator_actions(trajectory)
+            reshaped_dict.setdefault(trajectory, {})['Operator_actions'] = op_acts
         return reshaped_dict
+    
+    def get_operator_actions(self, trajectory):
+        operator_actions_dict = {}
+        with h5py.File(self.path_to_hdf5+'/'+str(trajectory)+'.h5', 'r') as f:
+            operator_names = ['t_fbseb', 't1_srv', 'opensrv', 't2_srv', 'tendssg2', 'tpesp','tpessg', 'tcss', 'p_u5', 'tsg2tr']
+            for op in operator_names:
+                operator_actions_dict[op] = f['other/private/'+ op][0]
+                if np.isnan(f['other/private/'+ op][0]).any() or not np.isfinite(f['other/private/'+ op][0]).any():
+                    raise TypeError(f"Operator action {op} in simulation {trajectory} is NaN")
+        return operator_actions_dict
                 
