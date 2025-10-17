@@ -14,7 +14,7 @@ def main():
         print(key, ' : ', value)
         
     testing = config_dataset['testing']
-    
+    print(f'Testing is {testing}!')
     if testing:
         #build test data
         print('--------------------------------Build testing dataset--------------------------------')

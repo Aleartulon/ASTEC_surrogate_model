@@ -73,7 +73,7 @@ class Astec_Dataset():
         for key in self.dictionary_of_sliced_windows:
             print(key, np.shape(self.dictionary_of_sliced_windows[key]))
         #save normalized dictionary with sliced windows
-        with h5py.File(f'{self.path_to_hdf5}/data_{self.purpose_of_data}_normalized_t_W_500.h5', 'w') as f:
+        with h5py.File(f'{self.path_to_hdf5}/data_{self.purpose_of_data}_normalized_t_W_'+str(self.t_W)+'.h5', 'w') as f:
             dict_to_hdf5(self.dictionary_of_sliced_windows, f)
             
         return 0

@@ -19,15 +19,20 @@ class Model_Test:
         self.path_to_model = information['path_to_model']
         
         self.directory_images = self.path_to_model+'/Images/'
-        self.directory_images_AutoEncoding_fields_reconstruction = self.directory_images + 'AutoEncoding/fields_reconstruction'
+        self.directory_images_AutoEncoding_fields_reconstruction_scalar = self.directory_images + 'AutoEncoding/fields_reconstruction_scalar'
+        self.directory_images_AutoEncoding_fields_reconstruction_2d = self.directory_images + 'AutoEncoding/fields_reconstruction_2d'
+        self.directory_images_AutoEncoding_fields_reconstruction_faces = self.directory_images + 'AutoEncoding/fields_reconstruction_faces'
         self.directory_images_AutoEncoding_final_latent = self.directory_images + 'AutoEncoding/final_latent'
         self.directory_images_AutoEncoding_latent_per_variables = self.directory_images + 'AutoEncoding/latent_per_variables'
         
         os.makedirs(self.directory_images, exist_ok=True)
         os.makedirs(self.directory_images+'/AutoEncoding', exist_ok=True)
-        os.makedirs(self.directory_images+'/AutoEncoding/fields_reconstruction', exist_ok=True)
+        os.makedirs(self.directory_images+'/AutoEncoding/fields_reconstruction_scalar', exist_ok=True)
+        os.makedirs(self.directory_images+'/AutoEncoding/fields_reconstruction_2d', exist_ok=True)
+        os.makedirs(self.directory_images+'/AutoEncoding/fields_reconstruction_faces', exist_ok=True)
         os.makedirs(self.directory_images+'/AutoEncoding/final_latent', exist_ok=True)
         os.makedirs(self.directory_images+'/AutoEncoding/latent_per_variables', exist_ok=True)
+        
         self.device = information['device']
         self.trajectory_to_be_plotted = information['trajectory_to_be_plotted']
         self.autoencoding_figures = information['autoencoding_figures']
@@ -207,10 +212,10 @@ class Model_Test:
         plt.ylabel(ylabel, fontsize=fontsize)
         plt.legend(fontsize=fontsize)
         plt.title(f'Trajectory number {trajectory}', fontsize = fontsize)
-        plt.savefig(f'{self.directory_images_AutoEncoding_fields_reconstruction}/{trajectory}_{field_name}.png', dpi=300, bbox_inches='tight')
+        plt.savefig(f'{self.directory_images_AutoEncoding_fields_reconstruction_scalar}/{trajectory}_{field_name}.png', dpi=300, bbox_inches='tight')
         plt.close()
     
-    def plot_core_and_vessel_values(self, trajectory, Time, reconstructed_fields, denormalized_fields,field_name='state_fuel', shape_index = 0, variable_index=0, time_indices=[0, 100, 1000, 20000], figsize=(20, 8), fontsize=16):
+    def plot_core_and_vessel_values(self, trajectory, Time, reconstructed_fields, denormalized_fields,field_name='state_fuel', shape_index = 0, variable_index=0, time_indices=[0, 100, 1000, 20000], figsize=(20, 8), fontsize=16, faces = False):
        
         fig, axs = plt.subplots(2, len(time_indices), figsize=figsize)
         
@@ -238,7 +243,10 @@ class Model_Test:
         # Add a single colorbar for all subplots
         fig.colorbar(im, ax=axs, location='right', shrink=0.8)
         fig.suptitle(f'Trajectory number {trajectory}, {field_name}', fontsize=fontsize)
-        plt.savefig(f'{self.directory_images_AutoEncoding_fields_reconstruction}/{trajectory}_{field_name}.png', dpi=300, bbox_inches='tight')
+        if not faces:
+            plt.savefig(f'{self.directory_images_AutoEncoding_fields_reconstruction_2d}/{trajectory}_{field_name}.png', dpi=300, bbox_inches='tight')
+        else:
+            plt.savefig(f'{self.directory_images_AutoEncoding_fields_reconstruction_faces}/{trajectory}_{field_name}.png', dpi=300, bbox_inches='tight')
         plt.close()
         
     def plot_latent_space_per_variable(self, trajectory, Time, latent_space_dict:dict, shape_index = 0, ylabel='latent_plenum', figsize=(5, 5), fontsize=16):
@@ -287,6 +295,20 @@ class Model_Test:
         self.plot_core_and_vessel_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, field_name='T_gas_vessel', shape_index = 2, variable_index=1, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16)
         self.plot_core_and_vessel_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, field_name='T_liq_vessel', shape_index = 2, variable_index=2, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16)
         self.plot_core_and_vessel_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, field_name='x_alfa_vessel', shape_index = 2, variable_index=3, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, field_name='T_sat_vessel', shape_index = 2, variable_index=4, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, field_name='P_H2_vessel', shape_index = 2, variable_index=5, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, field_name='P_steam_vessel', shape_index = 2, variable_index=6, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, field_name='m_gas_vessel', shape_index = 2, variable_index=7, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, field_name='m_liq_vessel_mesh', shape_index = 2, variable_index=8, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, field_name='rho_gas_vessel', shape_index = 2, variable_index=9, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, field_name='rho_liq_vessel', shape_index = 2, variable_index=10, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, field_name='Q_liq_vap_vessel', shape_index = 2, variable_index=11, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, field_name='porosity_vessel', shape_index = 2, variable_index=12, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, field_name='V_deb_vessel', shape_index = 2, variable_index=13, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, field_name='V_mag_vessel', shape_index = 2, variable_index=14, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, field_name='m_magma_vessel', shape_index = 2, variable_index=15, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, field_name='m_debris_0_vessel', shape_index = 2, variable_index=16, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, field_name='m_debris_1_vessel', shape_index = 2, variable_index=17, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16)
         
         # generate figure of lower plenum
         
@@ -297,9 +319,9 @@ class Model_Test:
         
         # generate figure of faces
         
-        self.plot_core_and_vessel_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, field_name='Q_m_liq_face', shape_index = 4, variable_index=0, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16)
-        self.plot_core_and_vessel_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, field_name='V_gas_face', shape_index = 4, variable_index=1, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16)
-        self.plot_core_and_vessel_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, field_name='V_liq_face', shape_index = 4, variable_index=2, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, field_name='Q_m_liq_face', shape_index = 4, variable_index=0, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16, faces = True)
+        self.plot_core_and_vessel_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, field_name='V_gas_face', shape_index = 4, variable_index=1, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16, faces = True)
+        self.plot_core_and_vessel_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, field_name='V_liq_face', shape_index = 4, variable_index=2, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16, faces = True)
         
         #generate figures for boundary conditions
         
