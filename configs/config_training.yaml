@@ -6,7 +6,7 @@ epochs: 5000 #maximum number of epochs
 learning_rate: 0.001 #initial learning rate
 gamma_lr: 0.999 # gamma of  tc.optim.lr_scheduler.ExponentialLR()
 early_stopping: 200
-batch_size: 2 #batch size
+batch_size: 64 #batch size
 number_of_workers: 8
 checkpoint: false  # if true uses existing checkpoint
 device : 'cuda:2' #device where to train

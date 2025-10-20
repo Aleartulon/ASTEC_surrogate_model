@@ -1,5 +1,6 @@
 from src.models.AE_NODE.training.data_functions import *
 import time 
+import torch.nn.functional as F
 
 class Training_Losses():
     def __init__(self, training_instance):
@@ -77,7 +78,8 @@ class Training_Losses():
         else:
             e2_latent_TF = self.processor_First_Order(input_processor, dt, latent_boundaries)
             e2_latent_TF = e2_latent_TF.reshape(number_batches, (number_of_time_steps-1), latent_dim)
-            l2_TF = dynamics_MSE(e2_latent_TF, latent_vector_fields[:, 1:, :], length_of_padding, False) * loss_coeff[1]
+            
+            l2_TF = dynamics_MSE(e2_latent_TF, latent_vector_fields[:, 1:, :], F.relu((length_of_padding-1))) * loss_coeff[1]
         
         if loss_coeff[3] <= 0:
             l3 = tc.tensor(0.0)
@@ -86,7 +88,7 @@ class Training_Losses():
             e2_middle_latent = self.processor_First_Order( input_processor,random_dt, latent_boundaries)
             e2_final = self.processor_First_Order(e2_middle_latent, dt-random_dt, latent_boundaries)
             e2_final = e2_final.reshape(number_batches, (number_of_time_steps-1), latent_dim)
-            l3 = dynamics_MSE(e2_final, latent_vector_fields[:, 1:, :], length_of_padding, False) * loss_coeff[3]
+            l3 = dynamics_MSE(e2_final, latent_vector_fields[:, 1:, :], F.relu((length_of_padding-1))) * loss_coeff[3]
 
         if loss_coeff[2] <= 0:
             with tc.no_grad():
@@ -162,6 +164,7 @@ class Training_Losses():
                     next_latent = self.processor_First_Order(next_latent, dt[:,count,:], latent_boundaries[:,count,:])
                     l2_AR += dynamics_MSE(next_latent, true_latent[:,count+1,:], True) 
                     step+=1
+                    
                 if (not train):
                     output_decoder, _ = self.decoder(next_latent)
                     output_decoder = [tensor.unsqueeze(1) for tensor in output_decoder]
@@ -169,7 +172,7 @@ class Training_Losses():
                     denorm_latent = standard_and_inverse_normalization_field(output_decoder, self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)
                     denorm_latent = [tensor.squeeze(1) for tensor in denorm_latent]
                     fields_at_correct_time_step = [tensor[:, count+1, ...] for tensor in fields]
-                    l_final, l_final_per_variable = dynamics_MSE(denorm_latent, fields_at_correct_time_step) #the boundary should not be taken into account here
+                    l_final, l_final_per_variable = auto_encoding_MSE(denorm_latent, fields_at_correct_time_step) #the boundary should not be taken into account here
                     loss_final += l_final
                     loss_final_per_variable += l_final_per_variable
             return l2_AR/step * coeff, l_final/(number_of_time_steps-1)
