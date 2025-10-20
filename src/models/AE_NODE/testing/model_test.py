@@ -24,6 +24,7 @@ class Model_Test:
         self.directory_images_AutoEncoding_fields_reconstruction_faces = self.directory_images + 'AutoEncoding/fields_reconstruction_faces'
         self.directory_images_AutoEncoding_final_latent = self.directory_images + 'AutoEncoding/final_latent'
         self.directory_images_AutoEncoding_latent_per_variables = self.directory_images + 'AutoEncoding/latent_per_variables'
+        self.directory_images_Operator_Actions = self.directory_images + '/Operator_Actions'
         
         os.makedirs(self.directory_images, exist_ok=True)
         os.makedirs(self.directory_images+'/AutoEncoding', exist_ok=True)
@@ -32,6 +33,7 @@ class Model_Test:
         os.makedirs(self.directory_images+'/AutoEncoding/fields_reconstruction_faces', exist_ok=True)
         os.makedirs(self.directory_images+'/AutoEncoding/final_latent', exist_ok=True)
         os.makedirs(self.directory_images+'/AutoEncoding/latent_per_variables', exist_ok=True)
+        os.makedirs(self.directory_images+'/Operator_Actions/', exist_ok=True)
         
         self.device = information['device']
         self.trajectory_to_be_plotted = information['trajectory_to_be_plotted']
@@ -87,21 +89,29 @@ class Model_Test:
             print('-----------------------------------------------------------------------')
             
     def print_operator_actions(self):
-        description = [
-            'Change of pressurizer valve mode',
-            'DBA Phase: Open PORV - time opening',
-            'DBA Phase: Open PORV - %Opening',
-            'SA phase: Open completely',
-            'Closing PORV after SGTR',
-            'RCS - Time at which the pumps are activated',
-            'SG-Time at which the pumps are activated',
-            'Instant at which containment spray system is recovered',
-            'Instant at which filtered containment venting system is operated/sampling the containment pressure set-point',
-            'Time at which SGTR occurs in SG or (P,T) BC'
-        ]
+        description = {
+            't_fbseb': 'Change of pressurizer valve mode',
+            't1_srv': 'DBA Phase: Open PORV - time opening',
+            'opensrv': 'DBA Phase: Open PORV - %Opening',
+            't2_srv': 'SA phase: Open completely',
+            'tendssg2': 'Closing PORV after SGTR',
+            'tpesp': 'RCS - Time at which the pumps are activated',
+            'tpessg': 'SG-Time at which the pumps are activated',
+            'tcss': 'Instant at which containment spray system is recovered',
+            'p_u5': 'Instant at which filtered containment venting system is operated/sampling the containment pressure set-point',
+            'tsg2tr': 'Time at which SGTR occurs in SG or (P,T) BC'
+        }
+        all_operators = []
+        all_labels = []
+        all_info = []
         
         for index in self.operator_actions_indeces:
+            labels = []
+            info_text = []
+            
             with h5py.File(self.path_to_test_data + self.name_test_file, 'r') as f:
+                Time = np.array(f[str(index)]['Time'])
+                arr_per_operator = []
                 ops = f[str(index)]['Operator_actions']
                 keys = list(ops.keys())
                 
@@ -109,11 +119,42 @@ class Model_Test:
                 print(f'Operator actions of simulation {index}:')
                 print(f'{"="*80}')
                 
-                for i, key in enumerate(keys):
+                for key in keys:
                     dataset = ops[key]
                     value = dataset[()]
-                    desc = description[i] if i < len(description) else 'No description'
-                    print(f'{key:15s}: {value:12.6f}  | {desc}')
+                    desc = description[key]
+                    print(f'{key:15s}: {value:12.6f} | {desc}')
+                    arr_per_operator.append(value)
+                    labels.append(key)
+                    info_text.append(f'{key}: {value:.2f} h')
+            
+            all_operators.append(arr_per_operator)
+            all_labels.append(labels)
+            all_info.append(info_text)
+        
+        for idx, i in enumerate(self.operator_actions_indeces):
+            fig, ax = plt.subplots(figsize=(16, 4))
+            
+            ax.scatter(all_operators[idx], np.zeros_like(all_operators[idx]), s=100, alpha=0.7)
+            
+            for count, l in enumerate(all_labels[idx]):
+                y = 15 if count % 2 == 0 else -15
+                ax.annotate(l, (all_operators[idx][count], 0), xytext=(0, y), 
+                        textcoords='offset points', ha='center', fontsize=9)
+            
+            ax.set_xlim([-0.5, Time[-1]/3600+1])
+            ax.set_xlabel('Time, h', fontsize=16)
+            ax.set_ylabel('Operator actions', fontsize=16)
+            
+            # Add text box to the right
+            info_str = '\n'.join(all_info[idx])
+            ax.text(1.02, 0.5, info_str, transform=ax.transAxes, 
+                    fontsize=9, verticalalignment='center',
+                    bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
+            
+            plt.savefig(f'{self.directory_images_Operator_Actions}/{i}_operator_actions.png', 
+                        dpi=300, bbox_inches='tight')
+            plt.close()
             
     def autoencoding(self):
         
@@ -326,11 +367,11 @@ class Model_Test:
         #generate figures for boundary conditions
         
         self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, shape_index = 5, variable_index = 0 ,field_name = 'Q_H20_connection_v_to_p', ylabel =  'Q_H20_connection_v_to_p', figsize=(5, 5), fontsize=16)
-        self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, shape_index = 5, variable_index =1 , field_name = 'Q_steam_connection_v_to_p', ylabel = 'Q_steam_connection_v_to_p', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, shape_index = 5, variable_index = 1 , field_name = 'Q_steam_connection_v_to_p', ylabel = 'Q_steam_connection_v_to_p', figsize=(5, 5), fontsize=16)
         self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, shape_index = 5, variable_index = 2 , field_name = 'm_H20_connection_v_to_p', ylabel = 'm_H20_connection_v_to_p', figsize=(5, 5), fontsize=16)
         
         self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, shape_index = 5, variable_index = 3 ,field_name = 'Q_H20_connection_p_to_v', ylabel =  'Q_H20_connection_p_to_v', figsize=(5, 5), fontsize=16)
-        self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, shape_index = 5, variable_index =4 , field_name = 'Q_steam_connection_p_to_v', ylabel = 'Q_steam_connection_p_to_v', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, shape_index = 5, variable_index = 4 , field_name = 'Q_steam_connection_p_to_v', ylabel = 'Q_steam_connection_p_to_v', figsize=(5, 5), fontsize=16)
         self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, shape_index = 5, variable_index = 5 , field_name = 'm_H20_connection_p_to_v', ylabel = 'm_H20_connection_p_to_v', figsize=(5, 5), fontsize=16)
         
     def generate_pictures_latent_space_autoencoding(self, latent_vectors_per_trajectory_per_field:dict, final_latent_vector_per_trajectory:dict ,Time:dict):

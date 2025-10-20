@@ -241,7 +241,7 @@ class Astec_Dataset():
         with h5py.File(self.path_to_hdf5+'/'+str(trajectory)+'.h5', 'r') as f:
             operator_names = ['t_fbseb', 't1_srv', 'opensrv', 't2_srv', 'tendssg2', 'tpesp','tpessg', 'tcss', 'p_u5', 'tsg2tr']
             for op in operator_names:
-                operator_actions_dict[op] = f['other/private/'+ op][0]
+                operator_actions_dict[op] = (f['other/private/'+ op][0])/ 3600.0
                 if np.isnan(f['other/private/'+ op][0]).any() or not np.isfinite(f['other/private/'+ op][0]).any():
                     raise TypeError(f"Operator action {op} in simulation {trajectory} is NaN")
         return operator_actions_dict
