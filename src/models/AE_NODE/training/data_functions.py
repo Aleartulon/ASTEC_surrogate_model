@@ -126,7 +126,7 @@ def create_padding_mask(size_of_tensor: list, length_of_padding: tc.tensor, devi
         return mask
 
 
-def MSE(input: list, target: list, length_of_padding: tc.tensor = None, reconstructed_boundaries: tc.tensor = None, boundaries: tc.tensor = None, is_denormalized_validation = False):
+def auto_encoding_MSE(input: list, target: list, length_of_padding: tc.tensor = None, reconstructed_boundaries: tc.tensor = None, boundaries: tc.tensor = None, is_denormalized_validation = False):
     device = input[0].device
     loss_no_reduction = nn.MSELoss(reduction='none')
     loss = nn.MSELoss()
@@ -139,6 +139,59 @@ def MSE(input: list, target: list, length_of_padding: tc.tensor = None, reconstr
         input = input + [reconstructed_boundaries]
         target = target + [boundaries]
         
+    if is_denormalized_validation:
+        for count, i in enumerate(input):
+            if is_denormalized_validation:
+                i = i.double()
+                target[count] = target[count].double()
+        
+    if (length_of_padding is not None) and tc.any(length_of_padding != 0.0):
+        for count, i in enumerate(input):  
+            size = i.size() 
+            
+            element_loss = loss_no_reduction(i, target[count]) 
+            mask = create_padding_mask( size_of_tensor=i.size(), length_of_padding=length_of_padding, device = device).bool()
+            masked_loss = element_loss[mask] #flattened vector of values not masked
+            if is_denormalized_validation:
+                masked_target = ((target[count])**2)[mask].mean()
+                mse_per_variable.append((masked_loss/masked_target).sum() / mask.sum())
+                mse = tc.concatenate([mse, masked_loss/masked_target]) #only send the ones not masked to mse
+                
+            else:
+                mse_per_variable.append(masked_loss.sum() / mask.sum())
+                mse = tc.concatenate([mse, masked_loss])
+                
+            counting_elements.append(mask.sum())
+                
+    else:
+        for count, i in enumerate(input):
+            size = i.size()
+            normal_mse = loss(i,target[count])
+            not_reduced_mse = loss_no_reduction(i,target[count])
+            
+            if is_denormalized_validation:
+                normal_mse = normal_mse/(target[count]**2).mean()
+                not_reduced_mse = (not_reduced_mse / (target[count]**2).mean()).flatten()
+                
+            mse_per_variable.append(normal_mse)
+            mse = tc.concatenate([mse,not_reduced_mse.flatten()])
+            
+            counting_elements.append(np.prod(size))
+                
+    #print('mse_per_variable',mse_per_variable)
+    mse_per_variable = tc.stack(mse_per_variable)
+    counting_elements = tc.tensor(counting_elements, device = device)
+    return mse.mean(), mse_per_variable
+
+def dynamics_MSE(input: list, target: list, time_index : int, length_of_padding: tc.tensor = None, is_denormalized_validation = False):
+    device = input[0].device
+    loss_no_reduction = nn.MSELoss(reduction='none')
+    loss = nn.MSELoss()
+    
+    mse = tc.tensor([], device = device)
+    mse_per_variable = []
+    counting_elements = []
+    
     if is_denormalized_validation:
         for count, i in enumerate(input):
             if is_denormalized_validation:

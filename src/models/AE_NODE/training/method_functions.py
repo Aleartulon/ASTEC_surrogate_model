@@ -25,11 +25,11 @@ class Training_Losses():
                 latent_vector_fields, latent_boundaries, l1, regularization_latent = self.auto_encoding_loss(fields, boundary_conditions, length_of_padding, loss_coeff, train)
 
         if self.is_coupled[0] == True or (self.is_coupled[0] == False and self.is_coupled[1] == 'NODE'):
-            l2_TF, l2_AR, l3, l_final = self.latent_dynamics_loss(fields, latent_vector_fields, latent_boundaries, original_size, train, dt, loss_coeff)
+            l2_TF, l2_AR, l3, l_final = self.latent_dynamics_loss(fields, latent_vector_fields, latent_boundaries, length_of_padding, original_size, train, dt, loss_coeff)
             
         elif (self.is_coupled[0] == False and self.is_coupled[1] == 'AE'):
             with tc.no_grad():
-                l2_TF, l2_AR, l3, l_final = self.latent_dynamics_loss(fields, latent_vector_fields, latent_boundaries, original_size, train, dt, loss_coeff)
+                l2_TF, l2_AR, l3, l_final = self.latent_dynamics_loss(fields, latent_vector_fields, latent_boundaries, length_of_padding, original_size, train, dt, loss_coeff)
 
         return l1, l2_TF, l2_AR, l3, l_final, regularization_latent
 
@@ -45,21 +45,21 @@ class Training_Losses():
         reconstructed_boundaries = tc.reshape(reconstructed_boundaries, ((boundaries.size()[0],boundaries.size()[1]) + reconstructed_boundaries.size()[1:]))
 
         if train:
-            l1, l1_per_variable = MSE(reconstructed_variables, fields, length_of_padding, reconstructed_boundaries, boundaries) * loss_coeff[0]
+            l1, l1_per_variable = auto_encoding_MSE(reconstructed_variables, fields, length_of_padding, reconstructed_boundaries, boundaries) * loss_coeff[0]
             l1 = [l1, l1_per_variable]
         else:
-            l1_mean, l1_per_variable = MSE(reconstructed_variables, fields, length_of_padding, reconstructed_boundaries, boundaries) * loss_coeff[0]
+            l1_mean, l1_per_variable = auto_encoding_MSE(reconstructed_variables, fields, length_of_padding, reconstructed_boundaries, boundaries) * loss_coeff[0]
             reconstructed_variables = standard_and_inverse_normalization_field(reconstructed_variables, self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)
             reconstructed_boundaries = standard_and_inverse_normalization_field([reconstructed_boundaries], self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)[0]
             fields = standard_and_inverse_normalization_field(fields, self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)
             boundaries = standard_and_inverse_normalization_field([boundaries], self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)[0]
-            l1_mean_denormalized, l1_mean_denormalized_per_variable = MSE(reconstructed_variables, fields, length_of_padding, reconstructed_boundaries, boundaries, is_denormalized_validation = True) * loss_coeff[0]
+            l1_mean_denormalized, l1_mean_denormalized_per_variable = auto_encoding_MSE(reconstructed_variables, fields, length_of_padding, reconstructed_boundaries, boundaries, is_denormalized_validation = True) * loss_coeff[0]
 
             l1 = [l1_mean, l1_per_variable, l1_mean_denormalized, l1_mean_denormalized_per_variable ]
             
         return latent_vector_fields, latent_boundaries, l1, regularization_latent
 
-    def latent_dynamics_loss(self, fields:list, latent_vector_fields:tc.tensor, latent_boundaries:tc.tensor, original_size:tuple, train:bool, dt:tc.tensor, loss_coeff:list):
+    def latent_dynamics_loss(self, fields:list, latent_vector_fields:tc.tensor, latent_boundaries:tc.tensor, length_of_padding:tc.tensor, original_size:tuple, train:bool, dt:tc.tensor, loss_coeff:list):
         number_batches = original_size[0]
         number_of_time_steps = original_size[1]
         latent_dim = latent_vector_fields.size()[-1]
@@ -77,7 +77,7 @@ class Training_Losses():
         else:
             e2_latent_TF = self.processor_First_Order(input_processor, dt, latent_boundaries)
             e2_latent_TF = e2_latent_TF.reshape(number_batches, (number_of_time_steps-1), latent_dim)
-            l2_TF = self.L2_relative_loss_general(e2_latent_TF, latent_vector_fields[:, 1:, :], True) * loss_coeff[1]
+            l2_TF = dynamics_MSE(e2_latent_TF, latent_vector_fields[:, 1:, :], length_of_padding, False) * loss_coeff[1]
         
         if loss_coeff[3] <= 0:
             l3 = tc.tensor(0.0)
@@ -86,7 +86,7 @@ class Training_Losses():
             e2_middle_latent = self.processor_First_Order( input_processor,random_dt, latent_boundaries)
             e2_final = self.processor_First_Order(e2_middle_latent, dt-random_dt, latent_boundaries)
             e2_final = e2_final.reshape(number_batches, (number_of_time_steps-1), latent_dim)
-            l3 = self.L2_relative_loss_general(e2_final, latent_vector_fields[:, 1:, :], True) * loss_coeff[3]
+            l3 = dynamics_MSE(e2_final, latent_vector_fields[:, 1:, :], length_of_padding, False) * loss_coeff[3]
 
         if loss_coeff[2] <= 0:
             with tc.no_grad():
@@ -138,7 +138,8 @@ class Training_Losses():
             return tc.tensor(0.0), tc.tensor(0.0)
             
         if self.start_backprop[0] == 0 or (not train):  #Encode initial condition and evolve in latent
-            l_final = tc.tensor(0., device = self.device)
+            loss_final = tc.tensor(0., device = self.device)
+            loss_final_per_variables = tc.zeros(self.number_of_different_domains, device = self.device)
             l2_AR = tc.tensor(0., device = self.device)
 
             if (number_of_time_steps-1-self.start_backprop[1]) == 0:
@@ -155,11 +156,11 @@ class Training_Losses():
                 if count <= (number_of_time_steps-1-self.start_backprop[1]):
                     with tc.no_grad():
                         next_latent = self.processor_First_Order( next_latent, dt[:,count,:], latent_boundaries[:,count,:])
-                        l2_AR += self.L2_relative_loss_general(next_latent, true_latent[:,count+1,:], True) 
+                        l2_AR += dynamics_MSE(next_latent, true_latent[:,count+1,:], True) 
                         step+=1
                 else:
                     next_latent = self.processor_First_Order(next_latent, dt[:,count,:], latent_boundaries[:,count,:])
-                    l2_AR += self.L2_relative_loss_general(next_latent, true_latent[:,count+1,:], True) 
+                    l2_AR += dynamics_MSE(next_latent, true_latent[:,count+1,:], True) 
                     step+=1
                 if (not train):
                     output_decoder, _ = self.decoder(next_latent)
@@ -168,7 +169,9 @@ class Training_Losses():
                     denorm_latent = standard_and_inverse_normalization_field(output_decoder, self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)
                     denorm_latent = [tensor.squeeze(1) for tensor in denorm_latent]
                     fields_at_correct_time_step = [tensor[:, count+1, ...] for tensor in fields]
-                    l_final += MSE(denorm_latent, fields_at_correct_time_step) #the boundary should not be taken into account here
+                    l_final, l_final_per_variable = dynamics_MSE(denorm_latent, fields_at_correct_time_step) #the boundary should not be taken into account here
+                    loss_final += l_final
+                    loss_final_per_variable += l_final_per_variable
             return l2_AR/step * coeff, l_final/(number_of_time_steps-1)
         
         elif self.start_backprop[0] == 1: #Encode ic and evolve in latent but TBPP
