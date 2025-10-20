@@ -126,32 +126,32 @@ class Model_Test:
                     print(f'{key:15s}: {value:12.6f} | {desc}')
                     arr_per_operator.append(value)
                     labels.append(key)
-                    info_text.append(f'{key}: {value:.2f} h')
+                    info_text.append(f'{key}: {value:.2f} h | {desc}') 
             
             all_operators.append(arr_per_operator)
             all_labels.append(labels)
             all_info.append(info_text)
         
         for idx, i in enumerate(self.operator_actions_indeces):
-            fig, ax = plt.subplots(figsize=(16, 4))
+            fig, ax = plt.subplots(figsize=(15, 4))
             
             ax.scatter(all_operators[idx], np.zeros_like(all_operators[idx]), s=100, alpha=0.7)
             
             for count, l in enumerate(all_labels[idx]):
                 y = 15 if count % 2 == 0 else -15
-                ax.annotate(l, (all_operators[idx][count], 0), xytext=(0, y), 
-                        textcoords='offset points', ha='center', fontsize=9)
+                ax.annotate(l, (all_operators[idx][count], 0), xytext=(0, y), textcoords='offset points', ha='center', fontsize=9)
             
             ax.set_xlim([-0.5, Time[-1]/3600+1])
+            ax.set_ylim([0.02, -0.02])
             ax.set_xlabel('Time, h', fontsize=16)
             ax.set_ylabel('Operator actions', fontsize=16)
             
             # Add text box to the right
             info_str = '\n'.join(all_info[idx])
-            ax.text(1.02, 0.5, info_str, transform=ax.transAxes, 
+            ax.text(0, -0.4, info_str, transform=ax.transAxes, 
                     fontsize=9, verticalalignment='center',
                     bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
-            
+
             plt.savefig(f'{self.directory_images_Operator_Actions}/{i}_operator_actions.png', 
                         dpi=300, bbox_inches='tight')
             plt.close()

@@ -163,7 +163,10 @@ class Training_Losses():
                     step+=1
                 if (not train):
                     output_decoder, _ = self.decoder(next_latent)
+                    output_decoder = [tensor.unsqueeze(1) for tensor in output_decoder]
+                    
                     denorm_latent = standard_and_inverse_normalization_field(output_decoder, self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)
+                    denorm_latent = [tensor.squeeze(1) for tensor in denorm_latent]
                     fields_at_correct_time_step = [tensor[:, count+1, ...] for tensor in fields]
                     l_final += MSE(denorm_latent, fields_at_correct_time_step) #the boundary should not be taken into account here
             return l2_AR/step * coeff, l_final/(number_of_time_steps-1)
