@@ -78,7 +78,6 @@ class Training_Losses():
         else:
             e2_latent_TF = self.processor_First_Order(input_processor, dt, latent_boundaries)
             e2_latent_TF = e2_latent_TF.reshape(number_batches, (number_of_time_steps-1), latent_dim)
-            
             l2_TF = dynamics_MSE(e2_latent_TF, latent_vector_fields[:, 1:, :], F.relu((length_of_padding-1))) * loss_coeff[1]
         
         if loss_coeff[3] <= 0:
@@ -95,87 +94,54 @@ class Training_Losses():
                 l2_AR = tc.tensor(0.0)
                 l_final = tc.tensor(0.0)
         else:
-            l2_AR, l_final = self.advance_from_ic(fields, latent_vector_fields, tc.reshape(dt,(number_batches,number_of_time_steps-1)).unsqueeze(-1), latent_boundaries.reshape(number_batches , (number_of_time_steps-1) , latent_boundaries.size(-1)), loss_coeff[2], train)
+            l2_AR, l_final = self.advance_from_ic(fields, latent_vector_fields, tc.reshape(dt,(number_batches,number_of_time_steps-1)).unsqueeze(-1), latent_boundaries.reshape(number_batches , (number_of_time_steps-1) , latent_boundaries.size(-1)), length_of_padding, loss_coeff[2], train)
             
         return l2_TF, l2_AR, l3, l_final
              
 
-    def advance_from_ic(self, fields:list, true_latent:tc.tensor, dt:tc.tensor, latent_boundaries:tc.tensor, coeff:list, train:bool):
-        
-        """ this function advances autoregressively the reduced vector at time t = 0 across the whole time series, effectively mimicking what happens at testing time. It is thus used to compute
-            L_2^A. We use this function to compute L_2^A and to get the full predicted time series of solution fields (needed during validation to compute a validation metric).
-            This function can implement 3 different algorithms depending on the value of self.start_backprop[0]:
-            - self.start_backprop[0] = 0: the initial confition is encoded and the latent vectors are predicted autoregressively keeping the gradients since the encoding
-            - self.start_backprop[0] = 1: the initial confition is encoded and the latent vectors are predicted autoregressively keeping the gradients since up to the previous self.start_backprop[1] time steps
-            - self.start_backprop[0] = 2: the initial confition is encoded and the latent vectors are predicted autoregressively keeping the gradients since up to the previous self.start_backprop[1] time steps,
-            where self.start_backprop[1]=1 in the first epoch and is then increased by 1 dynamically every TBPP_dynamic[1] epochs, where TBPP_dynamic is specified in initial_information.yaml.
-
-        Args:
-            self.encoder (class 'src.architecture.self.encoder): self.encoder
-            self.f (src.architecture.F_Latent): function self.f of the ODE of the latent dynamics
-            self.decoder (src.architecture.self.decoder): self.decoder
-            input_encoder (torch.Tensor): tensor of dimensions [B,T,C,x_dim_1, dim_x_1, dim_x_2, ...], where B is batch_size, T is the length of the full time series, C is the number of channels of the 
-                predicted solution field, dim_x_1, dim_x_2, ... are the dimensions of the first spatial dimension, second spatial dimension, etc. It is the field solution over time
-            true_latent (torch.Tensor): tensor of dimensions [B,T,latent_dim], where B is batch_size, T is the length of the full time series and latent_dim is the dimension of the latent space. It is the expected latent vectors
-            dt (torch.Tensor): a tensor containing the dts used to advance each snapshot in time. It has dimensions [B, T-1], where B is the batch size and T is the length of the time series. it assumes each batch evolves accordingly to the same dts 
-            latent_boundaries (torch.Tensor): tensor of dimension [B, T, num_params], where B is the batch size and T is the length of the time series and num_params the number of parameters of the system
-            self.k (int): stage of Runge-Kutta algorithm
-            self.RK (dict): dictionary with Butcher tablue for Runge-Kutta algorithms
-            self.device (torch.self.device): self.device where the training and validation are done
-            self.start_backprop (list): list with values that determine up to which time-step in the past backpropagate the gradients
-            size (torch.Size): tensor representing the length of each dimension of the solution field tensor
-            coeff (float): coefficient that multiplies the loss function L_2^A
-            dim_input (list): first dimension is the channels of the solution field, second is the number of spatial dimensions
-            train (bool): if true, this function was called inside the training loop, otherwise in the validation loop
-            time_dependence_in_f (bool):  if true, the function self.f depends on time as well.
-
-        Returns:
-            torch.tensor(), torch.tensor():  the mean L_2^A,  the loss function which takes into account the field solution predicted autoregressively (only at validation)
-        """    
-        number_batches = fields[0].size(0)
+    def advance_from_ic(self, fields:list, true_latent:tc.tensor, dt:tc.tensor, latent_boundaries:tc.tensor, length_of_padding: tc.tensor, loss_coeff:float, train:bool):
+        which_technique = self.autoregressive_step['which_technique']
         number_of_time_steps = fields[0].size(1)
         initial_condition = [tensor[:, 0:1, ...] for tensor in fields]
         
         if not (self.is_coupled[0]) and (self.is_coupled[1] == 'AE'):
             return tc.tensor(0.0), tc.tensor(0.0)
             
-        if self.start_backprop[0] == 0 or (not train):  #Encode initial condition and evolve in latent
+        if which_technique == 'fully_autoregressive' or (not train):  #Encode initial condition and evolve in latent. Always done at validation to compute the actual final loss autoregressively
             loss_final = tc.tensor(0., device = self.device)
             loss_final_per_variables = tc.zeros(self.number_of_different_domains, device = self.device)
             l2_AR = tc.tensor(0., device = self.device)
 
-            if (number_of_time_steps-1-self.start_backprop[1]) == 0:
-                next_latent, _, _ , _ = self.encoder(initial_condition)
-            else:
-                with tc.no_grad():
-                    next_latent, _ , _ , _ = self.encoder(initial_condition)
-
             if (not train):
                 fields = standard_and_inverse_normalization_field(fields, self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)
+                fields = [tensor[:, 1:, ...] for tensor in fields]
+                reconstructed_fields_from_latent = [tc.zeros_like(field) for field in fields]
+                
+            reconstructed_latent = tc.zeros_like(true_latent)[:,1:,:]
+                
+            next_latent, _, _ , _ = self.encoder(initial_condition)
             
-            step = 0
             for count in range(number_of_time_steps-1):
-                if count <= (number_of_time_steps-1-self.start_backprop[1]):
-                    with tc.no_grad():
-                        next_latent = self.processor_First_Order( next_latent, dt[:,count,:], latent_boundaries[:,count,:])
-                        l2_AR += dynamics_MSE(next_latent, true_latent[:,count+1,:], True) 
-                        step+=1
-                else:
-                    next_latent = self.processor_First_Order(next_latent, dt[:,count,:], latent_boundaries[:,count,:])
-                    l2_AR += dynamics_MSE(next_latent, true_latent[:,count+1,:], True) 
-                    step+=1
-                    
+                
+                next_latent = self.processor_First_Order(next_latent, dt[:,count,:], latent_boundaries[:,count,:])
+                reconstructed_latent[:,count,:] = next_latent
+                
                 if (not train):
                     output_decoder, _ = self.decoder(next_latent)
                     output_decoder = [tensor.unsqueeze(1) for tensor in output_decoder]
+        
+                    for index, field in enumerate(output_decoder):
+                        reconstructed_fields_from_latent[index][:,count:count+1,:] = field
                     
-                    denorm_latent = standard_and_inverse_normalization_field(output_decoder, self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)
-                    denorm_latent = [tensor.squeeze(1) for tensor in denorm_latent]
-                    fields_at_correct_time_step = [tensor[:, count+1, ...] for tensor in fields]
-                    l_final, l_final_per_variable = auto_encoding_MSE(denorm_latent, fields_at_correct_time_step) #the boundary should not be taken into account here
-                    loss_final += l_final
-                    loss_final_per_variable += l_final_per_variable
-            return l2_AR/step * coeff, l_final/(number_of_time_steps-1)
+            l2_AR = dynamics_MSE(reconstructed_latent, true_latent[:,1:,:], True) 
+            
+            if (not train):
+                reconstructed_fields_from_latent = standard_and_inverse_normalization_field(reconstructed_fields_from_latent, self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)
+                reconstructed_fields_from_latent = [tensor.squeeze(1) for tensor in reconstructed_fields_from_latent]
+                l_final, l_final_per_variable = auto_encoding_MSE(reconstructed_fields_from_latent, fields, is_denormalized_validation = True) #the boundary should not be taken into account here
+                return l2_AR * loss_coeff, (l_final, l_final_per_variable)
+            
+            return l2_AR * loss_coeff, tc.tensor(0.0)
         
         elif self.start_backprop[0] == 1: #Encode ic and evolve in latent but TBPP
 
@@ -202,7 +168,7 @@ class Training_Losses():
             place_holder = tc.reshape(place_holder,(number_batches,number_of_time_steps-self.start_backprop[1],true_latent.size()[-1]))
             l2_AR_2 += self.L2_relative_loss_general(place_holder, true_latent[:,self.start_backprop[1]:,:], True)
 
-            return (l2_AR_1 * (self.start_backprop[1]-1) +l2_AR_2 *(number_of_time_steps-self.start_backprop[1]))/(number_of_time_steps-1) * coeff, tc.tensor(0.0)
+            return (l2_AR_1 * (self.start_backprop[1]-1) +l2_AR_2 *(number_of_time_steps-self.start_backprop[1]))/(number_of_time_steps-1) * loss_coeff, tc.tensor(0.0)
             
         elif self.start_backprop[0] == 2: # Encode full field self.start_backprop[1] steps in advance and from there TBPP
 
@@ -220,7 +186,7 @@ class Training_Losses():
             place_holder = tc.reshape(place_holder,(number_batches,number_of_time_steps-self.start_backprop[1],true_latent.size()[-1]))
             l2_AR_2 = self.L2_relative_loss_general(place_holder, true_latent[:,self.start_backprop[1]:,:], True)
             
-            return (l2_AR_1 * (self.start_backprop[1]-1) +l2_AR_2 *(number_of_time_steps-self.start_backprop[1]))/(number_of_time_steps-1) * coeff, tc.tensor(0.0)
+            return (l2_AR_1 * (self.start_backprop[1]-1) +l2_AR_2 *(number_of_time_steps-self.start_backprop[1]))/(number_of_time_steps-1) * loss_coeff, tc.tensor(0.0)
             
     def processor_First_Order(self, latent_vector_fields:tc.tensor, dt:tc.tensor, latent_boudaries:tc.tensor):
         """this function implements the Runge-Kutta algorithms. First_Order refers to the fact that the ODE is a first order ODE, although higher orders would still be solved by this algorithms

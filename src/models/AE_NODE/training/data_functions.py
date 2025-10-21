@@ -117,11 +117,11 @@ def standard_and_inverse_normalization_field(x: list, maxima_or_mean: dict, mini
 
 def create_padding_mask(size_of_tensor: list, length_of_padding: tc.tensor, device: tc.device):
         
-        mask = tc.zeros(size_of_tensor, device = device)
+        mask = tc.ones(size_of_tensor, device = device)
         columns = tc.arange(size_of_tensor[1])
         where_to_fill = columns>=length_of_padding
         where_to_fill = where_to_fill[(...,) + (None,) * (len(size_of_tensor)-2)].expand(size_of_tensor).to(device)
-        mask = mask.masked_fill(where_to_fill, 1.0)
+        mask = mask.masked_fill(where_to_fill, 0.0)
         
         return mask
 
@@ -184,14 +184,12 @@ def auto_encoding_MSE(input: list, target: list, length_of_padding: tc.tensor = 
     return mse.mean(), mse_per_variable
 
 def dynamics_MSE(input: tc.tensor, target: tc.tensor, length_of_padding: tc.tensor):
-    print(length_of_padding)
     device = input[0].device
     loss_no_reduction = nn.MSELoss(reduction='none')
     loss = nn.MSELoss()
-        
+    length_of_padding = tc.tensor([[197.]])
     if tc.any(length_of_padding != 0.0):
         mse = tc.tensor([], device = device)
-        size = i.size() 
         element_loss = loss_no_reduction(input, target) 
         mask = create_padding_mask( size_of_tensor=input.size(), length_of_padding=length_of_padding, device = device).bool()
         masked_loss = element_loss[mask] #flattened vector of values not masked

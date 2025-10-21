@@ -16,15 +16,14 @@ class AE_NODE:
         self.checkpoint = config_training['checkpoint']
 
         self.loss_coefficients = model_information['loss_coefficients']
-        self.AR_strength =  model_information['AR_strength']
         self.time_only_TF = model_information['time_only_TF']
         self.k = model_information['k']
-        self.start_backprop = model_information['start_backprop']
         self.time_of_AE = model_information['time_of_AE']
-        self.TBPP_dynamic = model_information['TBPP_dynamic']
         self.clipping = model_information['clipping']
         self.is_coupled = model_information['is_coupled']
+        self.autoregressive_step = model_information['autoregressive_step']
         self.lambda_regularization = model_information['lambda_regularization']
+        
         self.data_training_path = config_training['data_path'] + '/' + model_information['data_training_file']
         self.data_validation_path = config_training['data_path'] + '/' + model_information['data_validation_file']
         self.batch_size = config_training['batch_size']

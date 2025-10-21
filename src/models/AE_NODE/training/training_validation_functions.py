@@ -59,6 +59,7 @@ class Training():
         count = 0
         regularization_loss = 0
         l_real = 0
+        l_real_per_variable = np.zeros(self.number_of_different_domains-1)
         l1_loss_unnorm_per_variable = np.zeros(self.number_of_different_domains)
         l1_loss_unnorm = 0
         
@@ -76,7 +77,8 @@ class Training():
                 l1_mean_per_denormalized_per_variable = l1[3]
                 
                 loss += (l1_mean + l2_TF + l2_AR + l3).detach().cpu().item()
-                l_real +=  l_final.detach().item()
+                l_real +=  l_final[0].detach().item()
+                l_real_per_variable += (l_final[1]).detach().cpu().numpy()
                 l1_loss += (l1_mean ).detach().cpu().numpy()
                 l1_loss_per_variable += (l1_mean_per_variable).detach().cpu().numpy()
                 l1_loss_unnorm += (l1_mean_denormalized).detach().cpu().item()
@@ -87,7 +89,7 @@ class Training():
                 regularization_loss += regularization_latent.detach().cpu().item()
                 count += 1
                 
-        return l1_loss/count, l1_loss_per_variable/count, l1_loss_unnorm/count, l1_loss_unnorm_per_variable/count, l2_TF_loss/count, l2_AR_loss/count , l3_loss/count, l_real/count, regularization_loss/count , loss/count
+        return l1_loss/count, l1_loss_per_variable/count, l1_loss_unnorm/count, l1_loss_unnorm_per_variable/count, l2_TF_loss/count, l2_AR_loss/count , l3_loss/count, l_real/count, l_real_per_variable/count, regularization_loss/count , loss/count
 
 
     def training(self):
@@ -96,8 +98,7 @@ class Training():
             # create losses file
             os.makedirs(self.PATH+'/losses/',exist_ok=True)
             os.makedirs(self.PATH+'/checkpoint/',exist_ok=True)
-
-            loss_coeff_2 = -10
+            
             #start the training
 
             #check for coupled_system
@@ -125,11 +126,9 @@ class Training():
             valid_l2_AR = np.zeros(self.epochs)
             valid_l3 = np.zeros(self.epochs)
             valid_real = np.zeros(self.epochs)
+            valid_real_per_variable = np.zeros((self.epochs, self.number_of_different_domains-1))
             valid_regularization = np.zeros(self.epochs)
             valid_loss_tot = np.zeros(self.epochs)
-            
-            if self.TBPP_dynamic[0]:
-                self.start_backprop.append(1)
         
             for i in range(self.epochs):
 
@@ -141,32 +140,25 @@ class Training():
                 time1 = time.time()
                 if i < self.time_of_AE: #use only AR
                     before_training = time.time()
-                    train_l1_data, train_l1_per_variable_data, train_l2_TF_data, train_l2_AR_data, train_l3_data, train_regularization_data, train_loss_data = self.train_epoch([self.loss_coefficients[0],0,0,0])
+                    train_l1_data, train_l1_per_variable_data, train_l2_TF_data, train_l2_AR_data, train_l3_data, train_regularization_data, train_loss_data = self.train_epoch([self.loss_coefficients['AE'],0,0,0])
                     before_validation = time.time()
-                    valid_l1_data, valid_l1_per_variable_data, valid_l1_unnorm_data, valid_l1_unnorm_per_variable_data, valid_l2_TF_data, valid_l2_AR_data, valid_l3_data, valid_real_data, valid_regularization_data, valid_loss_data = self.valid_epoch([1,1,1,1])
+                    valid_l1_data, valid_l1_per_variable_data, valid_l1_unnorm_data, valid_l1_unnorm_per_variable_data, valid_l2_TF_data, valid_l2_AR_data, valid_l3_data, valid_real_data, valid_real_per_variable_data, valid_regularization_data, valid_loss_data = self.valid_epoch([1,1,1,1])
                     if self.is_coupled[0]:
                         valid_loss_data = 100.0
                 elif i >=self.time_of_AE and i < self.time_only_TF: #use only TF
                     before_training = time.time()
-                    train_l1_data, train_l1_per_variable_data, train_l2_TF_data, train_l2_AR_data, train_l3_data, train_regularization_data, train_loss_data = self.train_epoch([self.loss_coefficients[0],self.loss_coefficients[1],0, self.loss_coefficients[3]])
-                    valid_l1_data, valid_l1_per_variable_data, valid_l1_unnorm_data, valid_l1_unnorm_per_variable_data, valid_l2_TF_data, valid_l2_AR_data, valid_l3_data, valid_real_data, valid_regularization_data, valid_loss_data = self.valid_epoch([1,1,1,1])
+                    train_l1_data, train_l1_per_variable_data, train_l2_TF_data, train_l2_AR_data, train_l3_data, train_regularization_data, train_loss_data = self.train_epoch([self.loss_coefficients['AE'],self.loss_coefficients['TF'],0, self.loss_coefficients['Random_DT']])
+                    valid_l1_data, valid_l1_per_variable_data, valid_l1_unnorm_data, valid_l1_unnorm_per_variable_data, valid_l2_TF_data, valid_l2_AR_data, valid_l3_data, valid_real_data, valid_real_per_variable_data, valid_regularization_data, valid_loss_data = self.valid_epoch([1,1,1,1])
                 else:
-                    loss_coeff_2 = self.loss_coefficients[2] * self.AR_strength * full_training_count
-                    full_training_count +=1
-                    if loss_coeff_2 >= self.loss_coefficients[2]:
-                        loss_coeff_2 = self.loss_coefficients[2]
-
-                    if self.TBPP_dynamic[0]  and self.start_backprop[1] < self.TBPP_dynamic[2] and full_training_count%self.TBPP_dynamic[1] == 0:
-                        self.start_backprop[1] += 1
+                    
                     before_training = time.time()
-                    train_l1_data, train_l1_per_variable_data, train_l2_TF_data, train_l2_AR_data, train_l3_data, train_regularization_data, train_loss_data = self.train_epoch([self.loss_coefficients[0],self.loss_coefficients[1],loss_coeff_2,self.loss_coefficients[3]])
+                    train_l1_data, train_l1_per_variable_data, train_l2_TF_data, train_l2_AR_data, train_l3_data, train_regularization_data, train_loss_data = self.train_epoch([self.loss_coefficients['AE'],self.loss_coefficients['TF'],self.loss_coefficients['AR'],self.loss_coefficients['Random_DT']])
                     before_validation = time.time()
-                    valid_l1_data, valid_l1_per_variable_data, valid_l1_unnorm_data, valid_l1_unnorm_per_variable_data, valid_l2_TF_data, valid_l2_AR_data, valid_l3_data, valid_real_data, valid_regularization_data, valid_loss_data = self.valid_epoch([1,1,1,1])
+                    self.loss_coefficients['AR'] += self.loss_coefficients['AR_strength']
+                    valid_l1_data, valid_l1_per_variable_data, valid_l1_unnorm_data, valid_l1_unnorm_per_variable_data, valid_l2_TF_data, valid_l2_AR_data, valid_l3_data, valid_real_data, valid_real_per_variable_data, valid_regularization_data, valid_loss_data = self.valid_epoch([1,1,1,1])
                 
                 time2 = time.time()
                 
-                print('Time of training:', before_validation - before_training)
-                print('Time of validation:', time2 - before_validation)
                 
                 if i > self.time_of_AE:
                     self.scheduler.step()
@@ -188,6 +180,7 @@ class Training():
                 valid_l2_AR[i] = valid_l2_AR_data
                 valid_l3[i] = valid_l3_data
                 valid_real[i] = valid_real_data
+                valid_real_per_variable[i] = valid_real_per_variable_data
                 valid_regularization[i] = valid_regularization_data
                 valid_loss_tot[i] = valid_loss_data
 
@@ -212,27 +205,38 @@ class Training():
 
 
                 print("Epoch: " +str(i)+', ' + str(time2-time1)+ ' s')
-                if self.TBPP_dynamic[0]:
-                    print("self.start_backprop for TBPP: " +str(self.start_backprop[1]))
+                print('Time of training:', before_validation - before_training)
+                print('Time of validation:', time2 - before_validation)
+                
+                if self.loss_coefficients['AR'] != 0.0 and self.autoregressive_step['which_technique'] == 'TBPP_from_end':
+                    print(" for TBPP: " +str(self.autoregressive_step['TBPP_from_end_config'][0]))
+                    
+                elif self.loss_coefficients['AR'] != 0.0 and self.autoregressive_step['which_technique'] == 'TBPP_from_start':
+                    print(" for TBPP: " +str(self.autoregressive_step['TBPP_from_start_config'][0]))
+                
+                elif self.loss_coefficients['AR'] != 0.0:
+                    print("Strength of autoregressive step: ", self.loss_coefficients['AR'])
+                    
                 print('')
-                print("Loss coefficient 2: " +str(loss_coeff_2))
+                print("Loss coefficient 2: " +str(self.loss_coefficients['AR']))
                 print('Train_loss_data = ' + str(train_loss_data) + 
-                    '\nl1 train loss = ' + str(train_l1_data) + 
-                    '\n l1 train loss per variable' + str(train_l1_per_variable_data)+
-                    '\nl2 TF train loss = ' + str(train_l2_TF_data) + 
-                    '\nl2 AR train loss = ' + str(train_l2_AR_data) + 
-                    '\nl3 train loss = ' + str(train_l3_data) + 
+                    '\nAE train loss = ' + str(train_l1_data) + 
+                    '\n AE train loss per variable' + str(train_l1_per_variable_data)+
+                    '\nTF train loss = ' + str(train_l2_TF_data) + 
+                    '\nAR train loss = ' + str(train_l2_AR_data) + 
+                    '\nRandom dt train loss = ' + str(train_l3_data) + 
                     '\nregularization loss = ' + str(train_regularization_data))
                 print(' ')
                 print('Valid_loss_data = ' + str(valid_loss_data) + 
                     '\nvalid Real loss = ' + str(valid_real_data) + 
-                    '\nl1 valid loss = ' + str(valid_l1_data) + 
-                    '\n l1 valid loss per variable' + str(valid_l1_per_variable_data)+
-                    '\nl1 valid unnorm  = ' + str(valid_l1_unnorm_data) + 
-                    '\nl1 valid unnorm per variable  = ' + str(valid_l1_unnorm_per_variable_data) + 
-                    '\nl2 valid TF loss = ' + str(valid_l2_TF_data) + 
-                    '\nl2 valid AR loss = ' + str(valid_l2_AR_data) + 
-                    '\nl3 valid loss = ' + str(valid_l3_data) + 
+                    '\nvalid Real per variable loss = ' + str(valid_real_per_variable_data) + 
+                    '\nAE valid loss = ' + str(valid_l1_data) + 
+                    '\n AE valid loss per variable' + str(valid_l1_per_variable_data)+
+                    '\nAE valid unnorm  = ' + str(valid_l1_unnorm_data) + 
+                    '\nAE valid unnorm per variable  = ' + str(valid_l1_unnorm_per_variable_data) + 
+                    '\nvalid TF loss = ' + str(valid_l2_TF_data) + 
+                    '\nvalid AR loss = ' + str(valid_l2_AR_data) + 
+                    '\nRandom dt valid loss = ' + str(valid_l3_data) + 
                     '\nvalid regularization = ' + str(valid_regularization_data))
                 print('The validation loss has not decreased for ' + str(early_stopping) + ' self.epochs!')
                 
@@ -247,12 +251,12 @@ class Training():
                 if np.mean(valid_loss_data) < loss_value: #careful valid loss tot!!
                     loss_value = np.mean(valid_loss_data)
                     print('Models saved!')
-                    save_checkpoint(self.encoder, self.f , self.decoder, self.optim, self.scheduler, i, loss_value, loss_coeff_2 , self.start_backprop, full_training_count,self.PATH+'/checkpoint/check.pt')
+                    save_checkpoint(self.encoder, self.f , self.decoder, self.optim, self.scheduler, i, loss_value, self.loss_coefficients['AR'] , self.autoregressive_step, full_training_count,self.PATH+'/checkpoint/check.pt')
                     early_stopping = 0
         
         else:
 
-            self.encoder, self.f, self.decoder, self.optim, scheduler, start_epoch, loss, loss_coeff_2, self.start_backprop, full_training_count = load_checkpoint(self.encoder, self.f , self.decoder, self.optim, scheduler, self.PATH+'/checkpoint/check.pt', self.device)
+            self.encoder, self.f, self.decoder, self.optim, scheduler, start_epoch, loss, self.loss_coefficients['AR'], self.start_backprop, full_training_count = load_checkpoint(self.encoder, self.f , self.decoder, self.optim, scheduler, self.PATH+'/checkpoint/check.pt', self.device)
             self.encoder.to(self.device)
             self.f.to(self.device)
             self.decoder.to(self.device) 
@@ -295,15 +299,15 @@ class Training():
                     train_l1_data, train_l2_TF_data, train_l2_AR_data, train_l3_data, train_regularization_data, train_loss_data = train_epoch(self.encoder, self.f, self.decoder,  self.device, self.optim, training_data,[self.loss_coefficients[0],self.loss_coefficients[1],0,self.loss_coefficients[3]], self.RK, self.k, self.start_backprop, self.lambda_regularization, self.clipping, self.is_coupled)
                     valid_l1_data, valid_l1_unnorm_per_variable_data, valid_l2_TF_data, valid_l2_AR_data, valid_l3_data, valid_real_data, valid_regularization_data, valid_loss_data = valid_epoch(self.encoder, self.f, self.decoder,  self.device, validation_data,[1,1,1,1], self.RK, self.k, self.start_backprop, self.lambda_regularization, self.is_coupled)
                 else:
-                    loss_coeff_2 = self.loss_coefficients[2] * AR_strength * full_training_count
+                    self.loss_coefficients['AR'] = self.loss_coefficients[2] * AR_strength * full_training_count
                     full_training_count +=1
-                    if loss_coeff_2 >= self.loss_coefficients[2]:
-                        loss_coeff_2 = self.loss_coefficients[2]
+                    if self.loss_coefficients['AR'] >= self.loss_coefficients[2]:
+                        self.loss_coefficients['AR'] = self.loss_coefficients[2]
 
                     if self.TBPP_dynamic[0]  and self.start_backprop[1] < self.TBPP_dynamic[2] and full_training_count%self.TBPP_dynamic[1] == 0:
                         self.start_backprop[1] += 1
                         
-                    train_l1_data, train_l2_TF_data, train_l2_AR_data, train_l3_data, train_regularization_data, train_loss_data = train_epoch(self.encoder, self.f, self.decoder, self.device, self.optim, training_data,[self.loss_coefficients[0],self.loss_coefficients[1],loss_coeff_2,self.loss_coefficients[3]], self.RK, self.k, self.start_backprop,self.lambda_regularization, self.clipping, self.is_coupled)
+                    train_l1_data, train_l2_TF_data, train_l2_AR_data, train_l3_data, train_regularization_data, train_loss_data = train_epoch(self.encoder, self.f, self.decoder, self.device, self.optim, training_data,[self.loss_coefficients[0],self.loss_coefficients[1],self.loss_coefficients['AR'],self.loss_coefficients[3]], self.RK, self.k, self.start_backprop,self.lambda_regularization, self.clipping, self.is_coupled)
                     valid_l1_data, valid_l1_unnorm_per_variable_data, valid_l2_TF_data, valid_l2_AR_data, valid_l3_data, valid_real_data, valid_regularization_data, valid_loss_data = valid_epoch(self.encoder, self.f, self.decoder, self.device, validation_data,[1,1,1,1], self.RK, self.k,self.start_backprop, self.lambda_regularization, self.is_coupled)
 
                 time2 = time.time()
@@ -348,7 +352,7 @@ class Training():
                 print("Epoch: " +str(i)+', ' + str(time2-time1)+ ' s')
                 if self.TBPP_dynamic[0]:
                     print("self.start_backprop for TBPP: " +str(self.start_backprop[1]))
-                print("Loss coefficient 2: " +str(loss_coeff_2))
+                print("Loss coefficient 2: " +str(self.loss_coefficients['AR']))
                 print('Train_loss_data = ' + str(train_loss_data) + ', l1 train loss = ' +str(train_l1_data) + ', l2 TF train loss = ' + str(train_l2_TF_data)+ ', l2 AR train loss = ' + str(train_l2_AR_data)+ ', l3 train loss = ' + str(train_l3_data)+ ', regularization loss = ' + str(train_regularization_data))
                 print('Valid_loss_data = ' + str(valid_loss_data)+ ', valid Real loss = ' +str(valid_real_data)  + ', l1 valid loss = ' +str(valid_l1_data) +  ', l1 valid unnorm loss = ' +str(valid_l1_unnorm_per_variable_data) + ', l2 valid TF loss = ' + str(valid_l2_TF_data)+ ', l2 valid AR loss = ' + str(valid_l2_AR_data)+ ', l3 valid loss = ' + str(valid_l3_data)+ ', valid regularization = ' + str(valid_regularization_data))
                 print('The validation loss has not decreased for ' + str(early_stopping) + ' epochs!')
@@ -364,6 +368,6 @@ class Training():
                 if valid_loss_data < loss_value: #careful valid loss tot!!
                     loss_value = valid_loss_data
                     print('Models saved!')
-                    save_checkpoint(self.encoder, self.f , self.decoder, self.optim, scheduler, i, loss_value, loss_coeff_2 , self.start_backprop, full_training_count,self.PATH+'/checkpoint/check.pt')
+                    save_checkpoint(self.encoder, self.f , self.decoder, self.optim, scheduler, i, loss_value, self.loss_coefficients['AR'] , self.start_backprop, full_training_count,self.PATH+'/checkpoint/check.pt')
                     early_stopping = 0
 
