@@ -100,13 +100,7 @@ class AE_NODE:
             self.number_of_different_domains = len(fields)+1
             break
         
-        self.RK = {
-                '1' : tc.tensor([[0,0],[0,1]]),
-                '2' : tc.tensor([[0,0,0],[1,1,0],[0, 1/2,1/2]]),
-                '3' : tc.tensor([[0,0,0,0],[1/2,1/2,0,0],[1,-1,2,0],[0,1/6,2/3,1/6]]),
-                '4' : tc.tensor([[0,0,0,0,0],[1/2,1/2,0,0,0],[1/2,0,1/2,0,0],[1,0,0,1,0],[0,1/6,1/3,1/3,1/6]])
-                }
-        
+        self.RK = {k: tc.tensor([[self.safe_eval(val) for val in row] for row in v]) for k, v in model_information['RK'].items()}
         #training starts
         if not model_information['is_coupled'][0]: 
             model_information['loss_coeff_TF_AR_together'] = model_information['loss_coeff_not_coupled']
@@ -114,3 +108,8 @@ class AE_NODE:
     def start_training(self):
         training_process = Training(self)
         training_process.training()
+        
+    def safe_eval(self, val):
+        if isinstance(val, str):
+            return eval(val)
+        return val

@@ -184,7 +184,10 @@ class Decoder(nn.Module):
         reconstructed_vessel_variables = self.decoder_vessel_variables(latent_vessel_variables)
         reconstructed_faces_variables = self.decoder_faces_variables(latent_faces_variables)
         
-        return [reconstructed_scalar_variables, reconstructed_core_variables, reconstructed_vessel_variables, reconstructed_plenum_variables , reconstructed_faces_variables], reconstructed_boundaries_variables, latent_in_variables_separated
+        if latent_boundaries is not None:
+            return [reconstructed_scalar_variables, reconstructed_core_variables, reconstructed_vessel_variables, reconstructed_plenum_variables , reconstructed_faces_variables], reconstructed_boundaries_variables, latent_in_variables_separated
+        else:
+            return [reconstructed_scalar_variables, reconstructed_core_variables, reconstructed_vessel_variables, reconstructed_plenum_variables , reconstructed_faces_variables], latent_in_variables_separated
     
 class Fully_Connected_Decoder(nn.Module):
     def __init__(self, config_training:dict, fully_connected_information:dict):

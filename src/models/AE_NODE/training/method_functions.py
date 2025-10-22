@@ -189,23 +189,8 @@ class Training_Losses():
             return (l2_AR_1 * (self.start_backprop[1]-1) +l2_AR_2 *(number_of_time_steps-self.start_backprop[1]))/(number_of_time_steps-1) * loss_coeff, tc.tensor(0.0)
             
     def processor_First_Order(self, definitive_latent:tc.tensor, dt:tc.tensor, latent_boudaries:tc.tensor):
-        """this function implements the Runge-Kutta algorithms. First_Order refers to the fact that the ODE is a first order ODE, although higher orders would still be solved by this algorithms
-        simply introducing new functions.
 
-        Args:
-            self.f (src.architecture.F_Latent): function self.f of the ODE of the latent dynamics
-            definitive_latent (torch.tensor()): tensor of dimension [B, dim_latent], where B is the batch size and dim_latent the dimension of the latent space
-            dt (torch.Tensor): a tensor containing the dts used to advance each snapshot in time. It has dimensions [B, T-1], where B is the batch size and T is the length of the time series. it assumes each batch evolves accordingly to the same dts 
-            latent_boudaries (tc.tensor()): tensor of dimension [B, num_params] where B is the batch size and num_params the number of parameters of the system
-            self.k (int): stage of Runge-Kutta algorithm
-            self.RK (dict): dictionary with Butcher tablue for Runge-Kutta algorithms
-            self.device (torch.self.device): self.device where the training and validation are done
-            time_dependence_in_f (bool):  if true, the function self.f depends on time as well.
-
-        Returns:
-            torch.tensor(): tensor of dimension [B, dim_latent] which contains the latent vectors advanced in time from definitive_latent of dt
-        """    
-        # self k=1 is Euler
+        # self.k = 1 is Euler
         b = tc.zeros((self.k, definitive_latent.size(0), definitive_latent.size(1)) , device= self.device)
         b[0, :,:] = self.f(definitive_latent, latent_boudaries )
         final_sum = self.f(definitive_latent, latent_boudaries)*self.RK[str(self.k)][-1][1]

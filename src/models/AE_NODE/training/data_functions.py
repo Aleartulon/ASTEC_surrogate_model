@@ -93,7 +93,7 @@ def standard_and_inverse_normalization_field(x: list, maxima_or_mean: dict, mini
             minimum_or_std = minima_or_std['boundary_conditions_and_time'][None,None,:-1]
             
         else:
-            raise TypeError("Something is wrong with data structure")  
+            raise TypeError(f"Something is wrong with data structure, size is {i.size()}")  
     
         if normalization == 'min_max':
             if inverse:
