@@ -183,12 +183,12 @@ def auto_encoding_MSE(input: list, target: list, length_of_padding: tc.tensor = 
     counting_elements = tc.tensor(counting_elements, device = device)
     return mse.mean(), mse_per_variable
 
-def dynamics_MSE(input: tc.tensor, target: tc.tensor, length_of_padding: tc.tensor):
+def dynamics_MSE(input: tc.tensor, target: tc.tensor, length_of_padding: tc.tensor = None):
     device = input[0].device
     loss_no_reduction = nn.MSELoss(reduction='none')
     loss = nn.MSELoss()
     length_of_padding = tc.tensor([[197.]])
-    if tc.any(length_of_padding != 0.0):
+    if (length_of_padding is not None) and tc.any(length_of_padding != 0.0):
         mse = tc.tensor([], device = device)
         element_loss = loss_no_reduction(input, target) 
         mask = create_padding_mask( size_of_tensor=input.size(), length_of_padding=length_of_padding, device = device).bool()

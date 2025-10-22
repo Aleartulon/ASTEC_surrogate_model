@@ -19,25 +19,25 @@ class Training_Losses():
         #First loss: invertibility of autoencoder enc-dec-enc
         
         if self.is_coupled[0] == True or (self.is_coupled[0] == False and self.is_coupled[1] == 'AE'):
-            latent_vector_fields, latent_boundaries, l1, regularization_latent = self.auto_encoding_loss(fields, boundary_conditions, length_of_padding, loss_coeff, train)
+            definitive_latent, latent_boundaries, l1, regularization_latent = self.auto_encoding_loss(fields, boundary_conditions, length_of_padding, loss_coeff, train)
             
         elif (self.is_coupled[0] == False and self.is_coupled[1] == 'NODE'):
             with tc.no_grad():
-                latent_vector_fields, latent_boundaries, l1, regularization_latent = self.auto_encoding_loss(fields, boundary_conditions, length_of_padding, loss_coeff, train)
+                definitive_latent, latent_boundaries, l1, regularization_latent = self.auto_encoding_loss(fields, boundary_conditions, length_of_padding, loss_coeff, train)
 
         if self.is_coupled[0] == True or (self.is_coupled[0] == False and self.is_coupled[1] == 'NODE'):
-            l2_TF, l2_AR, l3, l_final = self.latent_dynamics_loss(fields, latent_vector_fields, latent_boundaries, length_of_padding, original_size, train, dt, loss_coeff)
+            l2_TF, l2_AR, l3, l_final = self.latent_dynamics_loss(fields, definitive_latent, latent_boundaries, length_of_padding, original_size, train, dt, loss_coeff)
             
         elif (self.is_coupled[0] == False and self.is_coupled[1] == 'AE'):
             with tc.no_grad():
-                l2_TF, l2_AR, l3, l_final = self.latent_dynamics_loss(fields, latent_vector_fields, latent_boundaries, length_of_padding, original_size, train, dt, loss_coeff)
+                l2_TF, l2_AR, l3, l_final = self.latent_dynamics_loss(fields, definitive_latent, latent_boundaries, length_of_padding, original_size, train, dt, loss_coeff)
 
         return l1, l2_TF, l2_AR, l3, l_final, regularization_latent
 
     def auto_encoding_loss(self, fields:list , boundaries:tc.tensor,length_of_padding:tc.tensor ,loss_coeff:list, train:bool):
         
-        latent_vector_fields, _ , latent_boundaries, regularization_latent = self.encoder(fields, boundaries)
-        reconstructed_variables, reconstructed_boundaries = self.decoder(latent_vector_fields, latent_boundaries)
+        definitive_latent, _ , latent_boundaries, regularization_latent = self.encoder(fields, boundaries)
+        reconstructed_variables, reconstructed_boundaries, _ = self.decoder(definitive_latent, latent_boundaries)
         
         # separate the reconstruction of boundaries and fields
         for count, i in enumerate(reconstructed_variables):
@@ -58,15 +58,15 @@ class Training_Losses():
 
             l1 = [l1_mean, l1_per_variable, l1_mean_denormalized, l1_mean_denormalized_per_variable ]
             
-        return latent_vector_fields, latent_boundaries, l1, regularization_latent
+        return definitive_latent, latent_boundaries, l1, regularization_latent
 
-    def latent_dynamics_loss(self, fields:list, latent_vector_fields:tc.tensor, latent_boundaries:tc.tensor, length_of_padding:tc.tensor, original_size:tuple, train:bool, dt:tc.tensor, loss_coeff:list):
+    def latent_dynamics_loss(self, fields:list, definitive_latent:tc.tensor, latent_boundaries:tc.tensor, length_of_padding:tc.tensor, original_size:tuple, train:bool, dt:tc.tensor, loss_coeff:list):
         number_batches = original_size[0]
         number_of_time_steps = original_size[1]
-        latent_dim = latent_vector_fields.size()[-1]
+        latent_dim = definitive_latent.size()[-1]
         
-        latent_vector_fields = latent_vector_fields.reshape(number_batches, number_of_time_steps, latent_dim)
-        input_processor = latent_vector_fields[:, 0:-1, :].reshape(number_batches*(number_of_time_steps-1),latent_dim)
+        definitive_latent = definitive_latent.reshape(number_batches, number_of_time_steps, latent_dim)
+        input_processor = definitive_latent[:, 0:-1, :].reshape(number_batches*(number_of_time_steps-1),latent_dim)
         
         dt = tc.reshape(dt[:,0:-1],(number_batches*(number_of_time_steps-1), 1))
         
@@ -78,7 +78,7 @@ class Training_Losses():
         else:
             e2_latent_TF = self.processor_First_Order(input_processor, dt, latent_boundaries)
             e2_latent_TF = e2_latent_TF.reshape(number_batches, (number_of_time_steps-1), latent_dim)
-            l2_TF = dynamics_MSE(e2_latent_TF, latent_vector_fields[:, 1:, :], F.relu((length_of_padding-1))) * loss_coeff[1]
+            l2_TF = dynamics_MSE(e2_latent_TF, definitive_latent[:, 1:, :], F.relu((length_of_padding-1))) * loss_coeff[1]
         
         if loss_coeff[3] <= 0:
             l3 = tc.tensor(0.0)
@@ -87,14 +87,14 @@ class Training_Losses():
             e2_middle_latent = self.processor_First_Order( input_processor,random_dt, latent_boundaries)
             e2_final = self.processor_First_Order(e2_middle_latent, dt-random_dt, latent_boundaries)
             e2_final = e2_final.reshape(number_batches, (number_of_time_steps-1), latent_dim)
-            l3 = dynamics_MSE(e2_final, latent_vector_fields[:, 1:, :], F.relu((length_of_padding-1))) * loss_coeff[3]
+            l3 = dynamics_MSE(e2_final, definitive_latent[:, 1:, :], F.relu((length_of_padding-1))) * loss_coeff[3]
 
         if loss_coeff[2] <= 0:
             with tc.no_grad():
                 l2_AR = tc.tensor(0.0)
                 l_final = tc.tensor(0.0)
         else:
-            l2_AR, l_final = self.advance_from_ic(fields, latent_vector_fields, tc.reshape(dt,(number_batches,number_of_time_steps-1)).unsqueeze(-1), latent_boundaries.reshape(number_batches , (number_of_time_steps-1) , latent_boundaries.size(-1)), length_of_padding, loss_coeff[2], train)
+            l2_AR, l_final = self.advance_from_ic(fields, definitive_latent, tc.reshape(dt,(number_batches,number_of_time_steps-1)).unsqueeze(-1), latent_boundaries.reshape(number_batches , (number_of_time_steps-1) , latent_boundaries.size(-1)), length_of_padding, loss_coeff[2], train)
             
         return l2_TF, l2_AR, l3, l_final
              
@@ -127,7 +127,7 @@ class Training_Losses():
                 reconstructed_latent[:,count,:] = next_latent
                 
                 if (not train):
-                    output_decoder, _ = self.decoder(next_latent)
+                    output_decoder, _, _ = self.decoder(next_latent)
                     output_decoder = [tensor.unsqueeze(1) for tensor in output_decoder]
         
                     for index, field in enumerate(output_decoder):
@@ -188,13 +188,13 @@ class Training_Losses():
             
             return (l2_AR_1 * (self.start_backprop[1]-1) +l2_AR_2 *(number_of_time_steps-self.start_backprop[1]))/(number_of_time_steps-1) * loss_coeff, tc.tensor(0.0)
             
-    def processor_First_Order(self, latent_vector_fields:tc.tensor, dt:tc.tensor, latent_boudaries:tc.tensor):
+    def processor_First_Order(self, definitive_latent:tc.tensor, dt:tc.tensor, latent_boudaries:tc.tensor):
         """this function implements the Runge-Kutta algorithms. First_Order refers to the fact that the ODE is a first order ODE, although higher orders would still be solved by this algorithms
         simply introducing new functions.
 
         Args:
             self.f (src.architecture.F_Latent): function self.f of the ODE of the latent dynamics
-            latent_vector_fields (torch.tensor()): tensor of dimension [B, dim_latent], where B is the batch size and dim_latent the dimension of the latent space
+            definitive_latent (torch.tensor()): tensor of dimension [B, dim_latent], where B is the batch size and dim_latent the dimension of the latent space
             dt (torch.Tensor): a tensor containing the dts used to advance each snapshot in time. It has dimensions [B, T-1], where B is the batch size and T is the length of the time series. it assumes each batch evolves accordingly to the same dts 
             latent_boudaries (tc.tensor()): tensor of dimension [B, num_params] where B is the batch size and num_params the number of parameters of the system
             self.k (int): stage of Runge-Kutta algorithm
@@ -203,25 +203,25 @@ class Training_Losses():
             time_dependence_in_f (bool):  if true, the function self.f depends on time as well.
 
         Returns:
-            torch.tensor(): tensor of dimension [B, dim_latent] which contains the latent vectors advanced in time from latent_vector_fields of dt
+            torch.tensor(): tensor of dimension [B, dim_latent] which contains the latent vectors advanced in time from definitive_latent of dt
         """    
         # self k=1 is Euler
-        b = tc.zeros((self.k, latent_vector_fields.size(0), latent_vector_fields.size(1)) , device= self.device)
-        b[0, :,:] = self.f(latent_vector_fields, latent_boudaries )
-        final_sum = self.f(latent_vector_fields, latent_boudaries)*self.RK[str(self.k)][-1][1]
+        b = tc.zeros((self.k, definitive_latent.size(0), definitive_latent.size(1)) , device= self.device)
+        b[0, :,:] = self.f(definitive_latent, latent_boudaries )
+        final_sum = self.f(definitive_latent, latent_boudaries)*self.RK[str(self.k)][-1][1]
 
         for i in range(self.k-1):
             mu_in_time = latent_boudaries.clone() #avoid in place operation which messes with backprop.
-            s = tc.zeros_like(latent_vector_fields, device = self.device)
+            s = tc.zeros_like(definitive_latent, device = self.device)
 
             for j in range(i+1):
                 s +=  b[j] * self.RK[str(self.k)][i+1][j+1]
 
-            b_new = self.f(latent_vector_fields + dt * s, mu_in_time).unsqueeze(0).to(self.device)
+            b_new = self.f(definitive_latent + dt * s, mu_in_time).unsqueeze(0).to(self.device)
             b[i+1,:,:] = b_new
 
             final_sum += b_new.squeeze(0) * self.RK[str(self.k)][-1][i+2]
-        e2 = latent_vector_fields + final_sum * dt
+        e2 = definitive_latent + final_sum * dt
         return e2
     
     

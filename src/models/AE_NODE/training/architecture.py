@@ -45,10 +45,10 @@ class Encoder(nn.Module):
         latent_in_variables_separated = [latent_scalar_variables, latent_plenum_variables, latent_core_variables, latent_vessel_variables, latent_faces_variables] #useful at testing
         latent_in_variables = tc.concatenate((latent_scalar_variables, latent_plenum_variables, latent_core_variables, latent_vessel_variables, latent_faces_variables), axis = -1)
         regularization_latent = self.l1_latent_regularization(latent_in_variables, self.lambda_regularization, latent_boundaries_variables) #regularization latent space 
-        final_latent = self.final_reduction(latent_in_variables) #final reduced vector of inner fields
+        definitive_latent = self.final_reduction(latent_in_variables) #final reduced vector of inner fields
         
         
-        return final_latent, latent_in_variables_separated, latent_boundaries_variables, regularization_latent
+        return definitive_latent, latent_in_variables_separated, latent_boundaries_variables, regularization_latent
     
     def l1_latent_regularization(self, latent_fields: list, lambda_l1: float, latent_boundaries: tc.tensor = None):
         
@@ -163,27 +163,28 @@ class Decoder(nn.Module):
                 index += int( model_information['auto_encoding'][i]['output_dimension_encoder'])
         return indeces
            
-    def forward(self, latent_vector_fields:tc.tensor, latent_boundaries: tc.tensor = None):
+    def forward(self, definitive_latent:tc.tensor, latent_boundaries: tc.tensor = None):
         
         if latent_boundaries is not None:
             reconstructed_boundaries_variables = self.decoder_boundaries_variables(latent_boundaries)
         else:
             reconstructed_boundaries_variables = None
             
-        concatenated_latents = self.initial_increase(latent_vector_fields)
+        concatenated_latents = self.initial_increase(definitive_latent)
         latent_scalar_variables = concatenated_latents[:,0:self.indeces['auto_encoder_scalar']]
         latent_plenum_variables = concatenated_latents[:,self.indeces['auto_encoder_scalar']:self.indeces['auto_encoder_plenum']]
         latent_core_variables = concatenated_latents[:,self.indeces['auto_encoder_plenum']:self.indeces['auto_encoder_core']]
         latent_vessel_variables = concatenated_latents[:,self.indeces['auto_encoder_core']:self.indeces['auto_encoder_vessel']]
         latent_faces_variables = concatenated_latents[:,self.indeces['auto_encoder_vessel']:self.indeces['auto_encoder_faces']]
         
+        latent_in_variables_separated = [latent_scalar_variables, latent_plenum_variables, latent_core_variables, latent_vessel_variables, latent_faces_variables] #useful at testing
         reconstructed_scalar_variables = self.decoder_scalar_variables(latent_scalar_variables)
         reconstructed_plenum_variables = self.decoder_plenum_variables(latent_plenum_variables)
         reconstructed_core_variables = self.decoder_core_variables(latent_core_variables)
         reconstructed_vessel_variables = self.decoder_vessel_variables(latent_vessel_variables)
         reconstructed_faces_variables = self.decoder_faces_variables(latent_faces_variables)
         
-        return [reconstructed_scalar_variables, reconstructed_core_variables, reconstructed_vessel_variables, reconstructed_plenum_variables , reconstructed_faces_variables], reconstructed_boundaries_variables
+        return [reconstructed_scalar_variables, reconstructed_core_variables, reconstructed_vessel_variables, reconstructed_plenum_variables , reconstructed_faces_variables], reconstructed_boundaries_variables, latent_in_variables_separated
     
 class Fully_Connected_Decoder(nn.Module):
     def __init__(self, config_training:dict, fully_connected_information:dict):
@@ -299,13 +300,13 @@ class F_Latent(nn.Module):
                     nn.init.kaiming_uniform_(self.dfnn.weight)
 
 
-        elif parameter_information == 'FiLM':
+        elif self.parameter_information == 'FiLM':
 
             if self.param_dim > 0:
                 self.param_FiLM_gamma = nn.ModuleList([nn.Linear(self.param_dim, self.final_latent_dim, bias = True)])
                 self.param_FiLM_beta = nn.ModuleList([nn.Linear(self.param_dim, self.final_latent_dim, bias = True)])
-                self.param_FiLM_gamma.extend([nn.Linear(self.param_dim, n_neurons, bias = True) for i in range(n_FiLM_conditioning)])
-                self.param_FiLM_beta.extend([nn.Linear(self.param_dim, n_neurons, bias = True) for i in range(n_FiLM_conditioning)])
+                self.param_FiLM_gamma.extend([nn.Linear(self.param_dim, n_neurons, bias = True) for i in range(self.n_FiLM_conditioning)])
+                self.param_FiLM_beta.extend([nn.Linear(self.param_dim, n_neurons, bias = True) for i in range(self.n_FiLM_conditioning)])
 
             self.linears = nn.ModuleList([nn.Linear(self.final_latent_dim, n_neurons, bias = True)])
             self.linears.extend([nn.Linear(n_neurons, n_neurons, bias = True) for i in range(self.n_layers )])

@@ -78,13 +78,17 @@ class Model_Test:
                 
             # auto-encoding verification
             print('------------------------- Purely AutoEncoding -------------------------')
-            error_per_trajectory_per_field, reconstructed_fields_per_trajectory, latent_vectors_per_trajectory_per_field, final_latent_vector_per_trajectory, denormalized_fields_per_trajectory, Time = self.autoencoding()
+            error_per_trajectory_per_field_AE, reconstructed_fields_per_trajectory_AE, latent_vectors_per_trajectory_per_field_AE, final_latent_vector_per_trajectory_AE, denormalized_fields_per_trajectory_AE, Time = self.autoencoding()
             
             if self.autoencoding_figures:
-                self.generate_pictures_autoencoding(error_per_trajectory_per_field, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, Time)
+                self.generate_pictures_autoencoding(error_per_trajectory_per_field_AE, reconstructed_fields_per_trajectory_AE, denormalized_fields_per_trajectory_AE, Time)
                 
             if self.autoencoding_latent_figures:
-                self.generate_pictures_latent_space_autoencoding(latent_vectors_per_trajectory_per_field, final_latent_vector_per_trajectory,Time)
+                self.generate_pictures_latent_space_autoencoding(latent_vectors_per_trajectory_per_field_AE, final_latent_vector_per_trajectory_AE,Time)
+            
+            # actual prediction in latent space
+            print('------------------------- Actual Prediction -------------------------')  
+            error_per_trajectory_per_field_AE_NODE, reconstructed_fields_per_trajectory_AE_NODE, latent_vectors_per_trajectory_per_field_AE_NODE, final_latent_vector_per_trajectory_AE_NODE = self.latent_prediction()
                 
             print('-----------------------------------------------------------------------')
             
@@ -172,8 +176,8 @@ class Model_Test:
             #no need to normalize because daa is already normalized in the testing
 
             #auto-encode
-            final_latent_vector, latent_in_variables, latent_boundaries_variables, _ = self.encoder(fields, boundary_conditions)
-            reconstructed_fields, reconstructed_boundary_conditions = self.decoder(final_latent_vector, latent_boundaries_variables)
+            definitive_latent_vector, latent_in_variables, latent_boundaries_variables, _ = self.encoder(fields, boundary_conditions)
+            reconstructed_fields, reconstructed_boundary_conditions, _ = self.decoder(definitive_latent_vector, latent_boundaries_variables)
             
             #give back proper shape. Not necessary if always one trajectory per time is passed but better to be general
             for count, i in enumerate(reconstructed_fields):
@@ -192,14 +196,40 @@ class Model_Test:
             
             #fill in dictionaries for analysis
             fill_in_dictionaries_autoencoder_step(trajectory, reconstructed_fields_per_trajectory, latent_vectors_per_trajectory_per_field,  final_latent_vector_per_trajectory, denormalized_fields_per_trajectory,
-                                                 reconstructed_fields, reconstructed_boundary_conditions, latent_in_variables, latent_boundaries_variables, final_latent_vector, fields, boundary_conditions)
+                                                 reconstructed_fields, reconstructed_boundary_conditions, latent_in_variables, latent_boundaries_variables, definitive_latent_vector, fields, boundary_conditions)
         
             
         return error_per_trajectory_per_field, reconstructed_fields_per_trajectory, latent_vectors_per_trajectory_per_field, final_latent_vector_per_trajectory, denormalized_fields_per_trajectory, Time
     
     
         
-    
+    def latent_prediction(self):
+        error_per_trajectory_per_field = {'MSE_default':{}, 'MSE_normalized' : {}}
+        reconstructed_fields_per_trajectory = {}
+        latent_vectors_per_trajectory_per_field = {}
+        final_latent_vector_per_trajectory = {}
+        
+        for trajectory in self.trajectories:
+            fields, boundary_conditions, time = self.access_trajectory(trajectory)
+            
+            #no need to normalize because data is already normalized in the testing
+            
+            #encode initial condition
+            definitive_latent_vector, _ , latent_boundaries_variables, _ = self.encoder(fields, boundary_conditions)
+            initial_latent_vector = definitive_latent_vector[0:1]
+            del definitive_latent_vector
+            del fields
+            print(time)
+            
+            
+            exit()
+            #process in time until the end (how can I know what is the end?)
+            
+            
+        return error_per_trajectory_per_field, reconstructed_fields_per_trajectory, latent_vectors_per_trajectory_per_field, final_latent_vector_per_trajectory, Time
+        
+        
+        
     def load_checkpoint_on_models(self):
         checkpoint = tc.load(self.path_to_model+'/checkpoint/check.pt', map_location=self.device, weights_only=False)
         
