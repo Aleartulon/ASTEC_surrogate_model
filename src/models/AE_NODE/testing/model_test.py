@@ -190,7 +190,7 @@ class Model_Test:
         
         error_per_trajectory_per_field_AE = {'MSE_default':{}, 'MSE_normalized' : {}}
         reconstructed_fields_per_trajectory_AE = {}
-        latent_vectors_per_trajectory_per_field_AE = {}
+        latent_vectors_per_trajectory_per_shape_AE = {}
         definitive_latent_vector_per_trajectory_AE = {}
         denormalized_fields_per_trajectory_AE = {}
         Time = {}
@@ -221,11 +221,11 @@ class Model_Test:
             compute_errors_autoencoder(trajectory, error_per_trajectory_per_field_AE, reconstructed_fields, reconstructed_boundary_conditions, fields, boundary_conditions, 'MSE_normalized')
             
             #fill in dictionaries for analysis
-            fill_in_dictionaries_autoencoder_step(trajectory, reconstructed_fields_per_trajectory_AE, latent_vectors_per_trajectory_per_field_AE,  definitive_latent_vector_per_trajectory_AE, denormalized_fields_per_trajectory_AE,
+            fill_in_dictionaries_autoencoder_step(trajectory, reconstructed_fields_per_trajectory_AE, latent_vectors_per_trajectory_per_shape_AE,  definitive_latent_vector_per_trajectory_AE, denormalized_fields_per_trajectory_AE,
                                                  reconstructed_fields, reconstructed_boundary_conditions, latent_in_per_shape, latent_boundaries_variables, definitive_latent_vector, fields, boundary_conditions)
         
             
-        return error_per_trajectory_per_field_AE, reconstructed_fields_per_trajectory_AE, latent_vectors_per_trajectory_per_field_AE, definitive_latent_vector_per_trajectory_AE, denormalized_fields_per_trajectory_AE, Time
+        return error_per_trajectory_per_field_AE, reconstructed_fields_per_trajectory_AE, latent_vectors_per_trajectory_per_shape_AE, definitive_latent_vector_per_trajectory_AE, denormalized_fields_per_trajectory_AE, Time
         
     def latent_prediction(self):
         error_per_trajectory_per_field_AE_NODE = {'MSE_default':{}, 'MSE_normalized' : {}}
@@ -364,7 +364,7 @@ class Model_Test:
                 plt.savefig(f'{self.directory_images_AE_NODE_fields_reconstruction_faces}/{trajectory}_{field_name}.png', dpi=300, bbox_inches='tight')
         plt.close()
         
-    def plot_latent_space_per_variable(self, trajectory, Time, latent_space_dict:dict, AE:bool, shape_index = 0, ylabel='latent_plenum', figsize=(5, 5), fontsize=16):
+    def plot_latent_space_per_variable(self, trajectory, Time, latent_vectors_per_trajectory_per_shape_AE, final_latent_vector_per_trajectory_AE, latent_vectors_per_trajectory_per_shape_AE_NODE, final_latent_vector_per_trajectory_AE_NODE, AE:bool, shape_index = 0, ylabel='latent_plenum', figsize=(5, 5), fontsize=16):
 
         plt.figure(figsize=figsize)
         for dimension in range(latent_space_dict[trajectory][shape_index].size(-1)):
@@ -454,18 +454,18 @@ class Model_Test:
             self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, AE, shape_index = 5, variable_index = 4 , field_name = 'Q_steam_connection_p_to_v', ylabel = 'Q_steam_connection_p_to_v', figsize=(5, 5), fontsize=16)
             self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, AE, shape_index = 5, variable_index = 5 , field_name = 'm_H20_connection_p_to_v', ylabel = 'm_H20_connection_p_to_v', figsize=(5, 5), fontsize=16)
             
-    def generate_pictures_latent_space(self, latent_vectors_per_trajectory_per_field:dict, final_latent_vector_per_trajectory:dict ,Time:dict, AE: bool, error_per_trajectory_per_field_AE_NODE : dict = None, error_per_trajectory_definitive_latent_AE_NODE : dict = None):
+    def generate_pictures_latent_space(self, latent_vectors_per_trajectory_per_shape_AE:dict, final_latent_vector_per_trajectory_AE:dict, latent_vectors_per_trajectory_per_shape_AE_NODE:dict = None, final_latent_vector_per_trajectory_AE_NODE:dict = None, Time:dict, AE: bool, error_per_trajectory_per_field_AE_NODE : dict = None, error_per_trajectory_definitive_latent_AE_NODE : dict = None):
         
         #save fig of latent space of scalar values
-        self.plot_latent_space_per_variable(self.trajectory_to_be_plotted, Time, latent_vectors_per_trajectory_per_field, AE, shape_index = 0, ylabel='latent_scalar', figsize=(15, 5), fontsize=16)
+        self.plot_latent_space_per_variable(self.trajectory_to_be_plotted, Time, latent_vectors_per_trajectory_per_shape_AE, final_latent_vector_per_trajectory_AE, latent_vectors_per_trajectory_per_shape_AE_NODE, final_latent_vector_per_trajectory_AE_NODE, AE, shape_index = 0, ylabel='latent_scalar', figsize=(15, 5), fontsize=16)
         #save fig of latent space of core
-        self.plot_latent_space_per_variable(self.trajectory_to_be_plotted, Time, latent_vectors_per_trajectory_per_field, AE, shape_index = 1, ylabel='latent_core', figsize=(15, 5), fontsize=16)
+        self.plot_latent_space_per_variable(self.trajectory_to_be_plotted, Time, latent_vectors_per_trajectory_per_shape_AE, final_latent_vector_per_trajectory_AE, latent_vectors_per_trajectory_per_shape_AE_NODE, final_latent_vector_per_trajectory_AE_NODE, AE, shape_index = 1, ylabel='latent_core', figsize=(15, 5), fontsize=16)
         #save fig of latent space of vessel 
-        self.plot_latent_space_per_variable(self.trajectory_to_be_plotted, Time, latent_vectors_per_trajectory_per_field, AE, shape_index = 2, ylabel='latent_vessel', figsize=(15, 5), fontsize=16)
+        self.plot_latent_space_per_variable(self.trajectory_to_be_plotted, Time, latent_vectors_per_trajectory_per_shape_AE, final_latent_vector_per_trajectory_AE, latent_vectors_per_trajectory_per_shape_AE_NODE, final_latent_vector_per_trajectory_AE_NODE, AE, shape_index = 2, ylabel='latent_vessel', figsize=(15, 5), fontsize=16)
         #save fig of latent space of lower plenum 
-        self.plot_latent_space_per_variable(self.trajectory_to_be_plotted, Time, latent_vectors_per_trajectory_per_field, AE, shape_index = 3, ylabel='latent_lower_plenum', figsize=(15, 5), fontsize=16)
+        self.plot_latent_space_per_variable(self.trajectory_to_be_plotted, Time, latent_vectors_per_trajectory_per_shape_AE, final_latent_vector_per_trajectory_AE, latent_vectors_per_trajectory_per_shape_AE_NODE, final_latent_vector_per_trajectory_AE_NODE, AE, shape_index = 3, ylabel='latent_lower_plenum', figsize=(15, 5), fontsize=16)
         #save fig of latent space of faces 
-        self.plot_latent_space_per_variable(self.trajectory_to_be_plotted, Time, latent_vectors_per_trajectory_per_field, AE, shape_index = 4, ylabel='latent_faces', figsize=(15, 5), fontsize=16)
+        self.plot_latent_space_per_variable(self.trajectory_to_be_plotted, Time, latent_vectors_per_trajectory_per_shape_AE,final_latent_vector_per_trajectory_AE,  latent_vectors_per_trajectory_per_shape_AE_NODE, final_latent_vector_per_trajectory_AE_NODE, AE, shape_index = 4, ylabel='latent_faces', figsize=(15, 5), fontsize=16)
             
         #save fig of definitive latent vector
         self.plot_final_latent_space(self.trajectory_to_be_plotted, Time, final_latent_vector_per_trajectory, AE, ylabel='final_latent_space', figsize=(15, 5), fontsize=16)
