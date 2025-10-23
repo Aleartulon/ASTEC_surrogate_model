@@ -42,3 +42,7 @@ def safe_eval( val):
     if isinstance(val, str):
         return eval(val)
     return val
+
+def compute_errors(dictionary_of_errors :dict, input: list, target:list, is_AE:bool):
+    
+    return 0

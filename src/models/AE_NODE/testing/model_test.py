@@ -194,7 +194,7 @@ class Model_Test:
             
     def autoencoding(self):
         
-        error_per_trajectory_AE = {'MSE_default':{}, 'MSE_normalized' : {}, 'MSE_default_per_time_step':{}, 'MSE_normalized_per_time_step' : {}}
+        error_per_trajectory_AE = {'MSE_normalized_by_mean':{}, 'L2_error_norm' : {}, 'MSE_normalized_by_mean_per_time_step':{}, 'L2_error_norm_per_time_step' : {}}
         reconstructed_fields_per_trajectory_AE = {}
         latent_vectors_per_trajectory_per_shape_AE = {}
         definitive_latent_vector_per_trajectory_AE = {}
@@ -229,7 +229,9 @@ class Model_Test:
                                                  reconstructed_fields, reconstructed_boundary_conditions, latent_in_per_shape, latent_boundaries_variables, definitive_latent_vector, fields, boundary_conditions)
             
             # compute errors
-            compute_errors(error_per_trajectory_AE, reconstructed_fields_per_trajectory_AE, )
+            fields.append(boundary_conditions)
+            reconstructed_fields.append(reconstructed_boundary_conditions)
+            compute_errors(error_per_trajectory_AE, reconstructed_fields, fields, True)
         
             
         return error_per_trajectory_AE, reconstructed_fields_per_trajectory_AE, latent_vectors_per_trajectory_per_shape_AE, definitive_latent_vector_per_trajectory_AE, denormalized_fields_per_trajectory_AE, Time
