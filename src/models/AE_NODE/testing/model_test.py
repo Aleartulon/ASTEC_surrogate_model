@@ -98,10 +98,10 @@ class Model_Test:
                 
             # auto-encoding verification
             print('------------------------- Purely AutoEncoding -------------------------')
-            error_per_trajectory_per_field_AE, reconstructed_fields_per_trajectory_AE, latent_vectors_per_trajectory_per_shape_AE, definitive_latent_vector_per_trajectory_AE, denormalized_fields_per_trajectory, Time = self.autoencoding()
+            error_per_trajectory_AE_NODE, reconstructed_fields_per_trajectory_AE, latent_vectors_per_trajectory_per_shape_AE, definitive_latent_vector_per_trajectory_AE, denormalized_fields_per_trajectory, Time = self.autoencoding()
             
             if self.autoencoding_figures:
-                self.generate_pictures_fields(error_per_trajectory_per_field_AE, reconstructed_fields_per_trajectory_AE, denormalized_fields_per_trajectory, Time, True)
+                self.generate_pictures_fields(error_per_trajectory_AE, reconstructed_fields_per_trajectory_AE, denormalized_fields_per_trajectory, Time, True)
                 
             if self.autoencoding_latent_figures:
                 self.generate_pictures_latent_space(latent_vectors_per_trajectory_per_shape_AE, definitive_latent_vector_per_trajectory_AE,Time, True)
@@ -111,11 +111,11 @@ class Model_Test:
             
             # actual prediction in latent space
             print('------------------------- Actual Prediction -------------------------')  
-            error_per_trajectory_per_field_AE_NODE, error_per_trajectory_definitive_latent_AE_NODE, reconstructed_fields_per_trajectory_AE_NODE, latent_vectors_per_trajectory_per_shape_AE_NODE, definitive_latent_vector_per_trajectory_AE_NODE = self.latent_prediction()
+            error_per_trajectory_AE_NODE, error_per_trajectory_definitive_latent_AE_NODE, reconstructed_fields_per_trajectory_AE_NODE, latent_vectors_per_trajectory_per_shape_AE_NODE, definitive_latent_vector_per_trajectory_AE_NODE = self.latent_prediction()
             if self.actual_fields_prediction_figures:
-                self.generate_pictures_fields(error_per_trajectory_per_field_AE_NODE, reconstructed_fields_per_trajectory_AE_NODE, denormalized_fields_per_trajectory, Time, False)
+                self.generate_pictures_fields(error_per_trajectory_AE_NODE, reconstructed_fields_per_trajectory_AE_NODE, denormalized_fields_per_trajectory, Time, False)
             if self.actual_latent_prediction_figures:
-                self.generate_pictures_latent_space(latent_vectors_per_trajectory_per_shape_AE, definitive_latent_vector_per_trajectory_AE, Time, False, latent_vectors_per_trajectory_per_shape_AE_NODE, definitive_latent_vector_per_trajectory_AE_NODE, error_per_trajectory_per_field_AE_NODE, error_per_trajectory_definitive_latent_AE_NODE)
+                self.generate_pictures_latent_space(latent_vectors_per_trajectory_per_shape_AE, definitive_latent_vector_per_trajectory_AE, Time, False, latent_vectors_per_trajectory_per_shape_AE_NODE, definitive_latent_vector_per_trajectory_AE_NODE, error_per_trajectory_AE_NODE, error_per_trajectory_definitive_latent_AE_NODE)
                 
             print('-----------------------------------------------------------------------')
             
@@ -194,7 +194,7 @@ class Model_Test:
             
     def autoencoding(self):
         
-        error_per_trajectory_per_field_AE = {'MSE_default':{}, 'MSE_normalized' : {}}
+        error_per_trajectory_AE = {'MSE_default':{}, 'MSE_normalized' : {}, 'MSE_default_per_time_step':{}, 'MSE_normalized_per_time_step' : {}}
         reconstructed_fields_per_trajectory_AE = {}
         latent_vectors_per_trajectory_per_shape_AE = {}
         definitive_latent_vector_per_trajectory_AE = {}
@@ -216,7 +216,6 @@ class Model_Test:
                 size = i.size()
                 reconstructed_fields[count] = tc.reshape(reconstructed_fields[count], ((fields[0].size()[0],fields[0].size()[1]) + size[1:]))
             reconstructed_boundary_conditions = tc.reshape(reconstructed_boundary_conditions, ((boundary_conditions.size()[0],boundary_conditions.size()[1]) + reconstructed_boundary_conditions.size()[1:]))
-            compute_errors_autoencoder(trajectory, error_per_trajectory_per_field_AE, reconstructed_fields, reconstructed_boundary_conditions, fields, boundary_conditions, 'MSE_default')
             
             #de-normalize
             reconstructed_fields = standard_and_inverse_normalization_field(reconstructed_fields, self.maxima_or_mean, self.minima_or_std, self.which_normalization, inverse = True)
@@ -224,17 +223,19 @@ class Model_Test:
             fields = standard_and_inverse_normalization_field(fields, self.maxima_or_mean, self.minima_or_std, self.which_normalization, inverse = True)
             boundary_conditions = standard_and_inverse_normalization_field([boundary_conditions], self.maxima_or_mean, self.minima_or_std, self.which_normalization, inverse = True)[0]
             #compute errors
-            compute_errors_autoencoder(trajectory, error_per_trajectory_per_field_AE, reconstructed_fields, reconstructed_boundary_conditions, fields, boundary_conditions, 'MSE_normalized')
             
             #fill in dictionaries for analysis
             fill_in_dictionaries_autoencoder_step(trajectory, reconstructed_fields_per_trajectory_AE, latent_vectors_per_trajectory_per_shape_AE,  definitive_latent_vector_per_trajectory_AE, denormalized_fields_per_trajectory_AE,
                                                  reconstructed_fields, reconstructed_boundary_conditions, latent_in_per_shape, latent_boundaries_variables, definitive_latent_vector, fields, boundary_conditions)
+            
+            # compute errors
+            compute_errors(error_per_trajectory_AE, reconstructed_fields_per_trajectory_AE, )
         
             
-        return error_per_trajectory_per_field_AE, reconstructed_fields_per_trajectory_AE, latent_vectors_per_trajectory_per_shape_AE, definitive_latent_vector_per_trajectory_AE, denormalized_fields_per_trajectory_AE, Time
+        return error_per_trajectory_AE, reconstructed_fields_per_trajectory_AE, latent_vectors_per_trajectory_per_shape_AE, definitive_latent_vector_per_trajectory_AE, denormalized_fields_per_trajectory_AE, Time
         
     def latent_prediction(self):
-        error_per_trajectory_per_field_AE_NODE = {'MSE_default':{}, 'MSE_normalized' : {}}
+        error_per_trajectory_AE_NODE = {'MSE_default':{}, 'MSE_normalized' : {}}
         error_per_trajectory_definitive_latent_AE_NODE = {'MSE_default':{}, 'MSE_normalized' : {}}
         reconstructed_fields_per_trajectory_AE_NODE = {}
         latent_vectors_per_trajectory_per_shape_AE_NODE = {}
@@ -267,7 +268,7 @@ class Model_Test:
             final_latent_vector_per_trajectory_AE_NODE[trajectory] = predicted_latents
             
             
-        return error_per_trajectory_definitive_latent_AE_NODE, error_per_trajectory_per_field_AE_NODE, reconstructed_fields_per_trajectory_AE_NODE, latent_vectors_per_trajectory_per_shape_AE_NODE, final_latent_vector_per_trajectory_AE_NODE
+        return error_per_trajectory_definitive_latent_AE_NODE, error_per_trajectory_AE_NODE, reconstructed_fields_per_trajectory_AE_NODE, latent_vectors_per_trajectory_per_shape_AE_NODE, final_latent_vector_per_trajectory_AE_NODE
         
         
         
@@ -467,7 +468,7 @@ class Model_Test:
             self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, AE, shape_index = 5, variable_index = 4 , field_name = 'Q_steam_connection_p_to_v', ylabel = 'Q_steam_connection_p_to_v', figsize=(5, 5), fontsize=16)
             self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, AE, shape_index = 5, variable_index = 5 , field_name = 'm_H20_connection_p_to_v', ylabel = 'm_H20_connection_p_to_v', figsize=(5, 5), fontsize=16)
             
-    def generate_pictures_latent_space(self, latent_vectors_per_trajectory_per_shape_AE:dict, definitive_latent_vector_per_trajectory_AE: dict, Time:dict, AE: bool, latent_vectors_per_trajectory_per_shape_AE_NODE:dict = None, definitive_latent_vector_per_trajectory_AE_NODE:dict = None, error_per_trajectory_per_field_AE_NODE : dict = None, error_per_trajectory_definitive_latent_AE_NODE : dict = None):
+    def generate_pictures_latent_space(self, latent_vectors_per_trajectory_per_shape_AE:dict, definitive_latent_vector_per_trajectory_AE: dict, Time:dict, AE: bool, latent_vectors_per_trajectory_per_shape_AE_NODE:dict = None, definitive_latent_vector_per_trajectory_AE_NODE:dict = None, error_per_trajectory_AE_NODE : dict = None, error_per_trajectory_definitive_latent_AE_NODE : dict = None):
         
         #save fig of latent space of scalar values
         self.plot_latent_space_per_variable(self.trajectory_to_be_plotted, Time, latent_vectors_per_trajectory_per_shape_AE, latent_vectors_per_trajectory_per_shape_AE_NODE, AE, shape_index = 0, ylabel='latent_scalar', figsize=(15, 5), fontsize=16)
