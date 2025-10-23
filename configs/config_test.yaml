@@ -1,6 +1,6 @@
-path_to_test_data : '../../../../../../../scratch/ROM_datasets_ale/ASTEC/'
+path_to_test_data : '../../'
 name_test_file: 'data_testing.h5'
-path_to_model: '../../../../../../../scratch/ROM_datasets_ale/ASTEC/saved_logs/AE_NODE/Models/dynamics_first_trials_/'
+path_to_model: '../../dynamics_first_trials_/'
 device: 'cuda:2'
 trajectory_to_be_plotted : '2'
 autoencoding_figures : true
