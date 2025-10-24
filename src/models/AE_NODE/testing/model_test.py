@@ -36,7 +36,8 @@ class Model_Test:
         self.directory_images_AE_NODE_latent_per_variables = self.directory_images + 'AE_NODE/latent_per_variables'
         self.directory_images_AE_NODE_errors_ = self.directory_images + 'AE_NODE/errors_reconstruction_fields'
         self.directory_images_AE_NODE_errors_fields = self.directory_images + 'AE_NODE/errors_reconstruction_fields'
-        self.directory_images_AE_NODE_errors_latent = self.directory_images + 'AE_NODE/errors_reconstruction_latent'
+        self.directory_images_AE_NODE_errors_definitive_latent = self.directory_images + 'AE_NODE/errors_reconstruction_definitive_latent'
+        self.directory_images_AE_NODE_errors_latent_per_variable = self.directory_images + 'AE_NODE/errors_reconstruction_latent_per_variable'
         
         self.directory_images_Operator_Actions = self.directory_images + '/Operator_Actions'
         
@@ -56,7 +57,8 @@ class Model_Test:
         os.makedirs(self.directory_images+'/AE_NODE/final_latent', exist_ok=True)
         os.makedirs(self.directory_images+'/AE_NODE/latent_per_variables', exist_ok=True)
         os.makedirs(self.directory_images+'/AE_NODE/errors_reconstruction_fields', exist_ok=True)
-        os.makedirs(self.directory_images+'/AE_NODE/errors_reconstruction_latent', exist_ok=True)
+        os.makedirs(self.directory_images+'/AE_NODE/errors_reconstruction_definitive_latent', exist_ok=True)
+        os.makedirs(self.directory_images+'/AE_NODE/errors_reconstruction_latent_per_variable', exist_ok=True)
         os.makedirs(self.directory_images+'/Operator_Actions/', exist_ok=True)
         
         self.device = tc.device(information['device']) if tc.cuda.is_available() else tc.device("cpu")
@@ -119,7 +121,7 @@ class Model_Test:
             
             # actual prediction in latent space
             print('------------------------- Actual Prediction -------------------------')  
-            error_per_trajectory_AE_NODE, error_per_trajectory_definitive_latent_AE_NODE, reconstructed_fields_per_trajectory_AE_NODE, latent_vectors_per_trajectory_per_shape_AE_NODE, definitive_latent_vector_per_trajectory_AE_NODE = self.latent_prediction()
+            error_fields_per_trajectory_AE_NODE, error_definitive_latent_per_trajectory_AE_NODE, error_latent_per_variable_per_trajectory_AE_NODE, reconstructed_fields_per_trajectory_AE_NODE, latent_vectors_per_trajectory_per_shape_AE_NODE, definitive_latent_vector_per_trajectory_AE_NODE = self.latent_prediction()
             if self.actual_fields_prediction_figures:
                 self.generate_pictures_fields( reconstructed_fields_per_trajectory_AE_NODE, denormalized_fields_per_trajectory, Time, False)
             if self.actual_latent_prediction_figures:
@@ -201,8 +203,7 @@ class Model_Test:
             plt.close()
             
     def autoencoding(self):
-        
-        error_per_trajectory_AE = {}
+    
         reconstructed_fields_per_trajectory_AE = {}
         latent_vectors_per_trajectory_per_shape_AE = {}
         definitive_latent_vector_per_trajectory_AE = {}
@@ -237,17 +238,15 @@ class Model_Test:
                                                  reconstructed_fields, reconstructed_boundary_conditions, latent_in_per_shape, latent_boundaries_variables, definitive_latent_vector, fields, boundary_conditions)
             
             # compute errors
-            compute_errors(trajectory, error_per_trajectory_AE, reconstructed_fields, fields, True)
+            error_per_trajectory_AE = compute_errors(trajectory, reconstructed_fields, fields, True)
             
-            #print out errors in files
+            #print out errors in files and generate images of errors in time
             self.generate_pictures_errors_AE(trajectory, error_per_trajectory_AE, time)
         
             
         return error_per_trajectory_AE, reconstructed_fields_per_trajectory_AE, latent_vectors_per_trajectory_per_shape_AE, definitive_latent_vector_per_trajectory_AE, denormalized_fields_per_trajectory_AE, Time
         
     def latent_prediction(self):
-        error_per_trajectory_AE_NODE = {'MSE_default':{}, 'MSE_normalized' : {}}
-        error_per_trajectory_definitive_latent_AE_NODE = {'MSE_default':{}, 'MSE_normalized' : {}}
         reconstructed_fields_per_trajectory_AE_NODE = {}
         latent_vectors_per_trajectory_per_shape_AE_NODE = {}
         final_latent_vector_per_trajectory_AE_NODE = {}
@@ -259,13 +258,11 @@ class Model_Test:
             #no need to normalize because data is already normalized in the testing
             
             #encode initial condition
-            definitive_latent_vector, _ , latent_boundaries_variables, _ = self.encoder(fields, boundary_conditions)
+            definitive_latent_vector, per_variable_latent_vectors , latent_boundaries_variables, _ = self.encoder(fields, boundary_conditions)
             next_latent_vector = definitive_latent_vector[0:1]
             predicted_latents = tc.zeros((len(DT[0]), self.latent_dimension), device = self.device)
             
             #process in time until the end (how can I know what is the end?)
-            del definitive_latent_vector
-            del fields
             for count, dt in enumerate(DT[0][:-1]): #last one is fake, you need one less
                 next_latent_vector = self.training_losses.processor_First_Order(next_latent_vector, dt, latent_boundaries_variables[count:count+1])
                 predicted_latents[count] = next_latent_vector
@@ -278,8 +275,14 @@ class Model_Test:
             latent_vectors_per_trajectory_per_shape_AE_NODE[trajectory] = reconstructed_latent_vectors_per_field
             final_latent_vector_per_trajectory_AE_NODE[trajectory] = predicted_latents
             
+            # compute errors
+            error_fields_per_trajectory_AE_NODE = compute_errors(trajectory, reconstructed_fields, fields, True)
+            error_definitive_latent_per_trajectory_AE_NODE = compute_errors(trajectory, predicted_latents, definitive_latent_vector, True)
+            error_latent_per_variable_per_trajectory_AE_NODE = compute_errors(trajectory, reconstructed_latent_vectors_per_field, per_variable_latent_vectors, True)
             
-        return error_per_trajectory_definitive_latent_AE_NODE, error_per_trajectory_AE_NODE, reconstructed_fields_per_trajectory_AE_NODE, latent_vectors_per_trajectory_per_shape_AE_NODE, final_latent_vector_per_trajectory_AE_NODE
+            #print out errors in files and generate images of errors in time
+            
+        return error_fields_per_trajectory_AE_NODE, error_definitive_latent_per_trajectory_AE_NODE, error_latent_per_variable_per_trajectory_AE_NODE, reconstructed_fields_per_trajectory_AE_NODE, latent_vectors_per_trajectory_per_shape_AE_NODE, final_latent_vector_per_trajectory_AE_NODE
         
         
         
@@ -511,7 +514,7 @@ class Model_Test:
         #save fig of definitive latent vector
         self.plot_final_latent_space(self.trajectory_to_be_plotted, Time, definitive_latent_vector_per_trajectory_AE, definitive_latent_vector_per_trajectory_AE_NODE, AE, ylabel='final_latent_space', figsize=(15, 5), fontsize=16)
     
-    def generate_pictures_errors_AE(self, trajectory:str, error_per_trajectory_AE:dict, time:tc.tensor): #error_per_trajectory_AE = {'MSE_normalized_by_mean':[], 'L2_error_norm' : [], 'MSE_normalized_by_mean_per_time_step':[], 'L2_error_norm_per_time_step' : []}
+    def generate_pictures_errors_AE(self, trajectory:str, error_per_trajectory_AE:dict, time:tc.tensor): 
         dictionary_of_variables = build_dictionary_of_variables()
         scalar_variables = [ key+'_scalar' for key in dictionary_of_variables['dictionary_of_input_variables_1']]
         core_variables = [key+'_core' for key in dictionary_of_variables['dictionary_of_input_variables_36']]

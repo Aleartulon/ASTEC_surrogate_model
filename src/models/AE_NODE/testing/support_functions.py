@@ -44,7 +44,8 @@ def safe_eval( val):
         return eval(val)
     return val
 
-def compute_errors(trajectory:str, dictionary_of_errors :dict, input: list, target:list, is_AE:bool):
+def compute_errors(trajectory:str, input: list, target:list, is_AE:bool):
+    dictionary_of_errors = {}
     dictionary_of_errors[str(trajectory)] = {'MSE_normalized_by_mean':[], 'L2_error_norm' : [], 'MSE_normalized_by_mean_per_time_step':[], 'L2_error_norm_per_time_step' : []}
     #compute MSE_normalized_by_mean
     for count, i in enumerate(input):
