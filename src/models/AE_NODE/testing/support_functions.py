@@ -44,27 +44,30 @@ def safe_eval( val):
         return eval(val)
     return val
 
-def compute_errors(dictionary_of_errors :dict, input: list, target:list, is_AE:bool):
-    
+def compute_errors(trajectory:str, dictionary_of_errors :dict, input: list, target:list, is_AE:bool):
+    dictionary_of_errors[str(trajectory)] = {'MSE_normalized_by_mean':[], 'L2_error_norm' : [], 'MSE_normalized_by_mean_per_time_step':[], 'L2_error_norm_per_time_step' : []}
     #compute MSE_normalized_by_mean
     for count, i in enumerate(input):
         error = MSE_normalized_by_mean(i, target[count])
-        dictionary_of_errors['MSE_normalized_by_mean'].append(error)
+        dictionary_of_errors[str(trajectory)]['MSE_normalized_by_mean'].append(error)
         
         #compute L2_error_norm
         error = L2_error_norm(i, target[count])
-        dictionary_of_errors['L2_error_norm'].append(error)
+        dictionary_of_errors[str(trajectory)]['L2_error_norm'].append(error)
     
         #compute MSE_normalized_by_mean_per_time_step
         error = MSE_normalized_by_mean(i, target[count], per_time_step = True)
-        dictionary_of_errors['MSE_normalized_by_mean_per_time_step'].append(error)
+        dictionary_of_errors[str(trajectory)]['MSE_normalized_by_mean_per_time_step'].append(error)
         
         #compute L2_error_norm_per_time_step
         error = L2_error_norm(i, target[count], per_time_step = True)
-        dictionary_of_errors['L2_error_norm_per_time_step'].append(error)
+        dictionary_of_errors[str(trajectory)]['L2_error_norm_per_time_step'].append(error)
+        
     return dictionary_of_errors
 
 def MSE_normalized_by_mean(input:list, target:list, per_time_step: bool = False):
+    input = input.double()
+    target = target.double()
     loss = nn.MSELoss(reduction='none')
     array_of_errors = []
     for count, i in enumerate(input):
@@ -86,7 +89,8 @@ def MSE_normalized_by_mean(input:list, target:list, per_time_step: bool = False)
 
 def L2_error_norm(input:list, target:list, per_time_step: bool = False):
     array_of_errors = []
-    
+    input = input.double()
+    target = target.double()
     for count, i in enumerate(input):
         if len(i.size()) <= 2:
             e = tc.abs(i - target[count]).double()

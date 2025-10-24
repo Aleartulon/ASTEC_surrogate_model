@@ -27,12 +27,16 @@ class Model_Test:
         self.directory_images_AutoEncoding_fields_reconstruction_faces = self.directory_images + 'AutoEncoding/fields_reconstruction_faces'
         self.directory_images_AutoEncoding_final_latent = self.directory_images + 'AutoEncoding/final_latent'
         self.directory_images_AutoEncoding_latent_per_variables = self.directory_images + 'AutoEncoding/latent_per_variables'
+        self.directory_images_AutoEncoding_errors = self.directory_images + 'AutoEncoding/errors_reconstruction_fields'
         
         self.directory_images_AE_NODE_fields_reconstruction_scalar = self.directory_images + 'AE_NODE/fields_reconstruction_scalar'
         self.directory_images_AE_NODE_fields_reconstruction_2d = self.directory_images + 'AE_NODE/fields_reconstruction_2d'
         self.directory_images_AE_NODE_fields_reconstruction_faces = self.directory_images + 'AE_NODE/fields_reconstruction_faces'
         self.directory_images_AE_NODE_final_latent = self.directory_images + 'AE_NODE/final_latent'
         self.directory_images_AE_NODE_latent_per_variables = self.directory_images + 'AE_NODE/latent_per_variables'
+        self.directory_images_AE_NODE_errors_ = self.directory_images + 'AE_NODE/errors_reconstruction_fields'
+        self.directory_images_AE_NODE_errors_fields = self.directory_images + 'AE_NODE/errors_reconstruction_fields'
+        self.directory_images_AE_NODE_errors_latent = self.directory_images + 'AE_NODE/errors_reconstruction_latent'
         
         self.directory_images_Operator_Actions = self.directory_images + '/Operator_Actions'
         
@@ -43,6 +47,7 @@ class Model_Test:
         os.makedirs(self.directory_images+'/AutoEncoding/fields_reconstruction_faces', exist_ok=True)
         os.makedirs(self.directory_images+'/AutoEncoding/final_latent', exist_ok=True)
         os.makedirs(self.directory_images+'/AutoEncoding/latent_per_variables', exist_ok=True)
+        os.makedirs(self.directory_images+'/AutoEncoding/errors_reconstruction_fields', exist_ok=True)
         
         os.makedirs(self.directory_images+'/AE_NODE', exist_ok=True)
         os.makedirs(self.directory_images+'/AE_NODE/fields_reconstruction_scalar', exist_ok=True)
@@ -50,6 +55,8 @@ class Model_Test:
         os.makedirs(self.directory_images+'/AE_NODE/fields_reconstruction_faces', exist_ok=True)
         os.makedirs(self.directory_images+'/AE_NODE/final_latent', exist_ok=True)
         os.makedirs(self.directory_images+'/AE_NODE/latent_per_variables', exist_ok=True)
+        os.makedirs(self.directory_images+'/AE_NODE/errors_reconstruction_fields', exist_ok=True)
+        os.makedirs(self.directory_images+'/AE_NODE/errors_reconstruction_latent', exist_ok=True)
         os.makedirs(self.directory_images+'/Operator_Actions/', exist_ok=True)
         
         self.device = tc.device(information['device']) if tc.cuda.is_available() else tc.device("cpu")
@@ -107,7 +114,6 @@ class Model_Test:
             if self.autoencoding_latent_figures:
                 self.generate_pictures_latent_space(latent_vectors_per_trajectory_per_shape_AE, definitive_latent_vector_per_trajectory_AE,Time, True)
             
-            self.generate_pictures_errors_AE(error_per_trajectory_AE)
             #print Operator Actions of wanted simulations
             self.print_operator_actions(definitive_latent_vector_per_trajectory_AE)
             
@@ -196,7 +202,7 @@ class Model_Test:
             
     def autoencoding(self):
         
-        error_per_trajectory_AE = {'MSE_normalized_by_mean':[], 'L2_error_norm' : [], 'MSE_normalized_by_mean_per_time_step':[], 'L2_error_norm_per_time_step' : []}
+        error_per_trajectory_AE = {}
         reconstructed_fields_per_trajectory_AE = {}
         latent_vectors_per_trajectory_per_shape_AE = {}
         definitive_latent_vector_per_trajectory_AE = {}
@@ -231,7 +237,10 @@ class Model_Test:
                                                  reconstructed_fields, reconstructed_boundary_conditions, latent_in_per_shape, latent_boundaries_variables, definitive_latent_vector, fields, boundary_conditions)
             
             # compute errors
-            compute_errors(error_per_trajectory_AE, reconstructed_fields, fields, True)
+            compute_errors(trajectory, error_per_trajectory_AE, reconstructed_fields, fields, True)
+            
+            #print out errors in files
+            self.generate_pictures_errors_AE(trajectory, error_per_trajectory_AE, time)
         
             
         return error_per_trajectory_AE, reconstructed_fields_per_trajectory_AE, latent_vectors_per_trajectory_per_shape_AE, definitive_latent_vector_per_trajectory_AE, denormalized_fields_per_trajectory_AE, Time
@@ -450,9 +459,24 @@ class Model_Test:
         # generate figure of lower plenum
         
         self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, AE, shape_index = 3, variable_index = 0 ,field_name = 'P_lower_plenum', ylabel =  'P_lower_plenum', figsize=(5, 5), fontsize=16)
-        self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, AE, shape_index = 3, variable_index =1 , field_name = 'T_gas_lower_plenum', ylabel = 'T_gas_lower_plenum', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, AE, shape_index = 3, variable_index = 1 , field_name = 'T_gas_lower_plenum', ylabel = 'T_gas_lower_plenum', figsize=(5, 5), fontsize=16)
         self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, AE, shape_index = 3, variable_index = 2 , field_name = 'T_liq_lower_plenum', ylabel = 'T_liq_lower_plenum', figsize=(5, 5), fontsize=16)
-        self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, AE, shape_index = 3, variable_index =3 , field_name = 'x_alfa_lower_plenum', ylabel = 'x_alfa_lower_plenum', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, AE, shape_index = 3, variable_index = 3 , field_name = 'x_alfa_lower_plenum', ylabel = 'x_alfa_lower_plenum', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, AE, shape_index = 3, variable_index = 4 ,field_name = 'T_sat_lower_plenum', ylabel =  'T_sat_lower_plenum', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, AE, shape_index = 3, variable_index = 5 , field_name = 'P_H2_lower_plenum', ylabel = 'P_H2_lower_plenum', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, AE, shape_index = 3, variable_index = 6 , field_name = 'P_steam_lower_plenum', ylabel = 'P_steam_lower_plenum', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, AE, shape_index = 3, variable_index = 7 , field_name = 'm_gas_lower_plenum', ylabel = 'm_gas_lower_plenum', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, AE, shape_index = 3, variable_index = 8 ,field_name = 'm_liq_lower_plenum', ylabel =  'm_liq_vessel_lower_plenum', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, AE, shape_index = 3, variable_index = 9 , field_name = 'rho_gas_lower_plenum', ylabel = 'rho_gas_lower_plenum', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, AE, shape_index = 3, variable_index = 10 , field_name = 'rho_liq_lower_plenum', ylabel = 'rho_liq_lower_plenum', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, AE, shape_index = 3, variable_index = 11 , field_name = 'Q_liq_vap_lower_plenum', ylabel = 'Q_liq_vap_lower_plenum', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, AE, shape_index = 3, variable_index = 12 ,field_name = 'porosity_lower_plenum', ylabel =  'porosity_lower_plenum', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, AE, shape_index = 3, variable_index = 13 , field_name = 'V_deb_lower_plenum', ylabel = 'V_deb_lower_plenum', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, AE, shape_index = 3, variable_index = 14 , field_name = 'V_mag_lower_plenum', ylabel = 'V_mag_lower_plenum', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, AE, shape_index = 3, variable_index = 15 , field_name = 'm_magma_lower_plenum', ylabel = 'm_magma_lower_plenum', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, AE, shape_index = 3, variable_index = 16 ,field_name = 'm_debris_0_lower_plenum', ylabel =  'm_debris_0_lower_plenum', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(self.trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, AE, shape_index = 3, variable_index = 17 , field_name = 'm_debris_1_lower_plenum', ylabel = 'm_debris_1_lower_plenum', figsize=(5, 5), fontsize=16)
+
         
         # generate figure of faces
         
@@ -487,17 +511,56 @@ class Model_Test:
         #save fig of definitive latent vector
         self.plot_final_latent_space(self.trajectory_to_be_plotted, Time, definitive_latent_vector_per_trajectory_AE, definitive_latent_vector_per_trajectory_AE_NODE, AE, ylabel='final_latent_space', figsize=(15, 5), fontsize=16)
     
-    def generate_pictures_errors_AE(self, error_per_trajectory_AE):
+    def generate_pictures_errors_AE(self, trajectory:str, error_per_trajectory_AE:dict, time:tc.tensor): #error_per_trajectory_AE = {'MSE_normalized_by_mean':[], 'L2_error_norm' : [], 'MSE_normalized_by_mean_per_time_step':[], 'L2_error_norm_per_time_step' : []}
         dictionary_of_variables = build_dictionary_of_variables()
-        scalar_variables = [key for key in dictionary_of_variables['dictionary_of_input_variables_1']]
-        core_variables = [key for key in dictionary_of_variables['dictionary_of_input_variables_36']]
-        vessel_variables = [key for key in dictionary_of_variables['dictionary_of_input_variables_76']]
-        lower_plenum_variales = [key for key in dictionary_of_variables['dictionary_of_input_variables_76']]
-        faces_variables = [key for key in dictionary_of_variables['dictionary_of_input_variables_140']]
-        print(scalar_variables)
-        print(core_variables)
-        print(scalar_variables)
-        print(scalar_variables)
+        scalar_variables = [ key+'_scalar' for key in dictionary_of_variables['dictionary_of_input_variables_1']]
+        core_variables = [key+'_core' for key in dictionary_of_variables['dictionary_of_input_variables_36']]
+        vessel_variables = [key + '_vessel' for key in dictionary_of_variables['dictionary_of_input_variables_76']]
+        lower_plenum_variables = [key[:-7] + '_lower_plenum' for key in dictionary_of_variables['dictionary_of_input_variables_76']]
+        faces_variables = [key + '_faces' for key in dictionary_of_variables['dictionary_of_input_variables_140']]
+        all_variables = (scalar_variables + core_variables + vessel_variables + lower_plenum_variables + faces_variables)
+        
+        MSE_normalized_by_mean = []
+        for arr in error_per_trajectory_AE[trajectory]['MSE_normalized_by_mean']:
+            for error in arr:
+                MSE_normalized_by_mean+=tuple(error.cpu().numpy())
+                
+        L2_error_norm = []
+        for arr in error_per_trajectory_AE[trajectory]['L2_error_norm']:
+            for error in arr:
+                L2_error_norm+=tuple(error.cpu().numpy())
+            
+        MSE_normalized_by_mean_per_time_step = []
+        for arr in error_per_trajectory_AE[trajectory]['MSE_normalized_by_mean_per_time_step']:
+            for error in arr:
+                for count in range(error.size(-1)):     
+                    MSE_normalized_by_mean_per_time_step.append(error[:,count].cpu().numpy())
+                    
+        L2_error_norm_per_time_step = []
+        for arr in error_per_trajectory_AE[trajectory]['L2_error_norm_per_time_step']:
+            for error in arr:
+                for count in range(error.size(-1)): 
+                    L2_error_norm_per_time_step.append(error[:,count].cpu().numpy())
+                    
         #first deal with global errors per trajectory independent of time-steps
+        with open(self.directory_images_AutoEncoding_errors + f'/{trajectory}_global_errors.txt', 'w') as f:
+            f.write('Variable name\tMSE_normalized_by_mean\tL2_error_norm\n')
+            for i in range(len(all_variables)):
+                f.write(f'{all_variables[i]}\t{MSE_normalized_by_mean[i]}\t{L2_error_norm[i]}\n')
         
-        
+        #now deal with global errors per trajectory per time-steps
+        for count, variable_name in enumerate(all_variables):
+            plt.figure(figsize=(10,5))
+            plt.plot(time.cpu().numpy()/3600, MSE_normalized_by_mean_per_time_step[count])
+            plt.title(variable_name, fontsize = 16)
+            plt.xlabel('Time, h', fontsize = 16)
+            plt.ylabel('MSE normalized by mean', fontsize = 16)
+            plt.savefig(f'{self.directory_images_AutoEncoding_errors}/{trajectory}_{variable_name}_MSE_normalized_by_mean_per_time_step.png', dpi=300, bbox_inches='tight')
+            plt.close()
+            plt.figure(figsize=(10,5))
+            plt.title(variable_name, fontsize = 16)
+            plt.plot(time.cpu().numpy()/3600, L2_error_norm_per_time_step[count])
+            plt.xlabel('Time, h', fontsize = 16)
+            plt.ylabel('L2 error norm per time step', fontsize = 16)
+            plt.savefig(f'{self.directory_images_AutoEncoding_errors}/{trajectory}_{variable_name}_L2_error_norm_per_time_step.png', dpi=300, bbox_inches='tight')
+            plt.close()
