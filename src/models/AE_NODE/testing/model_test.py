@@ -106,17 +106,17 @@ class Model_Test:
         with tc.no_grad():
                 
             # auto-encoding verification
-            print('------------------------- Purely AutoEncoding -------------------------')
-            error_per_trajectory_AE, reconstructed_fields_per_trajectory_AE, latent_vectors_per_trajectory_per_shape_AE, definitive_latent_vector_per_trajectory_AE, denormalized_fields_per_trajectory, Time = self.autoencoding()
-            for trajectory_to_be_plotted in self.trajectories_to_be_plotted:
-                if self.autoencoding_figures:
-                    self.generate_pictures_fields(str(trajectory_to_be_plotted), reconstructed_fields_per_trajectory_AE, denormalized_fields_per_trajectory, Time, True)
+            #print('------------------------- Purely AutoEncoding -------------------------')
+            #error_per_trajectory_AE, reconstructed_fields_per_trajectory_AE, latent_vectors_per_trajectory_per_shape_AE, definitive_latent_vector_per_trajectory_AE, denormalized_fields_per_trajectory, Time = self.autoencoding()
+            #for trajectory_to_be_plotted in self.trajectories_to_be_plotted:
+            #    if self.autoencoding_figures:
+            #        self.generate_pictures_fields(str(trajectory_to_be_plotted), reconstructed_fields_per_trajectory_AE, denormalized_fields_per_trajectory, Time, True)
                     
-                if self.autoencoding_latent_figures:
-                    self.generate_pictures_latent_space(str(trajectory_to_be_plotted), latent_vectors_per_trajectory_per_shape_AE, definitive_latent_vector_per_trajectory_AE,Time, True)
+            #    if self.autoencoding_latent_figures:
+            #        self.generate_pictures_latent_space(str(trajectory_to_be_plotted), latent_vectors_per_trajectory_per_shape_AE, definitive_latent_vector_per_trajectory_AE,Time, True)
             
-            #print Operator Actions of wanted simulations
-            self.print_operator_actions(definitive_latent_vector_per_trajectory_AE)
+            # print Operator Actions of wanted simulations
+            #self.print_operator_actions(definitive_latent_vector_per_trajectory_AE)
             
             # actual prediction in latent space
             print('------------------------- Actual Prediction -------------------------')  
@@ -238,6 +238,8 @@ class Model_Test:
                                                  reconstructed_fields, reconstructed_boundary_conditions, latent_in_per_shape, latent_boundaries_variables, definitive_latent_vector, fields, boundary_conditions)
             
             # compute errors
+            for i in reconstructed_fields:
+                print(i.size())
             error_per_trajectory_AE = compute_errors(trajectory, reconstructed_fields, fields, True)
             
             #print out errors in files and generate images of errors in time
@@ -276,15 +278,23 @@ class Model_Test:
             final_latent_vector_per_trajectory_AE_NODE[trajectory] = predicted_latents
             
             # compute errors
-            error_fields_per_trajectory_AE_NODE = compute_errors(trajectory, reconstructed_fields, fields, True)
-            error_definitive_latent_per_trajectory_AE_NODE = compute_errors(trajectory, predicted_latents, definitive_latent_vector, True)
-            error_latent_per_variable_per_trajectory_AE_NODE = compute_errors(trajectory, reconstructed_latent_vectors_per_field, per_variable_latent_vectors, True)
-            
+            predicted_latents = [predicted_latents.unsqueeze(0)]
+            definitive_latent_vector = [definitive_latent_vector.unsqueeze(0)]
+            reconstructed_latent_vectors_per_field = [x.unsqueeze(0) for x in reconstructed_latent_vectors_per_field]
+            per_variable_latent_vectors = [x.unsqueeze(0) for x in per_variable_latent_vectors]
+
+            error_fields_per_trajectory_AE_NODE = compute_errors(trajectory, reconstructed_fields, fields, False)
+            print('e')
+            error_definitive_latent_per_trajectory_AE_NODE = compute_errors(trajectory, predicted_latents, definitive_latent_vector, False)
+            print('f')
+            error_latent_per_variable_per_trajectory_AE_NODE = compute_errors(trajectory, reconstructed_latent_vectors_per_field, per_variable_latent_vectors, False)
+            print('g')
             #print out errors in files and generate images of errors in time for field reconstruction
             self.generate_pictures_errors_field_reconstruction(trajectory, error_fields_per_trajectory_AE_NODE, time, self.directory_images_AE_NODE_errors_fields)
             
             #print out errors in files and generate images of errors in time for field reconstruction
-            self.generate_pictures_errors_NODE(trajectory, error_fields_per_trajectory_AE_NODE, error_definitive_latent_per_trajectory_AE_NODE, error_latent_per_variable_per_trajectory_AE_NODE)
+            self.generate_pictures_errors_latent_NODE_definitive(trajectory, error_definitive_latent_per_trajectory_AE_NODE, time)
+            self.generate_pictures_errors_latent_NODE_per_shape(trajectory, error_latent_per_variable_per_trajectory_AE_NODE, time)
             
         return error_fields_per_trajectory_AE_NODE, error_definitive_latent_per_trajectory_AE_NODE, error_latent_per_variable_per_trajectory_AE_NODE, reconstructed_fields_per_trajectory_AE_NODE, latent_vectors_per_trajectory_per_shape_AE_NODE, final_latent_vector_per_trajectory_AE_NODE
         
@@ -573,7 +583,7 @@ class Model_Test:
                 plt.savefig(f'{saving_directory}/{trajectory}_{variable_name}_L2_error_norm_per_time_step.png', dpi=300, bbox_inches='tight')
                 plt.close()
             
-    def generate_pictures_errors_NODE(self, trajectory:str, error_fields_per_trajectory_AE_NODE:dict, error_definitive_latent_per_trajectory_AE_NODE:dict, error_latent_per_variable_per_trajectory_AE_NODE:dict): 
+    def generate_pictures_errors_latent_NODE_per_shape(self, trajectory:str, latent_error :dict, time:tc.tensor): 
         dictionary_of_variables = build_dictionary_of_variables()
         
         scalar_variables = [ key+'_scalar' for key in dictionary_of_variables['dictionary_of_input_variables_1']]
@@ -584,46 +594,89 @@ class Model_Test:
         all_variables = (scalar_variables + core_variables + vessel_variables + lower_plenum_variables + faces_variables)
         
         MSE_normalized_by_mean = []
-        for arr in error_per_trajectory_AE[trajectory]['MSE_normalized_by_mean']:
+        for arr in latent_error[trajectory]['MSE_normalized_by_mean']:
+            print(arr.size())
             for error in arr:
+                print(error)
                 MSE_normalized_by_mean+=tuple(error.cpu().numpy())
                 
         L2_error_norm = []
-        for arr in error_per_trajectory_AE[trajectory]['L2_error_norm']:
+        for arr in latent_error[trajectory]['L2_error_norm']:
             for error in arr:
                 L2_error_norm+=tuple(error.cpu().numpy())
             
         MSE_normalized_by_mean_per_time_step = []
-        for arr in error_per_trajectory_AE[trajectory]['MSE_normalized_by_mean_per_time_step']:
+        for arr in latent_error[trajectory]['MSE_normalized_by_mean_per_time_step']:
             for error in arr:
                 for count in range(error.size(-1)):     
                     MSE_normalized_by_mean_per_time_step.append(error[:,count].cpu().numpy())
                     
         L2_error_norm_per_time_step = []
-        for arr in error_per_trajectory_AE[trajectory]['L2_error_norm_per_time_step']:
+        for arr in latent_error[trajectory]['L2_error_norm_per_time_step']:
             for error in arr:
                 for count in range(error.size(-1)): 
                     L2_error_norm_per_time_step.append(error[:,count].cpu().numpy())
-                    
-        #first deal with global errors per trajectory independent of time-steps
-        with open(self.directory_images_AutoEncoding_errors + f'/{trajectory}_global_errors.txt', 'w') as f:
-            f.write('Variable name\tMSE_normalized_by_mean\tL2_error_norm\n')
-            for i in range(len(all_variables)):
-                f.write(f'{all_variables[i]}\t{MSE_normalized_by_mean[i]}\t{L2_error_norm[i]}\n')
+                
+        if trajectory in self.trajectories_to_be_plotted:
+            #now deal with global errors per trajectory per time-steps
+            for count, variable_name in enumerate(all_variables):
+                plt.figure(figsize=(10,5))
+                plt.plot(time.cpu().numpy()/3600, MSE_normalized_by_mean_per_time_step[count])
+                plt.title(variable_name, fontsize = 16)
+                plt.xlabel('Time, h', fontsize = 16)
+                plt.ylabel('MSE normalized by mean', fontsize = 16)
+                plt.savefig(f'{self.directory_images_AutoEncoding_errors}/{trajectory}_{variable_name}_MSE_normalized_by_mean_per_time_step.png', dpi=300, bbox_inches='tight')
+                plt.close()
+                plt.figure(figsize=(10,5))
+                plt.title(variable_name, fontsize = 16)
+                plt.plot(time.cpu().numpy()/3600, L2_error_norm_per_time_step[count])
+                plt.xlabel('Time, h', fontsize = 16)
+                plt.ylabel('L2 error norm per time step', fontsize = 16)
+                plt.savefig(f'{self.directory_images_AutoEncoding_errors}/{trajectory}_{variable_name}_L2_error_norm_per_time_step.png', dpi=300, bbox_inches='tight')
+                plt.close()
+                
+    def generate_pictures_errors_latent_NODE_definitive(self, trajectory:str, latent_error :dict, time:tc.tensor): 
         
-        #now deal with global errors per trajectory per time-steps
-        for count, variable_name in enumerate(all_variables):
+        MSE_normalized_by_mean = []
+        for arr in latent_error[trajectory]['MSE_normalized_by_mean']:
+            for error in arr:
+                MSE_normalized_by_mean+=tuple(error.cpu().numpy())
+                
+        L2_error_norm = []
+        for arr in latent_error[trajectory]['L2_error_norm']:
+            for error in arr:
+                L2_error_norm+=tuple(error.cpu().numpy())
+            
+        MSE_normalized_by_mean_per_time_step = []
+        for arr in latent_error[trajectory]['MSE_normalized_by_mean_per_time_step']:
+            for error in arr:
+                for count in range(error.size(-1)):     
+                    MSE_normalized_by_mean_per_time_step.append(error[:,count].cpu().numpy())
+                    
+        L2_error_norm_per_time_step = []
+        for arr in latent_error[trajectory]['L2_error_norm_per_time_step']:
+            for error in arr:
+                for count in range(error.size(-1)): 
+                    L2_error_norm_per_time_step.append(error[:,count].cpu().numpy())
+        #save files with average error in latent space per dimension
+        with open(self.directory_images_AE_NODE_errors_definitive_latent + f'/{trajectory}_latent_errors_averaged_across_time.txt', 'w') as f:
+            f.write('Dimension\tMSE_normalized_by_mean\tL2_error_norm\n')
+            for i in range(len(MSE_normalized_by_mean)):
+                f.write(f'{i}\t{MSE_normalized_by_mean[i]}\t{L2_error_norm[i]}\n') 
+        
+        if trajectory in self.trajectories_to_be_plotted:
+            #now deal with global errors per trajectory per time-steps
             plt.figure(figsize=(10,5))
-            plt.plot(time.cpu().numpy()/3600, MSE_normalized_by_mean_per_time_step[count])
-            plt.title(variable_name, fontsize = 16)
-            plt.xlabel('Time, h', fontsize = 16)
-            plt.ylabel('MSE normalized by mean', fontsize = 16)
-            plt.savefig(f'{self.directory_images_AutoEncoding_errors}/{trajectory}_{variable_name}_MSE_normalized_by_mean_per_time_step.png', dpi=300, bbox_inches='tight')
+            for i in range(len(MSE_normalized_by_mean)):
+                plt.plot(time.cpu().numpy()/3600, np.array(MSE_normalized_by_mean_per_time_step)[i,:])
+                plt.xlabel('Time, h', fontsize = 16)
+                plt.ylabel('MSE normalized by mean', fontsize = 16)
+            plt.savefig(f'{self.directory_images_AE_NODE_errors_definitive_latent}/{trajectory}_MSE_normalized_by_mean_per_time_step.png', dpi=300, bbox_inches='tight')
             plt.close()
             plt.figure(figsize=(10,5))
-            plt.title(variable_name, fontsize = 16)
-            plt.plot(time.cpu().numpy()/3600, L2_error_norm_per_time_step[count])
-            plt.xlabel('Time, h', fontsize = 16)
-            plt.ylabel('L2 error norm per time step', fontsize = 16)
-            plt.savefig(f'{self.directory_images_AutoEncoding_errors}/{trajectory}_{variable_name}_L2_error_norm_per_time_step.png', dpi=300, bbox_inches='tight')
+            for i in range(len(MSE_normalized_by_mean)):
+                plt.plot(time.cpu().numpy()/3600, np.array(L2_error_norm_per_time_step)[i,:])
+                plt.xlabel('Time, h', fontsize = 16)
+                plt.ylabel('L2 error norm per time step', fontsize = 16)
+            plt.savefig(f'{self.directory_images_AE_NODE_errors_definitive_latent}/{trajectory}_L2_error_norm_per_time_step.png', dpi=300, bbox_inches='tight')
             plt.close()
