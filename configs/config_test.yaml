@@ -8,4 +8,4 @@ autoencoding_latent_figures : true
 latent_prediction_figures : true
 actual_fields_prediction_figures: true
 actual_latent_prediction_figures: true
-operator_actions_indeces : [1,2]
+operator_actions_indeces : [1]
