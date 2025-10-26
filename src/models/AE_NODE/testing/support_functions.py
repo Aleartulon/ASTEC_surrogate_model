@@ -63,7 +63,7 @@ def compute_errors(trajectory:str, input: list, target:list, is_AE:bool):
         #compute L2_error_norm_per_time_step
         error = L2_error_norm(i, target[count], per_time_step = True)
         dictionary_of_errors[str(trajectory)]['L2_error_norm_per_time_step'].append(error)
-        
+    
     return dictionary_of_errors
 
 def MSE_normalized_by_mean(input:list, target:list, per_time_step: bool = False):
