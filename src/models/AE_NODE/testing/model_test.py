@@ -195,6 +195,7 @@ class Model_Test:
             ax.set_ylim([minimum-2, maximum+2])
             ax.set_xlabel('Time, h', fontsize=16)
             ax.set_ylabel('Operator actions', fontsize=16)
+            ax.set_title(f'Latent space evolution, trajectory {i}, and instants of operator actions')
             
             # Add text box to the right
             info_str = '\n'.join(all_info[idx])
@@ -352,12 +353,14 @@ class Model_Test:
     def plot_scalar_values(self, trajectory, Time, reconstructed_fields, denormalized_fields, AE : bool,  shape_index = 0, variable_index = 0,field_name='m_cum_H2', ylabel='m_cum_H2', figsize=(5, 5), fontsize=16):
         if AE:
             index_time = 0
+            label_prediction = 'AutoEncoder prediction'
         else:
             index_time = 1
+            label_prediction = 'NODE prediction'
             
         plt.figure(figsize=figsize)
         plt.plot(Time[trajectory][index_time:].cpu()[:]/ 3600.0, reconstructed_fields[trajectory][shape_index][:, :, variable_index].cpu()[0][:], 
-                label='AutoEncoder prediction')
+                label=label_prediction)
         plt.plot(Time[trajectory][index_time:].cpu()[:]/ 3600.0, denormalized_fields[trajectory][shape_index][:, :, variable_index].cpu()[0][:], 
                 label='Ground truth')
         plt.xlabel('Time, h', fontsize=fontsize)
@@ -447,16 +450,18 @@ class Model_Test:
             if not AE:
                 plt.plot(Time[trajectory][index_time:].cpu()[:]/ 3600.0, definitive_latent_vector_per_trajectory_AE_NODE[trajectory][:,dimension].cpu()[:], label='From NODE, dimension: ' + str(dimension+1), marker='+', markersize=3, color=color)
 
-        if not AE:
-            plt.title('-- from Encoder, + from NODE')
             
         plt.xlabel('Time, h', fontsize=fontsize)
         plt.ylabel(ylabel, fontsize=fontsize)
-        plt.title(f'Trajectory number {trajectory}, {definitive_latent_vector_per_trajectory_AE[trajectory].size(-1)} dimensions', fontsize = fontsize)
-        if AE:
-            plt.savefig(f'{self.directory_images_AutoEncoding_final_latent}/{trajectory}_{ylabel}.png', dpi=300, bbox_inches='tight')
-        else:
+        
+        if not AE:
+            plt.title(f'Trajectory number {trajectory}, {definitive_latent_vector_per_trajectory_AE[trajectory].size(-1)} dimensions, -- from Encoder, + from NODE', fontsize = fontsize)
             plt.savefig(f'{self.directory_images_AE_NODE_final_latent}/{trajectory}_{ylabel}.png', dpi=300, bbox_inches='tight')
+        else:
+            plt.title(f'Trajectory number {trajectory}, {definitive_latent_vector_per_trajectory_AE[trajectory].size(-1)} dimensions', fontsize = fontsize)
+            plt.savefig(f'{self.directory_images_AutoEncoding_final_latent}/{trajectory}_{ylabel}.png', dpi=300, bbox_inches='tight')
+            
+            
         plt.close()
             
     def generate_pictures_fields(self, trajectory_to_be_plotted:str, reconstructed_fields_per_trajectory:dict, denormalized_fields_per_trajectory:dict, Time:dict, AE: bool):

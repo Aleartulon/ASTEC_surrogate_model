@@ -129,7 +129,10 @@ class Training():
             valid_real_per_variable = np.zeros((self.epochs, self.number_of_different_domains-1))
             valid_regularization = np.zeros(self.epochs)
             valid_loss_tot = np.zeros(self.epochs)
-        
+            
+            maximum_loss_coefficient_AR = self.loss_coefficients['AR']
+            self.loss_coefficients['AR'] = 0.0
+            
             for i in range(self.epochs):
 
                 early_stopping += 1
@@ -154,7 +157,11 @@ class Training():
                     before_training = time.time()
                     train_l1_data, train_l1_per_variable_data, train_l2_TF_data, train_l2_AR_data, train_l3_data, train_regularization_data, train_loss_data = self.train_epoch([self.loss_coefficients['AE'],self.loss_coefficients['TF'],self.loss_coefficients['AR'],self.loss_coefficients['Random_DT']])
                     before_validation = time.time()
-                    self.loss_coefficients['AR'] += self.loss_coefficients['AR_strength']
+                    
+                    if self.loss_coefficients['AR'] >= maximum_loss_coefficient_AR:
+                        self.loss_coefficients['AR'] = maximum_loss_coefficient_AR
+                    else:
+                        self.loss_coefficients['AR'] += self.loss_coefficients['AR_strength']
                     valid_l1_data, valid_l1_per_variable_data, valid_l1_unnorm_data, valid_l1_unnorm_per_variable_data, valid_l2_TF_data, valid_l2_AR_data, valid_l3_data, valid_real_data, valid_real_per_variable_data, valid_regularization_data, valid_loss_data = self.valid_epoch([1,1,1,1])
                 
                 time2 = time.time()

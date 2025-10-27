@@ -28,6 +28,7 @@ class AE_NODE:
         self.data_validation_path = config_training['data_path'] + '/' + model_information['data_validation_file']
         self.batch_size = config_training['batch_size']
         self.early_stopping = config_training['early_stopping']
+        self.number_of_workers = config_training['number_of_workers']
         
         with open(config_training['data_path']+'/maxima_or_mean.pkl', 'rb') as f:
             self.maxima_or_mean = pickle.load(f)
@@ -78,6 +79,7 @@ class AE_NODE:
             {'params': self.f.parameters(), 'weight_decay': model_information['weight_decay']['dfnn']},
             {'params': self.decoder.parameters(), 'weight_decay': model_information['weight_decay']['decoder']}
         ]
+            
         #move the models to the device
         self.encoder.to(self.device)
         self.f.to(self.device)
@@ -90,11 +92,7 @@ class AE_NODE:
         self.scheduler = tc.optim.lr_scheduler.ExponentialLR(self.optim, config_training['gamma_lr'])
         
         #create datasets and dataloader for training and validation 
-        dataset_training = ASTEC_Dataset(self.data_training_path)
-        self.training_loader = DataLoader(dataset_training, batch_size = self.batch_size, num_workers=config_training['number_of_workers'], shuffle=True,drop_last=True,pin_memory=True)
-        
-        dataset_validation = ASTEC_Dataset(self.data_validation_path)
-        self.validation_loader = DataLoader(dataset_validation, batch_size = self.batch_size, num_workers=config_training['number_of_workers'], shuffle=True,drop_last=True,pin_memory=True)
+        self.build_dataset(self.batch_size)
         
         for fields, _, _, _ in self.validation_loader:
             self.number_of_different_domains = len(fields)+1
@@ -105,6 +103,18 @@ class AE_NODE:
         if not model_information['is_coupled'][0]: 
             model_information['loss_coeff_TF_AR_together'] = model_information['loss_coeff_not_coupled']
             
+    def build_dataset(self, batch_size:int, time_window: int):
+        
+        #build dataset made out of 'time_window' chunks
+        
+        
+        # build dataset and dataloader
+        dataset_training = ASTEC_Dataset(self.data_training_path)
+        self.training_loader = DataLoader(dataset_training, batch_size = batch_size, num_workers = self.number_of_workers, shuffle=True,drop_last=True,pin_memory=True)
+        
+        dataset_validation = ASTEC_Dataset(self.data_validation_path)
+        self.validation_loader = DataLoader(dataset_validation, batch_size = batch_size, num_workers = self.number_of_workers, shuffle=True,drop_last=True,pin_memory=True)
+        
     def start_training(self):
         training_process = Training(self)
         training_process.training()

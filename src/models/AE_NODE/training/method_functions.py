@@ -192,7 +192,7 @@ class Training_Losses():
 
         # self.k = 1 is Euler
         b = tc.zeros((self.k, definitive_latent.size(0), definitive_latent.size(1)) , device= self.device)
-        b[0, :,:] = self.f(definitive_latent, latent_boudaries )
+        b[0, :,:] = self.f(definitive_latent, latent_boudaries)
         final_sum = self.f(definitive_latent, latent_boudaries)*self.RK[str(self.k)][-1][1]
 
         for i in range(self.k-1):
