@@ -13,7 +13,7 @@ def build_dataset(batch_size:int, time_window: int, data_training_path: str, dat
     validation_path = data_validation_path +  str(time_window) + '.h5'
     
     #build dataset made out of 'time_window' chunks
-    subprocess.run(['python', '-m', 'src.dataset_generation.main', '--t_W', str(time_window)])
+    subprocess.run(['python', '-m', 'src.dataset_generation.main', '--t_W', str(time_window), '--testing', 'false'])
     
     # build dataset and dataloader
     dataset_training = ASTEC_Dataset(training_path)

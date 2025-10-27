@@ -36,6 +36,9 @@ class AE_NODE:
         self.dynamic_dataset_generation_during_training = config_training['dynamic_dataset_generation_during_training']
         self.time_windows = config_training['time_windows']
         
+        if len(self.batch_sizes) + len(self.waiting_epochs_before_new_dataset_creation) + len(self.time_windows) != len(self.time_windows) * 3:
+            raise TypeError("Length of array of time_windows is not equal to length of array of batch_sizes or of waiting_epochs_before_new_dataset_creation")
+        
         #create datasets and dataloader for training and validation 
         if self.dynamic_dataset_generation_during_training:
             

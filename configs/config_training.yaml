@@ -1,15 +1,15 @@
 physics_model : '../../../../scratch/ROM_datasets_ale/ASTEC/saved_logs/' # this is the Path to a directory for the training on a given dataset
-description : '/more_powerful/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
+description : '/dynamic_autoregressive/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
 data_path : '../../../../scratch/ROM_datasets_ale/ASTEC/' #path of training and validation data
 model: 'AE_NODE'
 epochs: 5000 #maximum number of epochs
 learning_rate: 0.002 #initial learning rate
 gamma_lr: 0.999 # gamma of  tc.optim.lr_scheduler.ExponentialLR()
 early_stopping: 200
-batch_sizes: [32,32,32,32,32,32,32,32] #batch size
+batch_sizes: [32,32,16,16,8,8,4,1, 1] #batch size
 dynamic_dataset_generation_during_training : true
 time_windows : [10, 50, 100, 200, 500, 1000, 2000, 5000, 7000]
-waiting_epochs_before_new_dataset_creation : [1, 1, 1, 2, 2, 2, 2, 2]
+waiting_epochs_before_new_dataset_creation : [100, 100, 100, 100, 100, 100, 100, 100, 100]
 number_of_workers: 8
 checkpoint: false  # if true uses existing checkpoint
 device : 'cuda:2' #device where to train

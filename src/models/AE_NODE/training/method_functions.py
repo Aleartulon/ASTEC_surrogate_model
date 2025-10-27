@@ -108,8 +108,6 @@ class Training_Losses():
             return tc.tensor(0.0), tc.tensor(0.0)
             
         if which_technique == 'fully_autoregressive' or (not train):  #Encode initial condition and evolve in latent. Always done at validation to compute the actual final loss autoregressively
-            loss_final = tc.tensor(0., device = self.device)
-            loss_final_per_variables = tc.zeros(self.number_of_different_domains, device = self.device)
             l2_AR = tc.tensor(0., device = self.device)
 
             if (not train):
@@ -118,8 +116,9 @@ class Training_Losses():
                 reconstructed_fields_from_latent = [tc.zeros_like(field) for field in fields]
                 
             reconstructed_latent = tc.zeros_like(true_latent)[:,1:,:]
-                
-            next_latent, _, _ , _ = self.encoder(initial_condition)
+            
+            with tc.no_grad():
+                next_latent, _, _ , _ = self.encoder(initial_condition)
             
             for count in range(number_of_time_steps-1):
                 

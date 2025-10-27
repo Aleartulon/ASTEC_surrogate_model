@@ -10,8 +10,8 @@ from src.dataset_generation.astec_class import Astec_Dataset
 def main():
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description='Build ASTEC dataset')
-    parser.add_argument('--t_W', type=int, default=None,
-                        help='Override temporal window for time subsets')
+    parser.add_argument('--t_W', type=int, default=None,help='Override temporal window for time subsets')
+    parser.add_argument('--testing', type=lambda x: x.lower() == 'true', default=None)
     
     args = parser.parse_args()
     
@@ -21,6 +21,8 @@ def main():
     # Override t_W if provided via command line
     if args.t_W is not None:
         config_dataset['t_W'] = args.t_W
+    if args.testing is not None:
+        config_dataset['testing'] = args.testing
     
     # Initialize dataset
     astec_dataset = Astec_Dataset(config_dataset)
