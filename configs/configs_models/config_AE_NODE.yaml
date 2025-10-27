@@ -1,4 +1,6 @@
 #Data information
+data_training_file_dinamic: 'data_training_normalized_t_W_'
+data_validation_file_dinamic: 'data_validation_normalized_t_W_'
 data_training_file : 'data_training_normalized_t_W_10.h5'
 data_validation_file : 'data_validation_normalized_t_W_10.h5'
 #Training information
@@ -11,8 +13,8 @@ loss_coefficients: # coefficients that are multiplied to the loss function terms
   AR_strength: 0.0001
 
 k: 1 # stage of the Runge-Kutta solver for the latent dynamics
-time_of_AE: 10 # number of initial epochs where only the AutoEncoder is trained, i.e., loss_coeff_TF_AR_together = [1, 0, 0, 0]. In parallel of this a linear warm-up of the learning rate is performed
-time_only_TF : 200 #number of initial epochs after warm up where only TF and not AR approach is used
+time_of_AE: 1 # number of initial epochs where only the AutoEncoder is trained, i.e., loss_coeff_TF_AR_together = [1, 0, 0, 0]. In parallel of this a linear warm-up of the learning rate is performed
+time_only_TF : 0 #number of initial epochs after warm up where only TF and not AR approach is used
 clipping: [1, 2.5] #[if 1 clipping is applied to f, maximum norm allowed to gradients]
 is_coupled : [true, 'AE'] #if true the AutoEncoder (AE) is trained coupled with the NODE. if false, if 'AE' the AE is trained, if 'NODE' the NODE is trained.
 loss_coeff_not_coupled : [0, 1, 1, 1] #if is_coupled[0] == false, adjust accordingly the loss coefficients
@@ -23,7 +25,6 @@ autoregressive_step:
   which_technique: 'fully_autoregressive' # this can be 'TBPP_from_end', 'TBPP_from_start', 'fully_autoregressive'
   TBPP_from_end_config: [1, 30, 40]  # [if 1 k_2 increases dynamically from k_2=1, number of epochs after which k_2 is increased by 1, max rvalue of k_2]
   TBPP_from_start_config: [1, 30, 40] #[if 1 k_2 increases dynamically from k_2=1, number of epochs after which k_2 is increased by 1, max rvalue of k_2]
-  time_windows : [10, 50, 100, 200, 500, 1000, 2000, 5000, 7000]
 
 lambda_regularization: 0.001 #coefficients in front of the regularization term for the latent vector
 auto_encoding:
