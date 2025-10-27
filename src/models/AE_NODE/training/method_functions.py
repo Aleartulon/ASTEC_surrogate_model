@@ -127,7 +127,7 @@ class Training_Losses():
                 reconstructed_latent[:,count,:] = next_latent
                 
                 if (not train):
-                    output_decoder, _, _ = self.decoder(next_latent)
+                    output_decoder, _ = self.decoder(next_latent)
                     output_decoder = [tensor.unsqueeze(1) for tensor in output_decoder]
         
                     for index, field in enumerate(output_decoder):

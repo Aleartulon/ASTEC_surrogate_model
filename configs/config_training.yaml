@@ -1,5 +1,5 @@
 physics_model : '../../../../scratch/ROM_datasets_ale/ASTEC/saved_logs/' # this is the Path to a directory for the training on a given dataset
-description : '/dynamics_first_trials_/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
+description : '/more_powerful/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
 data_path : '../../../../scratch/ROM_datasets_ale/ASTEC/' #path of training and validation data
 model: 'AE_NODE'
 epochs: 5000 #maximum number of epochs
