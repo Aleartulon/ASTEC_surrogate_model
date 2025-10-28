@@ -291,8 +291,8 @@ class Model_Test:
             # compute errors
             predicted_latents = [predicted_latents.unsqueeze(0)]
             definitive_latent_vector = [definitive_latent_vector.unsqueeze(0)]
-            reconstructed_latent_vectors_per_field = [x.unsqueeze(0) for x in reconstructed_latent_vectors_per_field]
-            per_shape_latent_vectors = [x.unsqueeze(0) for x in per_shape_latent_vectors]
+            reconstructed_latent_vectors_per_field = [x.unsqueeze(0) for x in reconstructed_latent_vectors_per_field[:-1]] #-1 because it removes the None coming from the latent boundary not given (check output of Encoder from src.models.AE_NODE.training.arachitecture)
+            per_shape_latent_vectors = [x.unsqueeze(0) for x in per_shape_latent_vectors[:-1]] #-1 because it removes the None coming from the latent boundary not given (check output of Encoder from src.models.AE_NODE.training.arachitecture)
             
             error_fields_per_trajectory_AE_NODE = compute_errors(trajectory, reconstructed_fields, fields, False)
             error_definitive_latent_per_trajectory_AE_NODE = compute_errors(trajectory, predicted_latents, definitive_latent_vector, False)
