@@ -12,6 +12,7 @@ def main():
     parser = argparse.ArgumentParser(description='Build ASTEC dataset')
     parser.add_argument('--t_W', type=int, default=None,help='Override temporal window for time subsets')
     parser.add_argument('--testing', type=lambda x: x.lower() == 'true', default=None)
+    parser.add_argument('--path_to_hdf5', type=str, default=None)
     
     args = parser.parse_args()
     
@@ -23,6 +24,8 @@ def main():
         config_dataset['t_W'] = args.t_W
     if args.testing is not None:
         config_dataset['testing'] = args.testing
+    if args.path_to_hdf5 is not None:
+        config_dataset['path_to_hdf5'] = args.path_to_hdf5
     
     # Initialize dataset
     astec_dataset = Astec_Dataset(config_dataset)

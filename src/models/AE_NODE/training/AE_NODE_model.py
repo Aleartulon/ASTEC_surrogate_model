@@ -24,6 +24,7 @@ class AE_NODE:
         self.autoregressive_step = model_information['autoregressive_step']
         self.lambda_regularization = model_information['lambda_regularization']
         
+        self.data_path = config_training['data_path']
         self.data_training_path = config_training['data_path'] + '/' + model_information['data_training_file']
         self.data_validation_path = config_training['data_path'] + '/' + model_information['data_validation_file']
         self.data_training_path_dynamic = config_training['data_path'] + '/' + model_information['data_training_file_dinamic']
@@ -42,7 +43,7 @@ class AE_NODE:
         #create datasets and dataloader for training and validation 
         if self.dynamic_dataset_generation_during_training:
             
-            self.training_loader, self.validation_loader = build_dataset(self.batch_sizes[0], self.time_windows[0], self.data_training_path_dynamic, self.data_validation_path_dynamic, self.number_of_workers)
+            self.training_loader, self.validation_loader = build_dataset(self.batch_sizes[0], self.time_windows[0], self.data_training_path_dynamic, self.data_validation_path_dynamic, self.number_of_workers, self.data_path)
         else:
             dataset_training = ASTEC_Dataset(self.data_training_path)
             self.training_loader = DataLoader(dataset_training, batch_size = self.batch_sizes[0], num_workers = self.number_of_workers, shuffle=True,drop_last=True,pin_memory=True)
