@@ -6,7 +6,7 @@ data_validation_file : 'data_validation_normalized_t_W_10.h5'
 #Training information
 
 loss_coefficients: # coefficients that are multiplied to the loss function terms, signaling the relative importance of each [AE, TF, AUTOREGRESSIVE, TIME_GENERALIZATION]
-  AE: 1
+  AE: [1,1] #first one is for the field reconstruction, second one for the latent reconstruction per shape
   TF: 1
   AR: 1
   Random_DT: 1
@@ -113,7 +113,7 @@ auto_encoding:
 n_layers_f: 2 #number of hidden Dense layers which build up the function f
 parameter_information: "concatenation" #how the parameter information is passed to f. either 'concatenation' or 'FiLM'
 n_FiLM_conditioning : 1 #number of FiLM layers (if FiLM is chosen instead of concatenation). FiLM = 1 only applies to the latent vector
-n_neurons_f: 50 #number of neurons of each layer of f
+n_neurons_f: 100 #number of neurons of each layer of f
 NODE: true
 
 #Global

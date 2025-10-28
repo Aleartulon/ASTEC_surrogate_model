@@ -42,7 +42,7 @@ class Encoder(nn.Module):
         latent_faces_variables = self.encoder_faces_variables(faces_variables)
         
         #concatenate latent variables without latent_boundaries_variables
-        latent_in_variables_separated = [latent_scalar_variables, latent_plenum_variables, latent_core_variables, latent_vessel_variables, latent_faces_variables] #useful at testing
+        latent_in_variables_separated = [latent_scalar_variables, latent_plenum_variables, latent_core_variables, latent_vessel_variables, latent_faces_variables, latent_boundaries_variables] #useful at testing
         latent_in_variables = tc.concatenate((latent_scalar_variables, latent_plenum_variables, latent_core_variables, latent_vessel_variables, latent_faces_variables), axis = -1)
         regularization_latent = self.l1_latent_regularization(latent_in_variables, self.lambda_regularization, latent_boundaries_variables) #regularization latent space 
         definitive_latent = self.final_reduction(latent_in_variables) #final reduced vector of inner fields
@@ -177,7 +177,7 @@ class Decoder(nn.Module):
         latent_vessel_variables = concatenated_latents[:,self.indeces['auto_encoder_core']:self.indeces['auto_encoder_vessel']]
         latent_faces_variables = concatenated_latents[:,self.indeces['auto_encoder_vessel']:self.indeces['auto_encoder_faces']]
         
-        latent_in_variables_separated = [latent_scalar_variables, latent_plenum_variables, latent_core_variables, latent_vessel_variables, latent_faces_variables] #useful at testing
+        latent_in_variables_separated = [latent_scalar_variables, latent_plenum_variables, latent_core_variables, latent_vessel_variables, latent_faces_variables, reconstructed_boundaries_variables] #useful at testing
         reconstructed_scalar_variables = self.decoder_scalar_variables(latent_scalar_variables)
         reconstructed_plenum_variables = self.decoder_plenum_variables(latent_plenum_variables)
         reconstructed_core_variables = self.decoder_core_variables(latent_core_variables)

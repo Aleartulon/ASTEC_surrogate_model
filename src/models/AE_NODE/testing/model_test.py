@@ -61,6 +61,7 @@ class Model_Test:
         os.makedirs(self.directory_images+'/Operator_Actions/', exist_ok=True)
         
         self.device = tc.device(information['device']) if tc.cuda.is_available() else tc.device("cpu")
+        print('Device: ', self.device)
         self.trajectories_to_be_plotted = information['trajectories_to_be_plotted']
         self.autoencoding_figures = information['autoencoding_figures']
         self.autoencoding_latent_figures = information['autoencoding_latent_figures']
