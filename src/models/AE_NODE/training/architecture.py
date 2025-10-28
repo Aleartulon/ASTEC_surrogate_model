@@ -50,7 +50,7 @@ class Encoder(nn.Module):
         
         return definitive_latent, latent_in_variables_separated, latent_boundaries_variables, regularization_latent
     
-    def l1_latent_regularization(self, latent_fields: list, lambda_l1: float, latent_boundaries: tc.tensor = None):
+    def l1_latent_regularization(self, latent_fields: tc.tensor, lambda_l1: float, latent_boundaries: tc.tensor = None):
         
         if lambda_l1 != 0:
             if latent_boundaries is not None:

@@ -129,7 +129,11 @@ class Training():
             valid_real_per_variable = np.zeros((self.epochs, self.number_of_different_domains-1))
             valid_regularization = np.zeros(self.epochs)
             valid_loss_tot = np.zeros(self.epochs)
-        
+            
+            maximum_loss_coefficient_AR = self.loss_coefficients['AR']
+            self.loss_coefficients['AR'] = 0.0
+            before_next_window_change = self.waiting_epochs_before_new_dataset_creation[0]
+            how_many_datasets_creations = 1
             for i in range(self.epochs):
 
                 early_stopping += 1
@@ -150,14 +154,29 @@ class Training():
                     train_l1_data, train_l1_per_variable_data, train_l2_TF_data, train_l2_AR_data, train_l3_data, train_regularization_data, train_loss_data = self.train_epoch([self.loss_coefficients['AE'],self.loss_coefficients['TF'],0, self.loss_coefficients['Random_DT']])
                     valid_l1_data, valid_l1_per_variable_data, valid_l1_unnorm_data, valid_l1_unnorm_per_variable_data, valid_l2_TF_data, valid_l2_AR_data, valid_l3_data, valid_real_data, valid_real_per_variable_data, valid_regularization_data, valid_loss_data = self.valid_epoch([1,1,1,1])
                 else:
-                    
+                    if self.loss_coefficients['AR'] >= maximum_loss_coefficient_AR:
+                        self.loss_coefficients['AR'] = maximum_loss_coefficient_AR
+                    else:
+                        self.loss_coefficients['AR'] += self.loss_coefficients['AR_strength']
+                        
                     before_training = time.time()
                     train_l1_data, train_l1_per_variable_data, train_l2_TF_data, train_l2_AR_data, train_l3_data, train_regularization_data, train_loss_data = self.train_epoch([self.loss_coefficients['AE'],self.loss_coefficients['TF'],self.loss_coefficients['AR'],self.loss_coefficients['Random_DT']])
                     before_validation = time.time()
-                    self.loss_coefficients['AR'] += self.loss_coefficients['AR_strength']
+                    
                     valid_l1_data, valid_l1_per_variable_data, valid_l1_unnorm_data, valid_l1_unnorm_per_variable_data, valid_l2_TF_data, valid_l2_AR_data, valid_l3_data, valid_real_data, valid_real_per_variable_data, valid_regularization_data, valid_loss_data = self.valid_epoch([1,1,1,1])
                 
                 time2 = time.time()
+                if self.dynamic_dataset_generation_during_training and i > (self.time_only_TF + self.time_of_AE) and how_many_datasets_creations < len(self.time_windows):
+                    
+                    if before_next_window_change == 0:
+                        self.training_loader, self.validation_loader = build_dataset(self.batch_sizes[how_many_datasets_creations], self.time_windows[how_many_datasets_creations], self.data_training_path_dynamic, self.data_validation_path_dynamic, self.number_of_workers, self.data_path)
+                        before_next_window_change = self.waiting_epochs_before_new_dataset_creation[how_many_datasets_creations]
+                        how_many_datasets_creations+=1
+                        os.remove(self.data_training_path_dynamic + str(self.time_windows[how_many_datasets_creations-2]) + '.h5')
+                        os.remove(self.data_validation_path_dynamic + str(self.time_windows[how_many_datasets_creations-2]) + '.h5')
+                        loss_value = 100
+                        
+                    before_next_window_change-=1
                 
                 
                 if i > self.time_of_AE:
@@ -207,6 +226,7 @@ class Training():
                 print("Epoch: " +str(i)+', ' + str(time2-time1)+ ' s')
                 print('Time of training:', before_validation - before_training)
                 print('Time of validation:', time2 - before_validation)
+                print('Time window:', self.time_windows[how_many_datasets_creations-1])
                 
                 if self.loss_coefficients['AR'] != 0.0 and self.autoregressive_step['which_technique'] == 'TBPP_from_end':
                     print(" for TBPP: " +str(self.autoregressive_step['TBPP_from_end_config'][0]))
@@ -218,7 +238,6 @@ class Training():
                     print("Strength of autoregressive step: ", self.loss_coefficients['AR'])
                     
                 print('')
-                print("Loss coefficient 2: " +str(self.loss_coefficients['AR']))
                 print('Train_loss_data = ' + str(train_loss_data) + 
                     '\nAE train loss = ' + str(train_l1_data) + 
                     '\n AE train loss per variable' + str(train_l1_per_variable_data)+

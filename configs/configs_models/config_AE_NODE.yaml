@@ -1,4 +1,6 @@
 #Data information
+data_training_file_dinamic: 'data_training_normalized_t_W_'
+data_validation_file_dinamic: 'data_validation_normalized_t_W_'
 data_training_file : 'data_training_normalized_t_W_10.h5'
 data_validation_file : 'data_validation_normalized_t_W_10.h5'
 #Training information
@@ -8,12 +10,12 @@ loss_coefficients: # coefficients that are multiplied to the loss function terms
   TF: 1
   AR: 1
   Random_DT: 1
-  AR_strength: 0.0005 
+  AR_strength: 0.0001
 
 k: 4 # stage of the Runge-Kutta solver for the latent dynamics
 time_of_AE: 10 # number of initial epochs where only the AutoEncoder is trained, i.e., loss_coeff_TF_AR_together = [1, 0, 0, 0]. In parallel of this a linear warm-up of the learning rate is performed
 time_only_TF : 0 #number of initial epochs after warm up where only TF and not AR approach is used
-clipping: [0, 2.5] #[if 1 clipping is applied to f, maximum norm allowed to gradients]
+clipping: [1, 2.5] #[if 1 clipping is applied to f, maximum norm allowed to gradients]
 is_coupled : [true, 'AE'] #if true the AutoEncoder (AE) is trained coupled with the NODE. if false, if 'AE' the AE is trained, if 'NODE' the NODE is trained.
 loss_coeff_not_coupled : [0, 1, 1, 1] #if is_coupled[0] == false, adjust accordingly the loss coefficients
 path_trained_AE : 'datasets/parametric_advection/Models/not_coupled' #if is_coupled : [false, 'NODE'], provide the path to the models weights of the AE
@@ -24,12 +26,12 @@ autoregressive_step:
   TBPP_from_end_config: [1, 30, 40]  # [if 1 k_2 increases dynamically from k_2=1, number of epochs after which k_2 is increased by 1, max rvalue of k_2]
   TBPP_from_start_config: [1, 30, 40] #[if 1 k_2 increases dynamically from k_2=1, number of epochs after which k_2 is increased by 1, max rvalue of k_2]
 
-lambda_regularization: 0.0 #coefficients in front of the regularization term for the latent vector
+lambda_regularization: 0.00001 #coefficients in front of the regularization term for the latent vector
 auto_encoding:
   #Auto-Encoder scalar variables
   auto_encoder_scalar:
     input_dimension_encoder: 4
-    output_dimension_encoder: 4 #dimension of the latent space
+    output_dimension_encoder: 2 #dimension of the latent space
     list_of_neurons_encoder: [50,30]
     last_activation_encoder: false
 
@@ -49,7 +51,7 @@ auto_encoding:
   #Auto-Encoder boundaries
   auto_encoder_boundaries:
     input_dimension_encoder: 6
-    output_dimension_encoder: 4 #dimension of the latent space
+    output_dimension_encoder: 6 #dimension of the latent space
     list_of_neurons_encoder: [50,30]
     last_activation_encoder: false
 
@@ -65,37 +67,37 @@ auto_encoding:
     output_dimension_encoder: 5 #dimension of the latent space
     last_activation_encoder: false
 
-    kernel_decoder: [[3,3],[4,3],[4,3],[3]] #kernels sizes of the decoder
-    filters_decoder: [16,8] #number of middle of the decoder. First one is filters_encoder[-1] and last one is input_dimension_encoder[-2]
-    strides_decoder: [[1,1],[2,1],[2,1],[1,1]] #strides of the decoder
+    kernel_decoder: [[3,3],[4,3],[4,3],[3,3],[3,3],[3,3]] #kernels sizes of the decoder
+    filters_decoder: [16,8,4,4] #number of middle of the decoder. First one is filters_encoder[-1] and last one is input_dimension_encoder[-2]
+    strides_decoder: [[1,1],[2,1],[2,1],[1,1],[1,1],[1,1]] #strides of the decoder
     last_activation_decoder: false
 
   #Auto-Encoder vessel
   auto_encoder_vessel:
     input_dimension_encoder: [18, 15, 5]  # first dimension is # of channels (one if the predicted solution is a scalar field), second is spatial dimensions per channel.
     kernel_encoder: [3,3,3] #kernels sizes of the Encoder
-    filters_encoder: [16,16,16] #number of filters of the Encoder
+    filters_encoder: [8,16,32] #number of filters of the Encoder
     strides_encoder: [[1,1],[2,1],[2,1]] #strides of the Encoder
     output_dimension_encoder: 5 #dimension of the latent space
     last_activation_encoder: false
 
-    kernel_decoder: [[3,3],[4,3],[3,3],[3]]  #kernels of the Decoder. For this, use one upsampling with kernel 4 and one with kernel 3 because of odd output
-    filters_decoder: [16,16] #number of filters of the Decoder
-    strides_decoder: [[1,1],[2,1],[2,1],[1,1]] #strides of the Decoder
+    kernel_decoder: [[3,3],[4,3],[3,3],[3,3],[3,3],[3,3]]  #kernels of the Decoder. For this, use one upsampling with kernel 4 and one with kernel 3 because of odd output
+    filters_decoder: [32,24, 20, 18] #number of filters of the Decoder
+    strides_decoder: [[1,1],[2,1],[2,1],[1,1],[1,1],[1,1]] #strides of the Decoder
     last_activation_decoder: false
 
   #Auto-Encoder faces
   auto_encoder_faces:
     input_dimension_encoder: [3, 16, 9]  # first dimension is # of channels (one if the predicted solution is a scalar field), second is spatial dimensions per channel.
     kernel_encoder: [3,3,3] #kernels sizes of the Encoder
-    filters_encoder: [16,16,16] #number of filters of the Encoder
+    filters_encoder: [8,16,32] #number of filters of the Encoder
     strides_encoder: [[1,1],[2,2],[2,1]] #strides of the Encoder
     output_dimension_encoder: 7 #dimension of the latent space
     last_activation_encoder: false
 
-    kernel_decoder: [[3,3],[4,3],[4,3],[3]]  #kernels sizes of the Encoder
-    filters_decoder: [16,16] #number of filters of the Encoder
-    strides_decoder: [[1,1],[2,2],[2,1],[1,1]] #strides of the Encoder
+    kernel_decoder: [[3,3],[4,3],[4,3],[3,3],[3,3],[3,3]]  #kernels sizes of the Encoder
+    filters_decoder: [32,16,16,8] #number of filters of the Encoder
+    strides_decoder: [[1,1],[2,2],[2,1],[1,1],[1,1],[1,1]] #strides of the Encoder
     last_activation_decoder: false
 
   # Final_reduction

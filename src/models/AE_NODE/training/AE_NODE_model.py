@@ -4,7 +4,7 @@ import pickle
 from src.models.AE_NODE.training.architecture import *
 from src.models.AE_NODE.training.data_functions import *
 from src.models.AE_NODE.training.training_validation_functions import Training
-from torch.utils.data import DataLoader
+
 
 
 class AE_NODE:
@@ -24,10 +24,33 @@ class AE_NODE:
         self.autoregressive_step = model_information['autoregressive_step']
         self.lambda_regularization = model_information['lambda_regularization']
         
+        self.data_path = config_training['data_path']
         self.data_training_path = config_training['data_path'] + '/' + model_information['data_training_file']
         self.data_validation_path = config_training['data_path'] + '/' + model_information['data_validation_file']
-        self.batch_size = config_training['batch_size']
+        self.data_training_path_dynamic = config_training['data_path'] + '/' + model_information['data_training_file_dinamic']
+        self.data_validation_path_dynamic = config_training['data_path'] + '/' + model_information['data_validation_file_dinamic']
+        self.batch_sizes = config_training['batch_sizes']
         self.early_stopping = config_training['early_stopping']
+        self.number_of_workers = config_training['number_of_workers']
+        
+        self.waiting_epochs_before_new_dataset_creation = config_training['waiting_epochs_before_new_dataset_creation']
+        self.dynamic_dataset_generation_during_training = config_training['dynamic_dataset_generation_during_training']
+        self.time_windows = config_training['time_windows']
+        
+        if len(self.batch_sizes) + len(self.waiting_epochs_before_new_dataset_creation) + len(self.time_windows) != len(self.time_windows) * 3:
+            raise TypeError("Length of array of time_windows is not equal to length of array of batch_sizes or of waiting_epochs_before_new_dataset_creation")
+        
+        #create datasets and dataloader for training and validation 
+        if self.dynamic_dataset_generation_during_training:
+            
+            self.training_loader, self.validation_loader = build_dataset(self.batch_sizes[0], self.time_windows[0], self.data_training_path_dynamic, self.data_validation_path_dynamic, self.number_of_workers, self.data_path)
+        else:
+            dataset_training = ASTEC_Dataset(self.data_training_path)
+            self.training_loader = DataLoader(dataset_training, batch_size = self.batch_sizes[0], num_workers = self.number_of_workers, shuffle=True,drop_last=True,pin_memory=True)
+        
+            dataset_validation = ASTEC_Dataset(self.data_validation_path)
+            self.validation_loader = DataLoader(dataset_validation, batch_size = self.batch_sizes[0], num_workers = self.number_of_workers, shuffle=True,drop_last=True,pin_memory=True)
+        #get normalization information
         
         with open(config_training['data_path']+'/maxima_or_mean.pkl', 'rb') as f:
             self.maxima_or_mean = pickle.load(f)
@@ -78,6 +101,7 @@ class AE_NODE:
             {'params': self.f.parameters(), 'weight_decay': model_information['weight_decay']['dfnn']},
             {'params': self.decoder.parameters(), 'weight_decay': model_information['weight_decay']['decoder']}
         ]
+            
         #move the models to the device
         self.encoder.to(self.device)
         self.f.to(self.device)
@@ -89,12 +113,7 @@ class AE_NODE:
         self.pre_scheduler = tc.optim.lr_scheduler.LambdaLR(self.optim,lambda1)
         self.scheduler = tc.optim.lr_scheduler.ExponentialLR(self.optim, config_training['gamma_lr'])
         
-        #create datasets and dataloader for training and validation 
-        dataset_training = ASTEC_Dataset(self.data_training_path)
-        self.training_loader = DataLoader(dataset_training, batch_size = self.batch_size, num_workers=config_training['number_of_workers'], shuffle=True,drop_last=True,pin_memory=True)
         
-        dataset_validation = ASTEC_Dataset(self.data_validation_path)
-        self.validation_loader = DataLoader(dataset_validation, batch_size = self.batch_size, num_workers=config_training['number_of_workers'], shuffle=True,drop_last=True,pin_memory=True)
         
         for fields, _, _, _ in self.validation_loader:
             self.number_of_different_domains = len(fields)+1
@@ -104,7 +123,8 @@ class AE_NODE:
         #training starts
         if not model_information['is_coupled'][0]: 
             model_information['loss_coeff_TF_AR_together'] = model_information['loss_coeff_not_coupled']
-            
+
+        
     def start_training(self):
         training_process = Training(self)
         training_process.training()

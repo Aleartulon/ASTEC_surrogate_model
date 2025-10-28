@@ -108,8 +108,6 @@ class Training_Losses():
             return tc.tensor(0.0), tc.tensor(0.0)
             
         if which_technique == 'fully_autoregressive' or (not train):  #Encode initial condition and evolve in latent. Always done at validation to compute the actual final loss autoregressively
-            loss_final = tc.tensor(0., device = self.device)
-            loss_final_per_variables = tc.zeros(self.number_of_different_domains, device = self.device)
             l2_AR = tc.tensor(0., device = self.device)
 
             if (not train):
@@ -118,8 +116,9 @@ class Training_Losses():
                 reconstructed_fields_from_latent = [tc.zeros_like(field) for field in fields]
                 
             reconstructed_latent = tc.zeros_like(true_latent)[:,1:,:]
-                
-            next_latent, _, _ , _ = self.encoder(initial_condition)
+            
+            with tc.no_grad():
+                next_latent, _, _ , _ = self.encoder(initial_condition)
             
             for count in range(number_of_time_steps-1):
                 
@@ -127,7 +126,7 @@ class Training_Losses():
                 reconstructed_latent[:,count,:] = next_latent
                 
                 if (not train):
-                    output_decoder, _, _ = self.decoder(next_latent)
+                    output_decoder, _ = self.decoder(next_latent)
                     output_decoder = [tensor.unsqueeze(1) for tensor in output_decoder]
         
                     for index, field in enumerate(output_decoder):
@@ -192,7 +191,7 @@ class Training_Losses():
 
         # self.k = 1 is Euler
         b = tc.zeros((self.k, definitive_latent.size(0), definitive_latent.size(1)) , device= self.device)
-        b[0, :,:] = self.f(definitive_latent, latent_boudaries )
+        b[0, :,:] = self.f(definitive_latent, latent_boudaries)
         final_sum = self.f(definitive_latent, latent_boudaries)*self.RK[str(self.k)][-1][1]
 
         for i in range(self.k-1):

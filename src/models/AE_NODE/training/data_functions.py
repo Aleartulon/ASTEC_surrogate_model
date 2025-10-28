@@ -4,7 +4,26 @@ import numpy as np
 import h5py
 from torch.utils.data import Dataset
 from torch import nn
+from torch.utils.data import DataLoader
+import subprocess
+
+def build_dataset(batch_size:int, time_window: int, data_training_path: str, data_validation_path:str, number_of_workers:int, path_to_data: str):
     
+    training_path = data_training_path + str(time_window) + '.h5'
+    validation_path = data_validation_path +  str(time_window) + '.h5'
+    
+    #build dataset made out of 'time_window' chunks
+    subprocess.run(['python', '-m', 'src.dataset_generation.main', '--t_W', str(time_window), '--testing', 'false', '--path_to_hdf5', path_to_data])
+    
+    # build dataset and dataloader
+    dataset_training = ASTEC_Dataset(training_path)
+    training_loader = DataLoader(dataset_training, batch_size = batch_size, num_workers = number_of_workers, shuffle=True,drop_last=True,pin_memory=True)
+    
+    dataset_validation = ASTEC_Dataset(validation_path)
+    validation_loader = DataLoader(dataset_validation, batch_size = batch_size, num_workers = number_of_workers, shuffle=True,drop_last=True,pin_memory=True)
+    
+    return training_loader, validation_loader
+  
 def save_checkpoint(enco, f , dec, optimizer, scheduler, epoch, loss, loss_coeff_2, start_backprop,full_training_count,filepath):
   
     checkpoint = {
@@ -200,4 +219,4 @@ def dynamics_MSE(input: tc.tensor, target: tc.tensor, length_of_padding: tc.tens
         return mse
     
 
-      
+    
