@@ -119,7 +119,7 @@ NODE: true
 #Global
 weight_decay:
   encoder: 0.0
-  dfnn: 0.0
+  dfnn: 0.001
   decoder: 0.0
 
 # for latent progression
