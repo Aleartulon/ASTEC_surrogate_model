@@ -10,10 +10,10 @@ loss_coefficients: # coefficients that are multiplied to the loss function terms
   TF: 1
   AR: 1
   Random_DT: 1
-  AR_strength: 0.001
+  AR_strength: 0.0001
 
 k: 4 # stage of the Runge-Kutta solver for the latent dynamics
-time_of_AE: 1 # number of initial epochs where only the AutoEncoder is trained, i.e., loss_coeff_TF_AR_together = [1, 0, 0, 0]. In parallel of this a linear warm-up of the learning rate is performed
+time_of_AE: 10 # number of initial epochs where only the AutoEncoder is trained, i.e., loss_coeff_TF_AR_together = [1, 0, 0, 0]. In parallel of this a linear warm-up of the learning rate is performed
 time_only_TF : 0 #number of initial epochs after warm up where only TF and not AR approach is used
 clipping: [1, 2.5] #[if 1 clipping is applied to f, maximum norm allowed to gradients]
 is_coupled : [true, 'AE'] #if true the AutoEncoder (AE) is trained coupled with the NODE. if false, if 'AE' the AE is trained, if 'NODE' the NODE is trained.
@@ -26,7 +26,7 @@ autoregressive_step:
   TBPP_from_end_config: [1, 30, 40]  # [if 1 k_2 increases dynamically from k_2=1, number of epochs after which k_2 is increased by 1, max rvalue of k_2]
   TBPP_from_start_config: [1, 30, 40] #[if 1 k_2 increases dynamically from k_2=1, number of epochs after which k_2 is increased by 1, max rvalue of k_2]
 
-lambda_regularization: 0.001 #coefficients in front of the regularization term for the latent vector
+lambda_regularization: 0.00001 #coefficients in front of the regularization term for the latent vector
 auto_encoding:
   #Auto-Encoder scalar variables
   auto_encoder_scalar:
@@ -110,7 +110,7 @@ auto_encoding:
     last_activation_decoder: false
 
 #NODE
-n_layers_f: 2 #number of hidden Dense layers which build up the function f
+n_layers_f: 4 #number of hidden Dense layers which build up the function f
 parameter_information: "concatenation" #how the parameter information is passed to f. either 'concatenation' or 'FiLM'
 n_FiLM_conditioning : 1 #number of FiLM layers (if FiLM is chosen instead of concatenation). FiLM = 1 only applies to the latent vector
 n_neurons_f: 200 #number of neurons of each layer of f
