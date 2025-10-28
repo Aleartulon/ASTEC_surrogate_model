@@ -110,10 +110,10 @@ auto_encoding:
     last_activation_decoder: false
 
 #NODE
-n_layers_f: 4 #number of hidden Dense layers which build up the function f
+n_layers_f: 2 #number of hidden Dense layers which build up the function f
 parameter_information: "concatenation" #how the parameter information is passed to f. either 'concatenation' or 'FiLM'
 n_FiLM_conditioning : 1 #number of FiLM layers (if FiLM is chosen instead of concatenation). FiLM = 1 only applies to the latent vector
-n_neurons_f: 200 #number of neurons of each layer of f
+n_neurons_f: 50 #number of neurons of each layer of f
 NODE: true
 
 #Global
