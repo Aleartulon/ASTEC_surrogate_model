@@ -1,4 +1,4 @@
-path_to_hdf5 : '../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/'
+path_to_hdf5 : '../../../../../../scratch/ROM_datasets_ale/ASTEC/'
 indeces_training : [1]
 indeces_validation : [1]
 indeces_testing : [1]

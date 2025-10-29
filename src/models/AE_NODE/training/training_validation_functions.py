@@ -76,8 +76,8 @@ class Training():
                 l1_mean_denormalized = l1[2]
                 l1_mean_per_denormalized_per_variable = l1[3]
                 
-                loss += (l1_mean + l2_TF + l2_AR + l3).detach().cpu().item()
                 l_real +=  l_final[0].detach().item()
+                loss += (l1_mean + l2_TF + l2_AR + l3 + l_real).detach().cpu().item()
                 l_real_per_variable += (l_final[1]).detach().cpu().numpy()
                 l1_loss += (l1_mean ).detach().cpu().numpy()
                 l1_loss_per_variable += (l1_mean_per_variable).detach().cpu().numpy()
