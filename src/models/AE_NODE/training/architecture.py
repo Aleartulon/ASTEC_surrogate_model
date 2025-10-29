@@ -42,7 +42,7 @@ class Encoder(nn.Module):
         latent_faces_variables = self.encoder_faces_variables(faces_variables)
         
         #concatenate latent variables without latent_boundaries_variables
-        latent_in_variables_separated = [latent_scalar_variables, latent_plenum_variables, latent_core_variables, latent_vessel_variables, latent_faces_variables] #useful at testing
+        latent_in_variables_separated = [latent_scalar_variables, latent_plenum_variables, latent_core_variables, latent_vessel_variables, latent_faces_variables, latent_boundaries_variables] #useful at testing
         latent_in_variables = tc.concatenate((latent_scalar_variables, latent_plenum_variables, latent_core_variables, latent_vessel_variables, latent_faces_variables), axis = -1)
         regularization_latent = self.l1_latent_regularization(latent_in_variables, self.lambda_regularization, latent_boundaries_variables) #regularization latent space 
         definitive_latent = self.final_reduction(latent_in_variables) #final reduced vector of inner fields
@@ -177,7 +177,7 @@ class Decoder(nn.Module):
         latent_vessel_variables = concatenated_latents[:,self.indeces['auto_encoder_core']:self.indeces['auto_encoder_vessel']]
         latent_faces_variables = concatenated_latents[:,self.indeces['auto_encoder_vessel']:self.indeces['auto_encoder_faces']]
         
-        latent_in_variables_separated = [latent_scalar_variables, latent_plenum_variables, latent_core_variables, latent_vessel_variables, latent_faces_variables] #useful at testing
+        latent_in_variables_separated = [latent_scalar_variables, latent_plenum_variables, latent_core_variables, latent_vessel_variables, latent_faces_variables, reconstructed_boundaries_variables] #useful at testing
         reconstructed_scalar_variables = self.decoder_scalar_variables(latent_scalar_variables)
         reconstructed_plenum_variables = self.decoder_plenum_variables(latent_plenum_variables)
         reconstructed_core_variables = self.decoder_core_variables(latent_core_variables)
@@ -275,6 +275,7 @@ class F_Latent(nn.Module):
         self.n_layers = model_information['n_layers_f']
         self.parameter_information = model_information['parameter_information']
         self.n_FiLM_conditioning = model_information['n_FiLM_conditioning']
+        self.scaling_output_factor = model_information['scaling_output_factor']
 
         self.dropout = nn.Dropout(p=0.5)
         
@@ -282,7 +283,7 @@ class F_Latent(nn.Module):
         n_neurons = model_information['n_neurons_f']
 
         if self.parameter_information == 'concatenation':
-            if self.n_layers !=1:
+            if self.n_layers !=0:
 
                 if self.param_dim > 0:
                     self.linears = nn.ModuleList([nn.Linear(self.final_latent_dim + self.param_dim, n_neurons, bias = True)])
@@ -294,13 +295,20 @@ class F_Latent(nn.Module):
 
                 for i in self.linears:
                     nn.init.kaiming_uniform_(i.weight)
+                
+                # zero initialization helps with stability
+                nn.init.zeros_(self.linears[-1].weight)
+                nn.init.zeros_(self.linears[-1].bias)
+                
             else:
                 if self.param_dim > 0:
                     self.dfnn = nn.Linear(self.final_latent_dim + self.param_dim, self.final_latent_dim, bias = True)
-                    nn.init.kaiming_uniform_(self.dfnn.weight)
+                    nn.init.zeros_(self.dfnn.weight)
+                    nn.init.zeros_(self.dfnn.bias)
                 else:
                     self.dfnn = nn.Linear(self.final_latent_dim, self.final_latent_dim, bias = True)
-                    nn.init.kaiming_uniform_(self.dfnn.weight)
+                    nn.init.zeros_(self.dfnn.weight)
+                    nn.init.zeros_(self.dfnn.bias)
 
 
         elif self.parameter_information == 'FiLM':
@@ -317,6 +325,11 @@ class F_Latent(nn.Module):
 
             for i in self.linears:
                 nn.init.kaiming_uniform_(i.weight)
+            
+            # zero initialization helps with stability
+            nn.init.zeros_(self.linears[-1].weight)
+            nn.init.zeros_(self.linears[-1].bias)
+            
         else:
             raise ValueError("Wrong name of the type of parameter information")
 
@@ -329,18 +342,31 @@ class F_Latent(nn.Module):
 
         Returns:
             torch.tensor: a tensor of latent vectors of dimension [B*T, final_latent_dim], where B is batch size, T is the len of the time series and latent dim is the dimension of the latent space.
-            It is the output of the function f.
+            It is the output of the function f (representing dx/dt).
         """        
+        
+        x_input = x  # Store original input for final residual
         
         if self.parameter_information == 'concatenation':
             if self.param_dim > 0:
                 x = tc.cat((x, parameter), dim=1)
             
-            for count, i in enumerate(self.linears[0:-1]):
+            # First layer
+            x = self.linears[0](x)
+            x = self.activation(x)
+            
+            # Middle layers with residual connections
+            for i in self.linears[1:-1]:
+                residual = x
                 x = i(x)
-                x = self.activation(x) 
+                x = self.activation(x)
+                x = x + residual  # Residual connection
+            
+            # Final layer
             x = self.linears[-1](x)
-            return x
+            
+            return x * self.scaling_output_factor
+            
 
         elif self.parameter_information == 'FiLM':
             if self.param_dim > 0:
@@ -348,13 +374,26 @@ class F_Latent(nn.Module):
                 parameter_vector_beta = self.param_FiLM_beta[0](parameter)
                 x = parameter_vector_gamma * x + parameter_vector_beta
 
-            for count, i in enumerate(self.linears[0:-1]):
+            # First layer
+            x = self.linears[0](x)
+            if 0 < self.n_FiLM_conditioning:
+                parameter_vector_gamma = self.param_FiLM_gamma[1](parameter)
+                parameter_vector_beta = self.param_FiLM_beta[1](parameter)
+                x = parameter_vector_gamma * x + parameter_vector_beta
+            x = self.activation(x)
+            
+            # Middle layers with residual connections
+            for count, i in enumerate(self.linears[1:-1], start=1):
+                residual = x
                 x = i(x)
                 if (count+1) < self.n_FiLM_conditioning:
                     parameter_vector_gamma = self.param_FiLM_gamma[count+1](parameter)
                     parameter_vector_beta = self.param_FiLM_beta[count+1](parameter)
                     x = parameter_vector_gamma * x + parameter_vector_beta
-                x = self.activation(x) 
+                x = self.activation(x)
+                x = x + residual  # Residual connection
                 
+            # Final layer
             x = self.linears[-1](x)
-            return x
+            
+            return x * self.scaling_output_factor
