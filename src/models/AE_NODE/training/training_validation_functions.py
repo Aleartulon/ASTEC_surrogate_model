@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import time
+import torch as tc
 from src.models.AE_NODE.training.data_functions import *
 from src.models.AE_NODE.training.method_functions import Training_Losses
 
@@ -9,10 +10,38 @@ class Training():
         
         self.__dict__.update(astec_instance.__dict__)
         self.training_losses = Training_Losses(self)
-    
+        
+    def check_if_NaN(self, l1_mean:tc.tensor, l1_latent:tc.tensor, l2_TF: tc.tensor,l2_AR: tc.tensor,l3: tc.tensor,regularization_latent: tc.tensor):
+        if tc.isnan(l1_mean):
+            print("NaN in l1_mean (reconstruction loss)")
+            self.optim.zero_grad()
+            return True
+        if tc.isnan(l1_latent):
+            print("NaN in l1_latent (latent loss)")
+            self.optim.zero_grad()
+            return True
+        if tc.isnan(l2_TF):
+            print("NaN in l2_TF (teacher forcing)")
+            self.optim.zero_grad()
+            return True
+        if tc.isnan(l2_AR):
+            print("NaN in l2_AR (autoregressive)")
+            self.optim.zero_grad()
+            return True
+        if tc.isnan(l3):
+            print("NaN in l3")
+            self.optim.zero_grad()
+            return True
+        if tc.isnan(regularization_latent):
+            print("NaN in regularization")
+            self.optim.zero_grad()
+            return True
+        return False
+            
+            
     def train_epoch(self, loss_coefficients):
         l1_loss = 0
-        l1_loss_per_variable = np.zeros(self.number_of_different_domains)
+        l1_loss_per_shape = np.zeros(self.number_of_different_domains)
         l1_loss_latent = 0
         l2_TF_loss = 0
         l2_AR_loss = 0
@@ -27,20 +56,26 @@ class Training():
         for fields, boundary_conditions, dt, length_of_padding in self.training_loader:
             
             l1,l2_TF,l2_AR,l3, _,regularization_latent = self.training_losses.loss_sup_mixed(fields, boundary_conditions, dt, length_of_padding, loss_coefficients, True)
+            
             l1_mean = l1[0]
-            l1_mean_per_variable = l1[1]
+            l1_mean_per_shape = l1[1]
             l1_latent = l1[2]
             
+            #is_there_nan = self.check_if_NaN(l1_mean, l1_latent,l2_TF ,l2_AR, l3, regularization_latent)
+            #if is_there_nan:
+            #    continue
             (l1_mean+l1_latent+l2_TF+l2_AR+l3+regularization_latent).backward()
             if self.clipping[0]:
-                tc.nn.utils.clip_grad_norm_(self.f.parameters(), max_norm=self.clipping[1])
+                
+                all_params = (list(self.encoder.parameters()) + list(self.f.parameters()) + list(self.decoder.parameters()))
+                tc.nn.utils.clip_grad_norm_(all_params, max_norm=self.clipping[1])
                 
             self.optim.step()
             self.optim.zero_grad() 
     
             loss += (l1_mean +l1_latent+ l2_TF+l2_AR+l3).detach().cpu().item()
             l1_loss += (l1_mean).detach().cpu().numpy()
-            l1_loss_per_variable += (l1_mean_per_variable).detach().cpu().numpy()
+            l1_loss_per_shape += (l1_mean_per_shape).detach().cpu().numpy()
             l1_loss_latent += (l1_latent).detach().cpu().numpy()
             l2_TF_loss += l2_TF.detach().cpu().item()
             l2_AR_loss += l2_AR.detach().cpu().item()
@@ -48,14 +83,13 @@ class Training():
             
             regularization_loss += regularization_latent.detach().cpu().item()
             count += 1
-        
-        return l1_loss/count, l1_loss_per_variable/count, l1_loss_latent/count ,l2_TF_loss/count, l2_AR_loss/count ,l3_loss/count, regularization_loss/count, loss/count
+        return l1_loss/count, l1_loss_per_shape/count, l1_loss_latent/count ,l2_TF_loss/count, l2_AR_loss/count ,l3_loss/count, regularization_loss/count, loss/count
         
 
     def valid_epoch(self, loss_coefficients):
         
         l1_loss = 0
-        l1_loss_per_variable = np.zeros(self.number_of_different_domains)
+        l1_loss_per_shape = np.zeros(self.number_of_different_domains)
         l1_loss_unnorm_per_variable = np.zeros(self.number_of_different_domains)
         l1_loss_unnorm = 0
         l1_loss_latent = 0
@@ -65,8 +99,8 @@ class Training():
         loss = 0
         count = 0
         regularization_loss = 0
-        l_real = 0
-        l_real_per_variable = np.zeros(self.number_of_different_domains-1)
+        loss_real = 0
+        loss_real_per_shape = np.zeros(self.number_of_different_domains-1)
         
         
         self.encoder.eval()
@@ -78,16 +112,19 @@ class Training():
             for fields, boundary_conditions, dt, length_of_padding in self.validation_loader:
                 l1,l2_TF,l2_AR,l3, l_final, regularization_latent  = self.training_losses.loss_sup_mixed(fields, boundary_conditions, dt, length_of_padding, loss_coefficients, False)
                 l1_mean = l1[0]
-                l1_mean_per_variable = l1[1]
+                l1_mean_per_shape = l1[1]
                 l1_mean_denormalized = l1[2]
                 l1_mean_per_denormalized_per_variable = l1[3]
                 l1_latent = l1[4]
                 
-                l_real +=  l_final[0].detach().item()
-                loss += (l1_mean + l1_latent+ l2_TF + l2_AR + l3 + l_real).detach().cpu().item()
-                l_real_per_variable += (l_final[1]).detach().cpu().numpy()
+                l_real_mean = l_final[0]
+                l_real_per_shape = l_final[1]
+                
+                loss_real +=  l_real_mean.detach().item()
+                loss += (l1_mean + l1_latent+ l2_TF + l2_AR + l3 + l_real_mean).detach().cpu().item()
+                loss_real_per_shape += (l_real_per_shape).detach().cpu().numpy()
                 l1_loss += (l1_mean ).detach().cpu().numpy()
-                l1_loss_per_variable += (l1_mean_per_variable).detach().cpu().numpy()
+                l1_loss_per_shape += (l1_mean_per_shape).detach().cpu().numpy()
                 l1_loss_unnorm += (l1_mean_denormalized).detach().cpu().item()
                 l1_loss_unnorm_per_variable += (l1_mean_per_denormalized_per_variable).detach().cpu().numpy()
                 l1_loss_latent += (l1_latent).detach().cpu().item()
@@ -96,8 +133,7 @@ class Training():
                 l3_loss += l3.detach().cpu().item()
                 regularization_loss += regularization_latent.detach().cpu().item()
                 count += 1
-                
-        return l1_loss/count, l1_loss_per_variable/count, l1_loss_unnorm/count, l1_loss_unnorm_per_variable/count, l1_loss_latent/count, l2_TF_loss/count, l2_AR_loss/count , l3_loss/count, l_real/count, l_real_per_variable/count, regularization_loss/count , loss/count
+        return l1_loss/count, l1_loss_per_shape/count, l1_loss_unnorm/count, l1_loss_unnorm_per_variable/count, l1_loss_latent/count, l2_TF_loss/count, l2_AR_loss/count , l3_loss/count, loss_real/count, loss_real_per_shape/count, regularization_loss/count , loss/count
 
 
     def training(self):
@@ -174,7 +210,7 @@ class Training():
                     before_validation = time.time()
                     
                     valid_l1_data, valid_l1_per_shape_data, valid_l1_unnorm_data, valid_l1_unnorm_per_variable_data, valid_l1_latent_data, valid_l2_TF_data, valid_l2_AR_data, valid_l3_data, valid_real_data, valid_real_per_variable_data, valid_regularization_data, valid_loss_data = self.valid_epoch([[1,1],1,1,1])
-                
+                    
                 time2 = time.time()
                 if self.dynamic_dataset_generation_during_training and i > (self.time_only_TF + self.time_of_AE) and how_many_datasets_creations < len(self.time_windows):
                     
