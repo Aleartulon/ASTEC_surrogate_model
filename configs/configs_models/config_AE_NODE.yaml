@@ -6,7 +6,7 @@ data_validation_file : 'data_validation_normalized_t_W_10.h5'
 #Training information
 
 loss_coefficients: # coefficients that are multiplied to the loss function terms, signaling the relative importance of each [AE, TF, AUTOREGRESSIVE, TIME_GENERALIZATION]
-  AE: 1
+  AE: [1,1] #first one is for the field reconstruction, second one for the latent reconstruction per shape
   TF: 1
   AR: 1
   Random_DT: 1
@@ -15,7 +15,7 @@ loss_coefficients: # coefficients that are multiplied to the loss function terms
 k: 4 # stage of the Runge-Kutta solver for the latent dynamics
 time_of_AE: 10 # number of initial epochs where only the AutoEncoder is trained, i.e., loss_coeff_TF_AR_together = [1, 0, 0, 0]. In parallel of this a linear warm-up of the learning rate is performed
 time_only_TF : 0 #number of initial epochs after warm up where only TF and not AR approach is used
-clipping: [1, 2.5] #[if 1 clipping is applied to f, maximum norm allowed to gradients]
+clipping: [0, 2.5] #[if 1 clipping is applied to f, maximum norm allowed to gradients]
 is_coupled : [true, 'AE'] #if true the AutoEncoder (AE) is trained coupled with the NODE. if false, if 'AE' the AE is trained, if 'NODE' the NODE is trained.
 loss_coeff_not_coupled : [0, 1, 1, 1] #if is_coupled[0] == false, adjust accordingly the loss coefficients
 path_trained_AE : 'datasets/parametric_advection/Models/not_coupled' #if is_coupled : [false, 'NODE'], provide the path to the models weights of the AE
@@ -32,30 +32,30 @@ auto_encoding:
   auto_encoder_scalar:
     input_dimension_encoder: 4
     output_dimension_encoder: 2 #dimension of the latent space
-    list_of_neurons_encoder: [50,30]
+    list_of_neurons_encoder: [50,50,50]
     last_activation_encoder: false
 
-    list_of_neurons_decoder: [50,30]
+    list_of_neurons_decoder: [50,50,50]
     last_activation_decoder: false
 
   #Auto-Encoder plenum
   auto_encoder_plenum:
     input_dimension_encoder: 18
     output_dimension_encoder: 5 #dimension of the latent space
-    list_of_neurons_encoder: [50,30]
+    list_of_neurons_encoder: [50,50,50]
     last_activation_encoder: false
 
-    list_of_neurons_decoder: [50,30]
+    list_of_neurons_decoder: [50,50,50]
     last_activation_decoder: false
 
   #Auto-Encoder boundaries
   auto_encoder_boundaries:
     input_dimension_encoder: 6
     output_dimension_encoder: 6 #dimension of the latent space
-    list_of_neurons_encoder: [50,30]
+    list_of_neurons_encoder: [50,50,50]
     last_activation_encoder: false
 
-    list_of_neurons_decoder: [50,30]
+    list_of_neurons_decoder: [50,50,50]
     last_activation_decoder: false
 
   #Auto-Encoder core
@@ -110,17 +110,18 @@ auto_encoding:
     last_activation_decoder: false
 
 #NODE
-n_layers_f: 2 #number of hidden Dense layers which build up the function f
+n_layers_f: 8 #number of hidden Dense layers which build up the function f
 parameter_information: "concatenation" #how the parameter information is passed to f. either 'concatenation' or 'FiLM'
 n_FiLM_conditioning : 1 #number of FiLM layers (if FiLM is chosen instead of concatenation). FiLM = 1 only applies to the latent vector
-n_neurons_f: 50 #number of neurons of each layer of f
+n_neurons_f: 200 #number of neurons of each layer of f
 NODE: true
+scaling_output_factor: 0.1
 
 #Global
 weight_decay:
-  encoder: 0.0
-  dfnn: 0.0
-  decoder: 0.0
+  encoder: 0.0001
+  dfnn: 0.0001
+  decoder: 0.0001
 
 # for latent progression
 RK:
