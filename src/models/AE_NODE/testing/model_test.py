@@ -224,24 +224,21 @@ class Model_Test:
 
             #auto-encode
             definitive_latent_vector, latent_in_per_shape, latent_boundaries_variables, _ = self.encoder(fields, boundary_conditions)
-            reconstructed_fields, reconstructed_boundary_conditions, _ = self.decoder(definitive_latent_vector, latent_boundaries_variables)
+            reconstructed_fields, _ = self.decoder(definitive_latent_vector)
             
             #give back proper shape. Not necessary if always one trajectory per time is passed but better to be general
             for count, i in enumerate(reconstructed_fields):
                 size = i.size()
                 reconstructed_fields[count] = tc.reshape(reconstructed_fields[count], ((fields[0].size()[0],fields[0].size()[1]) + size[1:]))
-            reconstructed_boundary_conditions = tc.reshape(reconstructed_boundary_conditions, ((boundary_conditions.size()[0],boundary_conditions.size()[1]) + reconstructed_boundary_conditions.size()[1:]))
             
             #de-normalize
             reconstructed_fields = standard_and_inverse_normalization_field(reconstructed_fields, self.maxima_or_mean, self.minima_or_std, self.which_normalization, inverse = True)
-            reconstructed_boundary_conditions = standard_and_inverse_normalization_field([reconstructed_boundary_conditions], self.maxima_or_mean, self.minima_or_std, self.which_normalization, inverse = True)[0]
             fields = standard_and_inverse_normalization_field(fields, self.maxima_or_mean, self.minima_or_std, self.which_normalization, inverse = True)
-            boundary_conditions = standard_and_inverse_normalization_field([boundary_conditions], self.maxima_or_mean, self.minima_or_std, self.which_normalization, inverse = True)[0]
             #compute errors
             
             #fill in dictionaries for analysis
             fill_in_dictionaries_autoencoder_step(trajectory, reconstructed_fields_per_trajectory_AE, latent_vectors_per_trajectory_per_shape_AE,  definitive_latent_vector_per_trajectory_AE, denormalized_fields_per_trajectory_AE,
-                                                 reconstructed_fields, reconstructed_boundary_conditions, latent_in_per_shape, latent_boundaries_variables, definitive_latent_vector, fields, boundary_conditions)
+                                                 reconstructed_fields, latent_in_per_shape, latent_boundaries_variables, definitive_latent_vector, fields, boundary_conditions)
             
             # compute errors
             error_per_trajectory_AE = compute_errors(trajectory, reconstructed_fields, fields, True)
@@ -529,17 +526,6 @@ class Model_Test:
         self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, AE, field_name='Q_m_liq_face', shape_index = 4, variable_index=0, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16, faces = True)
         self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, AE, field_name='V_gas_face', shape_index = 4, variable_index=1, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16, faces = True)
         self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, AE, field_name='V_liq_face', shape_index = 4, variable_index=2, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16, faces = True)
-        
-        #generate figures for boundary conditions
-        if AE:
-            self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, AE, shape_index = 5, variable_index = 0 ,field_name = 'Q_H20_connection_v_to_p', ylabel =  'Q_H20_connection_v_to_p', figsize=(5, 5), fontsize=16)
-            self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, AE, shape_index = 5, variable_index = 1 , field_name = 'Q_steam_connection_v_to_p', ylabel = 'Q_steam_connection_v_to_p', figsize=(5, 5), fontsize=16)
-            self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, AE, shape_index = 5, variable_index = 2 , field_name = 'm_H20_connection_v_to_p', ylabel = 'm_H20_connection_v_to_p', figsize=(5, 5), fontsize=16)
-            
-            self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, AE, shape_index = 5, variable_index = 3 ,field_name = 'Q_H20_connection_p_to_v', ylabel =  'Q_H20_connection_p_to_v', figsize=(5, 5), fontsize=16)
-            self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, AE, shape_index = 5, variable_index = 4 , field_name = 'Q_steam_connection_p_to_v', ylabel = 'Q_steam_connection_p_to_v', figsize=(5, 5), fontsize=16)
-            self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, AE, shape_index = 5, variable_index = 5 , field_name = 'm_H20_connection_p_to_v', ylabel = 'm_H20_connection_p_to_v', figsize=(5, 5), fontsize=16)
-            
         
     def generate_pictures_latent_space(self, trajectory_to_be_plotted, latent_vectors_per_trajectory_per_shape_AE:dict, definitive_latent_vector_per_trajectory_AE: dict, Time:dict, AE: bool, latent_vectors_per_trajectory_per_shape_AE_NODE:dict = None, definitive_latent_vector_per_trajectory_AE_NODE:dict = None):
             

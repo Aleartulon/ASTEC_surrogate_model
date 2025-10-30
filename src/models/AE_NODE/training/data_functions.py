@@ -145,7 +145,7 @@ def create_padding_mask(size_of_tensor: list, length_of_padding: tc.tensor, devi
         return mask
 
 
-def auto_encoding_MSE(input: list, target: list, length_of_padding: tc.tensor = None, reconstructed_boundaries: tc.tensor = None, boundaries: tc.tensor = None, is_denormalized_validation = False):
+def auto_encoding_MSE(input: list, target: list, length_of_padding: tc.tensor = None, is_denormalized_validation = False):
     device = input[0].device
     loss_no_reduction = nn.MSELoss(reduction='none')
     loss = nn.MSELoss()
@@ -153,11 +153,7 @@ def auto_encoding_MSE(input: list, target: list, length_of_padding: tc.tensor = 
     mse = tc.tensor([], device = device)
     mse_per_variable = []
     counting_elements = []
-    
-    if reconstructed_boundaries is not None:
-        input = input + [reconstructed_boundaries]
-        target = target + [boundaries]
-        
+
     if is_denormalized_validation:
         for count, i in enumerate(input):
             if is_denormalized_validation:
