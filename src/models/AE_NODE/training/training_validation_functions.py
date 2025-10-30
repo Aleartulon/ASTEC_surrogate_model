@@ -100,7 +100,7 @@ class Training():
         count = 0
         regularization_loss = 0
         loss_real = 0
-        loss_real_per_shape = np.zeros(self.number_of_different_domains-1)
+        loss_real_per_shape = np.zeros(self.number_of_different_domains)
         
         
         self.encoder.eval()
@@ -172,7 +172,7 @@ class Training():
             valid_l2_AR = np.zeros(self.epochs)
             valid_l3 = np.zeros(self.epochs)
             valid_real = np.zeros(self.epochs)
-            valid_real_per_variable = np.zeros((self.epochs, self.number_of_different_domains-1))
+            valid_real_per_variable = np.zeros((self.epochs, self.number_of_different_domains))
             valid_regularization = np.zeros(self.epochs)
             valid_loss_tot = np.zeros(self.epochs)
             
