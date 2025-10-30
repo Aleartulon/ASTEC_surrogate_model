@@ -19,7 +19,7 @@ class Encoder(nn.Module):
         self.encoder_vessel_variables = Convolutional_Encoder(config_training, model_information['auto_encoding']['auto_encoder_vessel']).to(self.device)
         self.encoder_faces_variables = Convolutional_Encoder(config_training, model_information['auto_encoding']['auto_encoder_faces']).to(self.device)
         self.final_reduction = Fully_Connected_Encoder(config_training, model_information['auto_encoding']['final_reduction_and_initial_increase']).to(self.device)
-        self.lambda_regularization = model_information['lambda_regularization']
+        self.lambda_regularization = model_information['loss_coefficients']['lambda_regularization'] if model_information['is_coupled'][0] else model_information['loss_coefficients_not_coupled']['lambda_regularization'] 
         
     def forward(self, fields:list, boundaries: tc.tensor = None):
         

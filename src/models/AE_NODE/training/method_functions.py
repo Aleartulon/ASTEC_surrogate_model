@@ -110,8 +110,11 @@ class Training_Losses():
         number_of_time_steps = fields[0].size(1)
         initial_condition = [tensor[:, 0:1, ...] for tensor in fields]
         
-        if not (self.is_coupled[0]) and (self.is_coupled[1] == 'AE'):
+        if not (self.is_coupled[0]) and (self.is_coupled[1] == 'AE') and train:
             return tc.tensor(0.0), tc.tensor(0.0)
+        
+        elif not (self.is_coupled[0]) and (self.is_coupled[1] == 'AE') and not train:
+            return tc.tensor(0.0), (tc.tensor(0.0),tc.tensor(0.0))
             
         if which_technique == 'fully_autoregressive' or (not train):  #Encode initial condition and evolve in latent. Always done at validation to compute the actual final loss autoregressively
             if (not train):
