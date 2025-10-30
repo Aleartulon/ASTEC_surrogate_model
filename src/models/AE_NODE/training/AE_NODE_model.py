@@ -15,14 +15,13 @@ class AE_NODE:
         self.PATH = config_training['PATH']
         self.checkpoint = config_training['checkpoint']
 
-        self.loss_coefficients = model_information['loss_coefficients']
+        self.loss_coefficients = model_information['loss_coefficients'] if model_information['is_coupled'][0] else model_information['loss_coefficients_not_coupled']
         self.time_only_TF = model_information['time_only_TF']
         self.k = model_information['k']
         self.time_of_AE = model_information['time_of_AE']
         self.clipping = model_information['clipping']
         self.is_coupled = model_information['is_coupled']
         self.autoregressive_step = model_information['autoregressive_step']
-        self.lambda_regularization = model_information['lambda_regularization']
         
         self.data_path = config_training['data_path']
         self.data_training_path = config_training['data_path'] + '/' + model_information['data_training_file']
@@ -116,14 +115,12 @@ class AE_NODE:
         
         
         for fields, _, _, _ in self.validation_loader:
-            self.number_of_different_domains = len(fields)+1
+            self.number_of_different_domains = len(fields)
             break
         
         self.RK = {k: tc.tensor([[self.safe_eval(val) for val in row] for row in v]) for k, v in model_information['RK'].items()}
+        
         #training starts
-        if not model_information['is_coupled'][0]: 
-            model_information['loss_coeff_TF_AR_together'] = model_information['loss_coeff_not_coupled']
-
         
     def start_training(self):
         training_process = Training(self)

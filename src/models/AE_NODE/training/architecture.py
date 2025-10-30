@@ -19,7 +19,7 @@ class Encoder(nn.Module):
         self.encoder_vessel_variables = Convolutional_Encoder(config_training, model_information['auto_encoding']['auto_encoder_vessel']).to(self.device)
         self.encoder_faces_variables = Convolutional_Encoder(config_training, model_information['auto_encoding']['auto_encoder_faces']).to(self.device)
         self.final_reduction = Fully_Connected_Encoder(config_training, model_information['auto_encoding']['final_reduction_and_initial_increase']).to(self.device)
-        self.lambda_regularization = model_information['lambda_regularization']
+        self.lambda_regularization = model_information['loss_coefficients']['lambda_regularization'] if model_information['is_coupled'][0] else model_information['loss_coefficients_not_coupled']['lambda_regularization'] 
         
     def forward(self, fields:list, boundaries: tc.tensor = None):
         
@@ -72,25 +72,32 @@ class Fully_Connected_Encoder(nn.Module):
         self.number_of_layers = len(self.list_of_neurons)
         self.last_activation = fully_connected_information['last_activation_encoder']
         
-        self.first_layer = tc.nn.Linear(self.input_dimension, self.list_of_neurons[0], bias=True)
-        self.inner_layers = tc.nn.ModuleList([nn.Linear(self.list_of_neurons[i], self.list_of_neurons[i+1]) for i in range(self.number_of_layers-1)])
-        self.last_layer = tc.nn.Linear(self.list_of_neurons[-1], self.output_dimension, bias=True)
-        
         self.gelu = nn.GELU()
         self.activation = self.gelu
         
+        if len(self.list_of_neurons) != 0:
+            self.first_layer = tc.nn.Linear(self.input_dimension, self.list_of_neurons[0], bias=True)
+            self.inner_layers = tc.nn.ModuleList([nn.Linear(self.list_of_neurons[i], self.list_of_neurons[i+1]) for i in range(self.number_of_layers-1)])
+            self.last_layer = tc.nn.Linear(self.list_of_neurons[-1], self.output_dimension, bias=True)
+        
+        else:
+            self.first_layer = tc.nn.Linear(self.input_dimension, self.output_dimension, bias=True)
+        
+        
+        
     def forward(self, x:tc.tensor):
         x = self.first_layer(x)
-        x = self.activation(x)
-        for i in self.inner_layers:
-            x = i(x)
-            x = self.activation(x)
-            
-        x = self.last_layer(x)
         
-        if self.last_activation:
+        if len(self.list_of_neurons) != 0:
             x = self.activation(x)
+            for i in self.inner_layers:
+                x = i(x)
+                x = self.activation(x)
+                
+            x = self.last_layer(x)
             
+            if self.last_activation:
+                x = self.activation(x)
         return x
 
 class Convolutional_Encoder(nn.Module):
@@ -148,7 +155,6 @@ class Decoder(nn.Module):
         self.initial_increase = Fully_Connected_Decoder(config_training, model_information['auto_encoding']['final_reduction_and_initial_increase']).to(self.device)
         self.decoder_scalar_variables = Fully_Connected_Decoder(config_training, model_information['auto_encoding']['auto_encoder_scalar']).to(self.device)
         self.decoder_plenum_variables = Fully_Connected_Decoder(config_training, model_information['auto_encoding']['auto_encoder_plenum']).to(self.device)
-        self.decoder_boundaries_variables = Fully_Connected_Decoder(config_training, model_information['auto_encoding']['auto_encoder_boundaries']).to(self.device)
         self.decoder_core_variables = Convolutional_Decoder(config_training, model_information['auto_encoding']['auto_encoder_core']).to(self.device)
         self.decoder_vessel_variables = Convolutional_Decoder(config_training, model_information['auto_encoding']['auto_encoder_vessel']).to(self.device)
         self.decoder_faces_variables = Convolutional_Decoder(config_training, model_information['auto_encoding']['auto_encoder_faces']).to(self.device)
@@ -163,12 +169,7 @@ class Decoder(nn.Module):
                 index += int( model_information['auto_encoding'][i]['output_dimension_encoder'])
         return indeces
            
-    def forward(self, definitive_latent:tc.tensor, latent_boundaries: tc.tensor = None):
-        
-        if latent_boundaries is not None:
-            reconstructed_boundaries_variables = self.decoder_boundaries_variables(latent_boundaries)
-        else:
-            reconstructed_boundaries_variables = None
+    def forward(self, definitive_latent:tc.tensor):
             
         concatenated_latents = self.initial_increase(definitive_latent)
         latent_scalar_variables = concatenated_latents[:,0:self.indeces['auto_encoder_scalar']]
@@ -177,17 +178,14 @@ class Decoder(nn.Module):
         latent_vessel_variables = concatenated_latents[:,self.indeces['auto_encoder_core']:self.indeces['auto_encoder_vessel']]
         latent_faces_variables = concatenated_latents[:,self.indeces['auto_encoder_vessel']:self.indeces['auto_encoder_faces']]
         
-        latent_in_variables_separated = [latent_scalar_variables, latent_plenum_variables, latent_core_variables, latent_vessel_variables, latent_faces_variables, reconstructed_boundaries_variables] #useful at testing
+        latent_in_variables_separated = [latent_scalar_variables, latent_plenum_variables, latent_core_variables, latent_vessel_variables, latent_faces_variables] #useful at testing
         reconstructed_scalar_variables = self.decoder_scalar_variables(latent_scalar_variables)
         reconstructed_plenum_variables = self.decoder_plenum_variables(latent_plenum_variables)
         reconstructed_core_variables = self.decoder_core_variables(latent_core_variables)
         reconstructed_vessel_variables = self.decoder_vessel_variables(latent_vessel_variables)
         reconstructed_faces_variables = self.decoder_faces_variables(latent_faces_variables)
         
-        if latent_boundaries is not None:
-            return [reconstructed_scalar_variables, reconstructed_core_variables, reconstructed_vessel_variables, reconstructed_plenum_variables , reconstructed_faces_variables], reconstructed_boundaries_variables, latent_in_variables_separated
-        else:
-            return [reconstructed_scalar_variables, reconstructed_core_variables, reconstructed_vessel_variables, reconstructed_plenum_variables , reconstructed_faces_variables], latent_in_variables_separated
+        return [reconstructed_scalar_variables, reconstructed_core_variables, reconstructed_vessel_variables, reconstructed_plenum_variables , reconstructed_faces_variables], latent_in_variables_separated
     
 class Fully_Connected_Decoder(nn.Module):
     def __init__(self, config_training:dict, fully_connected_information:dict):

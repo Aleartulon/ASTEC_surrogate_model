@@ -8,22 +8,19 @@ from src.models.AE_NODE.training.data_functions import dynamics_MSE
 from src.models.AE_NODE.training.architecture import F_Latent
 from torch import nn
 
-def compute_errors_autoencoder(trajectory: str, error_per_trajectory_per_field : dict, reconstructed_fields : list, reconstructed_boundary_conditions : tc.tensor, fields : list, boundary_conditions: tc.tensor, which_error: str):
+def compute_errors_autoencoder(trajectory: str, error_per_trajectory_per_field : dict, reconstructed_fields : list, fields : list, which_error: str):
     if which_error == 'MSE_default':
-        _, MSE_default = auto_encoding_MSE(reconstructed_fields, fields, None, reconstructed_boundary_conditions, boundary_conditions, False)
+        _, MSE_default = auto_encoding_MSE(reconstructed_fields, fields, None, False)
         error_per_trajectory_per_field['MSE_default'][trajectory] = MSE_default
         
     elif which_error == 'MSE_normalized':
-        _, MSE_normalized = auto_encoding_MSE(reconstructed_fields, fields, None, reconstructed_boundary_conditions, boundary_conditions, True)
+        _, MSE_normalized = auto_encoding_MSE(reconstructed_fields, fields, None, True)
         error_per_trajectory_per_field['MSE_normalized'][trajectory] = MSE_normalized
     
 def fill_in_dictionaries_autoencoder_step(trajectory:str, reconstructed_fields_per_trajectory:dict, latent_vectors_per_trajectory_per_field:dict,  final_latent_vector_per_trajectory:dict, denormalized_fields_per_trajectory:dict,
-                                                 reconstructed_fields:list, reconstructed_boundary_conditions:tc.tensor, latent_in_per_shape:list, latent_boundaries_variables:tc.tensor, definitive_latent_vector:tc.tensor, fields: list, boundary_conditions:list):
+                                                 reconstructed_fields:list, latent_in_per_shape:list, latent_boundaries_variables:tc.tensor, definitive_latent_vector:tc.tensor, fields: list, boundary_conditions:list):
     
-    reconstructed_fields.append(reconstructed_boundary_conditions)
-    fields.append(boundary_conditions)
     latent_in_per_shape.append(latent_boundaries_variables)
-    
     reconstructed_fields_per_trajectory[trajectory] = reconstructed_fields
     latent_vectors_per_trajectory_per_field[trajectory] = latent_in_per_shape
     final_latent_vector_per_trajectory[trajectory] = definitive_latent_vector
