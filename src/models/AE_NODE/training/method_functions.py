@@ -37,30 +37,27 @@ class Training_Losses():
     def auto_encoding_loss(self, fields:list , boundaries:tc.tensor,length_of_padding:tc.tensor ,loss_coeff:list, train:bool):
         
         definitive_latent, latent_per_shape , latent_boundaries, regularization_latent = self.encoder(fields, boundaries)
-        reconstructed_variables, reconstructed_boundaries, reconstructed_latent_per_shape = self.decoder(definitive_latent, latent_boundaries)
+        reconstructed_variables, reconstructed_latent_per_shape = self.decoder(definitive_latent)
         
         # separate the reconstruction of boundaries and fields
         for count, i in enumerate(reconstructed_variables):
             size = i.size()
             reconstructed_variables[count] = tc.reshape(reconstructed_variables[count], ((fields[0].size()[0],fields[0].size()[1]) + size[1:]))
-        reconstructed_boundaries = tc.reshape(reconstructed_boundaries, ((boundaries.size()[0],boundaries.size()[1]) + reconstructed_boundaries.size()[1:]))
         
         for count, _ in enumerate(reconstructed_latent_per_shape):
             reconstructed_latent_per_shape[count] = tc.reshape(reconstructed_latent_per_shape[count], (fields[0].size()[0],fields[0].size()[1],-1))
             latent_per_shape[count] = tc.reshape(latent_per_shape[count], (fields[0].size()[0],fields[0].size()[1],-1))
         
         if train:
-            l1_mean, l1_per_shape = auto_encoding_MSE(reconstructed_variables, fields, length_of_padding, reconstructed_boundaries, boundaries) * loss_coeff[0][0] #field reconstruction
+            l1_mean, l1_per_shape = auto_encoding_MSE(reconstructed_variables, fields, length_of_padding) * loss_coeff[0][0] #field reconstruction
             l1_latent, _ = auto_encoding_MSE(reconstructed_latent_per_shape, latent_per_shape, length_of_padding) * loss_coeff[0][1] #latent reconstruction per shape
             l1 = [l1_mean, l1_per_shape, l1_latent]
         else:
-            l1_mean, l1_per_shape = auto_encoding_MSE(reconstructed_variables, fields, length_of_padding, reconstructed_boundaries, boundaries) * loss_coeff[0][0]
+            l1_mean, l1_per_shape = auto_encoding_MSE(reconstructed_variables, fields, length_of_padding) * loss_coeff[0][0]
             l1_latent, _ = auto_encoding_MSE(reconstructed_latent_per_shape, latent_per_shape, length_of_padding) * loss_coeff[0][1] #latent reconstruction per shape
             reconstructed_variables = standard_and_inverse_normalization_field(reconstructed_variables, self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)
-            reconstructed_boundaries = standard_and_inverse_normalization_field([reconstructed_boundaries], self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)[0]
             fields = standard_and_inverse_normalization_field(fields, self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)
-            boundaries = standard_and_inverse_normalization_field([boundaries], self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)[0]
-            l1_mean_denormalized, l1_mean_denormalized_per_variable = auto_encoding_MSE(reconstructed_variables, fields, length_of_padding, reconstructed_boundaries, boundaries, is_denormalized_validation = True) * loss_coeff[0][0]
+            l1_mean_denormalized, l1_mean_denormalized_per_variable = auto_encoding_MSE(reconstructed_variables, fields, length_of_padding, is_denormalized_validation = True) * loss_coeff[0][0]
 
             l1 = [l1_mean, l1_per_shape, l1_mean_denormalized, l1_mean_denormalized_per_variable, l1_latent ]
             

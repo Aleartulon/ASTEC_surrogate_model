@@ -11,7 +11,7 @@ loss_coefficients: # coefficients that are multiplied to the loss function terms
   AR: 1
   Random_DT: 1
   AR_strength: 0.0001
-  lambda_regularization: 0.00001 #coefficients in front of the regularization term for the latent vector
+  lambda_regularization: 0.0 #coefficients in front of the regularization term for the latent vector
 
 loss_coefficients_not_coupled: # coefficients that are multiplied to the loss function terms when the trainin of AE and NODE is decoupled, signaling the relative importance of each [AE, TF, AUTOREGRESSIVE, TIME_GENERALIZATION]
   AE: [1,1] #first one is for the field reconstruction, second one for the latent reconstruction per shape
@@ -19,7 +19,7 @@ loss_coefficients_not_coupled: # coefficients that are multiplied to the loss fu
   AR: 0
   Random_DT: 0
   AR_strength: 0.0
-  lambda_regularization: 0.00001 #coefficients in front of the regularization term for the latent vector
+  lambda_regularization: 0.0 #coefficients in front of the regularization term for the latent vector
 
 k: 4 # stage of the Runge-Kutta solver for the latent dynamics
 time_of_AE: 10 # number of initial epochs where only the AutoEncoder is trained, i.e., loss_coeff_TF_AR_together = [1, 0, 0, 0]. In parallel of this a linear warm-up of the learning rate is performed
@@ -37,7 +37,7 @@ auto_encoding:
   #Auto-Encoder scalar variables
   auto_encoder_scalar:
     input_dimension_encoder: 4
-    output_dimension_encoder: 1 #dimension of the latent space
+    output_dimension_encoder: 2 #dimension of the latent space
     list_of_neurons_encoder: [50,50,50]
     last_activation_encoder: false
 
@@ -47,7 +47,7 @@ auto_encoding:
   #Auto-Encoder plenum
   auto_encoder_plenum:
     input_dimension_encoder: 18
-    output_dimension_encoder: 1 #dimension of the latent space
+    output_dimension_encoder: 5 #dimension of the latent space
     list_of_neurons_encoder: [50,50,50]
     last_activation_encoder: false
 
@@ -58,11 +58,8 @@ auto_encoding:
   auto_encoder_boundaries:
     input_dimension_encoder: 6
     output_dimension_encoder: 6 #dimension of the latent space
-    list_of_neurons_encoder: [50,50,50]
+    list_of_neurons_encoder: []
     last_activation_encoder: false
-
-    list_of_neurons_decoder: [50,50,50]
-    last_activation_decoder: false
 
   #Auto-Encoder core
   auto_encoder_core:
@@ -70,7 +67,7 @@ auto_encoding:
     kernel_encoder: [3,3,3] #kernels sizes of the Encoder
     filters_encoder: [8,16,32] #number of filters of the Encoder
     strides_encoder: [[1,1],[2,1],[2,1]] #strides of the Encoder
-    output_dimension_encoder: 1 #dimension of the latent space
+    output_dimension_encoder: 6 #dimension of the latent space
     last_activation_encoder: false
 
     kernel_decoder: [[3,3],[4,3],[4,3],[3,3],[3,3],[3,3]] #kernels sizes of the decoder
@@ -84,7 +81,7 @@ auto_encoding:
     kernel_encoder: [3,3,3] #kernels sizes of the Encoder
     filters_encoder: [8,16,32] #number of filters of the Encoder
     strides_encoder: [[1,1],[2,1],[2,1]] #strides of the Encoder
-    output_dimension_encoder: 1 #dimension of the latent space
+    output_dimension_encoder: 6 #dimension of the latent space
     last_activation_encoder: false
 
     kernel_decoder: [[3,3],[4,3],[3,3],[3,3],[3,3],[3,3]]  #kernels of the Decoder. For this, use one upsampling with kernel 4 and one with kernel 3 because of odd output
@@ -98,7 +95,7 @@ auto_encoding:
     kernel_encoder: [3,3,3] #kernels sizes of the Encoder
     filters_encoder: [8,16,32] #number of filters of the Encoder
     strides_encoder: [[1,1],[2,2],[2,1]] #strides of the Encoder
-    output_dimension_encoder: 1 #dimension of the latent space
+    output_dimension_encoder: 6 #dimension of the latent space
     last_activation_encoder: false
 
     kernel_decoder: [[3,3],[4,3],[4,3],[3,3],[3,3],[3,3]]  #kernels sizes of the Encoder

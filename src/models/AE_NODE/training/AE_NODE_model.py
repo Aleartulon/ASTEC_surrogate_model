@@ -115,7 +115,7 @@ class AE_NODE:
         
         
         for fields, _, _, _ in self.validation_loader:
-            self.number_of_different_domains = len(fields)+1
+            self.number_of_different_domains = len(fields)
             break
         
         self.RK = {k: tc.tensor([[self.safe_eval(val) for val in row] for row in v]) for k, v in model_information['RK'].items()}
