@@ -102,15 +102,15 @@ auto_encoding:
 
   # Final_reduction
   final_reduction_and_initial_increase:
-    output_dimension_encoder: 3 # THIS IS THE ACTUAL FINAL REDUCED DIMENSION
-    list_of_neurons_encoder: [50,30]
+    output_dimension_encoder: 6 # THIS IS THE ACTUAL FINAL REDUCED DIMENSION
+    list_of_neurons_encoder: [50,50,50]
     last_activation_encoder: false
 
-    list_of_neurons_decoder: [50,30]
+    list_of_neurons_decoder: [50,50,50]
     last_activation_decoder: false
 
 #NODE
-n_layers_f: 8 #number of hidden Dense layers which build up the function f
+n_layers_f: 2 #number of hidden Dense layers which build up the function f
 parameter_information: "concatenation" #how the parameter information is passed to f. either 'concatenation' or 'FiLM'
 n_FiLM_conditioning : 1 #number of FiLM layers (if FiLM is chosen instead of concatenation). FiLM = 1 only applies to the latent vector
 n_neurons_f: 200 #number of neurons of each layer of f
@@ -119,15 +119,9 @@ scaling_output_factor: 0.1
 
 #Global
 weight_decay:
-<<<<<<< HEAD
-  encoder: 0.0
-  dfnn: 0.001
-  decoder: 0.0
-=======
-  encoder: 0.0001
-  dfnn: 0.0001
-  decoder: 0.0001
->>>>>>> 907a22720e35e82108a43da6d962b067fd0d0d94
+  encoder: 0.0000001
+  dfnn: 0.0000001
+  decoder: 0.0000001
 
 # for latent progression
 RK:
