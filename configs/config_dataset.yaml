@@ -2,7 +2,7 @@ path_to_hdf5 : '../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/'
 indeces_training : [1]
 indeces_validation : [1]
 indeces_testing : [1]
-t_W : 10 #temporal window for time subsets of time series
+t_W : 1 #temporal window for time subsets of time series
 save_dictionary_per_time_lengths : false
 which_normalization : 'mean_std' #min_max or mean_std
 number_of_workers : 8

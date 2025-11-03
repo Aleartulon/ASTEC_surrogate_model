@@ -72,10 +72,10 @@ class ASTEC_Dataset(Dataset):
             dictionary_of_input_variables_76 = tc.tensor(f['dictionary_of_input_variables_76'][idx], dtype=tc.float32)
             lower_plenum = tc.tensor(f['lower_plenum'][idx], dtype=tc.float32)
             dictionary_of_input_variables_140 = tc.tensor(f['dictionary_of_input_variables_140'][idx], dtype=tc.float32)
-            boundary_conditions = tc.tensor(f['boundary_conditions_and_time'][idx][:,:-2], dtype=tc.float32) #last one is t, not dt, not useful for this model
-            time = tc.tensor(f['boundary_conditions_and_time'][idx][:,-2], dtype=tc.float32) #last one is t, not dt, not useful for this model
+            boundary_conditions = f['boundary_conditions_and_time'][idx]
+            boundary_conditions_and_time = tc.tensor(np.concatenate([boundary_conditions[:-2], boundary_conditions[-1]]), dtype=tc.float32) #excludes dt and takes time
             length_of_padding = tc.tensor(f['length_of_padding'][idx], dtype=tc.float32)
-        return [dictionary_of_input_variables_1, dictionary_of_input_variables_36, dictionary_of_input_variables_76, lower_plenum, dictionary_of_input_variables_140], boundary_conditions, time, length_of_padding #keep boundary conditions separated for ease
+        return [dictionary_of_input_variables_1, dictionary_of_input_variables_36, dictionary_of_input_variables_76, lower_plenum, dictionary_of_input_variables_140], boundary_conditions_and_time, length_of_padding #keep boundary conditions separated for ease
     
     def __len__(self):
         

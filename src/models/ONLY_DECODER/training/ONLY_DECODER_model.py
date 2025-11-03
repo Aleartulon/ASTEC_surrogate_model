@@ -1,13 +1,13 @@
 import numpy as np
 import torch as tc
 import pickle
-from src.models.AE_NODE.training.architecture import *
-from src.models.AE_NODE.training.data_functions import *
-from src.models.AE_NODE.training.training_validation_functions import Training
+from src.models.ONLY_DECODER.training.architecture import *
+from src.models.ONLY_DECODER.training.data_functions import *
+from src.models.ONLY_DECODER.training.training_validation_functions import Training
 
 
 
-class AE_NODE:
+class ONLY_DECODER:
     def __init__(self , config_training: dict, model_information: dict):
         
         self.device = config_training['device']
