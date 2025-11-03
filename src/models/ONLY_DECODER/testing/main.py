@@ -4,7 +4,7 @@ import torch as tc
 import yaml
 import shutil
 from src.common_functions import load_config
-from src.models.AE_NODE.testing.model_test import Model_Test
+from src.models.ONLY_DECODER.testing.model_test import Model_Test
 
 def main():
     config_test = load_config('configs/config_test.yaml')

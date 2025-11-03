@@ -98,16 +98,16 @@ class Training():
                 time1 = time.time()
                 if i < self.warm_up_time: #use only AR
                     before_training = time.time()
-                    train_l1_data, train_l1_per_shape_data = self.train_epoch([self.loss_coefficients['AE'],0,0,0])
+                    train_l1_data, train_l1_per_shape_data = self.train_epoch([self.loss_coefficients['AE']])
                     before_validation = time.time()
-                    valid_l1_data, valid_l1_per_shape_data, valid_l1_unnorm_data, valid_l1_unnorm_per_variable_data = self.valid_epoch([1,1,1,1])
+                    valid_l1_data, valid_l1_per_shape_data, valid_l1_unnorm_data, valid_l1_unnorm_per_variable_data = self.valid_epoch([1])
                 else:
                         
                     before_training = time.time()
-                    train_l1_data, train_l1_per_shape_data = self.train_epoch([self.loss_coefficients['AE'],self.loss_coefficients['TF'],self.loss_coefficients['AR'],self.loss_coefficients['Random_DT']])
+                    train_l1_data, train_l1_per_shape_data = self.train_epoch([self.loss_coefficients['AE']])
                     before_validation = time.time()
                     
-                    valid_l1_data, valid_l1_per_shape_data, valid_l1_unnorm_data, valid_l1_unnorm_per_variable_data = self.valid_epoch([1,1,1,1])
+                    valid_l1_data, valid_l1_per_shape_data, valid_l1_unnorm_data, valid_l1_unnorm_per_variable_data = self.valid_epoch([1])
                     
                 time2 = time.time()
              
