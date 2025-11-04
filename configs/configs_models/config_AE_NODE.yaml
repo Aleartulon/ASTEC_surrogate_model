@@ -11,7 +11,7 @@ loss_coefficients: # coefficients that are multiplied to the loss function terms
   AR: 1
   Random_DT: 1
   AR_strength: 0.0001
-  lambda_regularization: 0.001 #coefficients in front of the regularization term for the latent vector
+  lambda_regularization: 0.01 #coefficients in front of the regularization term for the latent vector
 
 loss_coefficients_not_coupled: # coefficients that are multiplied to the loss function terms when the trainin of AE and NODE is decoupled, signaling the relative importance of each [AE, TF, AUTOREGRESSIVE, TIME_GENERALIZATION]
 
@@ -28,6 +28,7 @@ time_only_TF : 0 #number of initial epochs after warm up where only TF and not A
 clipping: [0, 2.5] #[if 1 clipping is applied to f, maximum norm allowed to gradients]
 is_coupled : [true, 'NODE'] #if true the AutoEncoder (AE) is trained coupled with the NODE. if false, if 'AE' the AE is trained, if 'NODE' the NODE is trained.
 path_trained_AE : '../../../../../../../scratch/ROM_datasets_ale/ASTEC/saved_logs/AE_NODE/Models/only_AE/' #if is_coupled : [false, 'NODE'], provide the path to the models weights of the AE
+
 
 autoregressive_step:
   start_from_t0: false

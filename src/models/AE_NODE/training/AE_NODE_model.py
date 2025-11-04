@@ -39,6 +39,7 @@ class AE_NODE:
         if len(self.batch_sizes) + len(self.waiting_epochs_before_new_dataset_creation) + len(self.time_windows) != len(self.time_windows) * 3:
             raise TypeError("Length of array of time_windows is not equal to length of array of batch_sizes or of waiting_epochs_before_new_dataset_creation")
         
+        #check confi files are okay when training decoupled
         if not self.is_coupled[0] and self.is_coupled[1] == 'AE' and (self.loss_coefficients['TF'] != 0.0 or self.loss_coefficients['AR'] != 0.0): 
             raise TypeError("Inconsistent loss coefficients in loss_coefficients_not_coupled")
         elif not self.is_coupled[0] and self.is_coupled[1] == 'NODE' and (self.loss_coefficients['AE'][0] != 0.0 or self.loss_coefficients['AE'][1] != 0.0 or self.loss_coefficients['lambda_regularization']!= 0.0 or not self.dynamic_dataset_generation_during_training): 

@@ -1,0 +1,64 @@
+#Data information
+data_training_file : 'data_training_normalized_t_W_1.h5' #use when using a fixed dataset during training
+data_validation_file : 'data_training_normalized_t_W_1.h5' #use when using a fixed dataset during training
+#Training information
+
+loss_coefficients: # coefficients that are multiplied to the loss function terms, signaling the relative importance of each [AE, TF, AUTOREGRESSIVE, TIME_GENERALIZATION]
+  AE: 1 #first one is for the field reconstruction, second one for the latent reconstruction per shape
+
+clipping: [0, 2.5] #[if 1 clipping is applied to f, maximum norm allowed to gradients]
+warm_up_time: 10
+decoding:
+  #Decoder scalar variables
+  decoding_scalar:
+    output_dimension: 4
+    list_of_neurons_decoder: [50,50,50]
+    input_dimension: 2 #dimension of the latent space
+    last_activation_decoder: false
+
+  #Decoder plenum
+  decoding_plenum:
+    output_dimension: 18
+    list_of_neurons_decoder: [50,50,50]
+    input_dimension: 5 #dimension of the latent space
+    last_activation_decoder: false
+
+  #Decoder core
+  decoding_core:
+    first_channel: 32
+    output_dimension: [4, 12, 3]  # first dimension is # of channels (one if the predicted solution is a scalar field), second is spatial dimensions per channel.
+    kernel_decoder: [[3,3],[4,3],[4,3],[3,3],[3,3],[3,3]] #kernels sizes of the decoder
+    filters_decoder: [16,8,4,4] #number of middle of the decoder. First one is filters_encoder[-1] and last one is output_dimension_encoder[-2]
+    strides_decoder: [[1,1],[2,1],[2,1],[1,1],[1,1],[1,1]] #strides of the decoder
+    input_dimension: 6 #dimension of the latent space
+    last_activation_decoder: false
+
+  #Decoder vessel
+  decoding_vessel:
+    first_channel: 32
+    output_dimension: [18, 15, 5]  # first dimension is # of channels (one if the predicted solution is a scalar field), second is spatial dimensions per channel.
+    kernel_decoder: [[3,3],[4,3],[3,3],[3,3],[3,3],[3,3]]  #kernels of the Decoder. For this, use one upsampling with kernel 4 and one with kernel 3 because of odd output
+    filters_decoder: [32,24, 20, 18] #number of filters of the Decoder
+    strides_decoder: [[1,1],[2,1],[2,1],[1,1],[1,1],[1,1]] #strides of the Decoder
+    input_dimension: 6 #dimension of the latent space
+    last_activation_decoder: false
+
+  #Decoder faces
+  decoding_faces:
+    first_channel: 32
+    output_dimension: [3, 16, 9]  # first dimension is # of channels (one if the predicted solution is a scalar field), second is spatial dimensions per channel.
+    kernel_decoder: [[3,3],[4,3],[4,3],[3,3],[3,3],[3,3]]  #kernels sizes of the Encoder
+    filters_decoder: [32,16,16,8] #number of filters of the Encoder
+    strides_decoder: [[1,1],[2,2],[2,1],[1,1],[1,1],[1,1]] #strides of the Encoder
+    input_dimension: 6 #dimension of the latent space
+    last_activation_decoder: false
+
+  # Final_reduction
+  decoding_initial_increase:
+    input_dimension: 7 # THIS IS THE ACTUAL FINAL REDUCED DIMENSION
+    list_of_neurons_decoder: [10,10,10]
+    last_activation_decoder: false
+
+#Global
+weight_decay:
+  decoder: 0.0
