@@ -60,7 +60,7 @@ class Encoder(nn.Module):
                 
             return lambda_l1 * l1_norm
         else:
-            return tc.tensor(0.0, device=latent_fields[0].device)
+            return tc.tensor(0.0, device=latent_fields.device)
     
 class Fully_Connected_Encoder(nn.Module):
     def __init__(self, config_training:dict, fully_connected_information:dict):

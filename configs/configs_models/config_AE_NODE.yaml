@@ -26,8 +26,8 @@ k: 4 # stage of the Runge-Kutta solver for the latent dynamics
 time_of_AE: 10 # number of initial epochs where only the AutoEncoder is trained, i.e., loss_coeff_TF_AR_together = [1, 0, 0, 0]. In parallel of this a linear warm-up of the learning rate is performed
 time_only_TF : 0 #number of initial epochs after warm up where only TF and not AR approach is used
 clipping: [0, 2.5] #[if 1 clipping is applied to f, maximum norm allowed to gradients]
-is_coupled : [false, 'AE'] #if true the AutoEncoder (AE) is trained coupled with the NODE. if false, if 'AE' the AE is trained, if 'NODE' the NODE is trained.
-path_trained_AE : '../../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/saved_logs/AE_NODE/Models/only_AE_no_boundary_reconstruction_with_regularization/' #if is_coupled : [false, 'NODE'], provide the path to the models weights of the AE
+is_coupled : [true, 'NODE'] #if true the AutoEncoder (AE) is trained coupled with the NODE. if false, if 'AE' the AE is trained, if 'NODE' the NODE is trained.
+path_trained_AE : '../../../../../../../scratch/ROM_datasets_ale/ASTEC/saved_logs/AE_NODE/Models/only_AE/' #if is_coupled : [false, 'NODE'], provide the path to the models weights of the AE
 
 autoregressive_step:
   start_from_t0: false
@@ -68,7 +68,7 @@ auto_encoding:
     kernel_encoder: [3,3,3] #kernels sizes of the Encoder
     filters_encoder: [8,16,32] #number of filters of the Encoder
     strides_encoder: [[1,1],[2,1],[2,1]] #strides of the Encoder
-    output_dimension_encoder: 6 #dimension of the latent space
+    output_dimension_encoder: 5 #dimension of the latent space
     last_activation_encoder: false
 
     kernel_decoder: [[3,3],[4,3],[4,3],[3,3],[3,3],[3,3]] #kernels sizes of the decoder
@@ -82,7 +82,7 @@ auto_encoding:
     kernel_encoder: [3,3,3] #kernels sizes of the Encoder
     filters_encoder: [8,16,32] #number of filters of the Encoder
     strides_encoder: [[1,1],[2,1],[2,1]] #strides of the Encoder
-    output_dimension_encoder: 6 #dimension of the latent space
+    output_dimension_encoder: 10 #dimension of the latent space
     last_activation_encoder: false
 
     kernel_decoder: [[3,3],[4,3],[3,3],[3,3],[3,3],[3,3]]  #kernels of the Decoder. For this, use one upsampling with kernel 4 and one with kernel 3 because of odd output
@@ -96,7 +96,7 @@ auto_encoding:
     kernel_encoder: [3,3,3] #kernels sizes of the Encoder
     filters_encoder: [8,16,32] #number of filters of the Encoder
     strides_encoder: [[1,1],[2,2],[2,1]] #strides of the Encoder
-    output_dimension_encoder: 6 #dimension of the latent space
+    output_dimension_encoder: 10 #dimension of the latent space
     last_activation_encoder: false
 
     kernel_decoder: [[3,3],[4,3],[4,3],[3,3],[3,3],[3,3]]  #kernels sizes of the Encoder
@@ -106,7 +106,7 @@ auto_encoding:
 
   # Final_reduction
   final_reduction_and_initial_increase:
-    output_dimension_encoder: 6 # THIS IS THE ACTUAL FINAL REDUCED DIMENSION
+    output_dimension_encoder: 10 # THIS IS THE ACTUAL FINAL REDUCED DIMENSION
 
     list_of_neurons_encoder: [10,10,10]
     last_activation_encoder: false
@@ -126,7 +126,7 @@ scaling_output_factor: 0.1
 weight_decay:
 
   encoder: 0.0
-  dfnn: 0.0000001
+  dfnn: 0.0
   decoder: 0.0
 
 # for latent progression
