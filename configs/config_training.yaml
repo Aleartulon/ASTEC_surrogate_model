@@ -1,19 +1,19 @@
 physics_model : '../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/saved_logs/' # this is the Path to a directory for the training on a given dataset
-description : '/first_try_min_max/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
+description : '/multiple_trajectories/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
 data_path : '../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/' #path of training and validation data
-model: 'ONLY_DECODER'
+model: 'AE_NODE'
 epochs: 5000 #maximum number of epochs
 learning_rate: 0.002 #initial learning rate
 gamma_lr: 0.999 # gamma of  tc.optim.lr_scheduler.ExponentialLR()
 early_stopping: 200
-batch_sizes: [128, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32] #batch size
-dynamic_dataset_generation_during_training : false
+batch_sizes: [64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64] #batch size
+dynamic_dataset_generation_during_training : true
 time_windows : [10, 20, 30, 40, 50, 60, 70, 80, 90, 100,110, 120, 130, 140, 150, 160, 170, 180, 190, 200 ]
 waiting_epochs_before_new_dataset_creation : [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100]
 number_of_workers: 8
 checkpoint: false  # if true uses existing checkpoint
 device : 'cuda' #device where to train
-which_normalization: 'min_max' # min_max or mean_std
+which_normalization: 'mean_std' # min_max or mean_std
 normalization_field : True # if true, maxima of each dimension of the solution fields are found. If not, dimension 1,2, etc are the maxima of dimension 1,2, etc of the solution field (only one if it is a scalar field)
 normalization_bc : False #if True, minima of each dimension of the vector of parameters are found. If not, dimension 1,2, etc are the minima of dimension 1,2, etc of the parameter vector
 

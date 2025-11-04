@@ -182,7 +182,8 @@ class Model_Test:
         maximum = -1e35
         for idx, i in enumerate(self.operator_actions_indeces):
             fig, ax = plt.subplots(figsize=(15, 4))
-            
+            with h5py.File(self.path_to_test_data + self.name_test_file, 'r') as f:
+                Time = np.array(f[str(i)]['Time'])
             for dimension in range(definitive_latent_vector_per_trajectory_AE[str(i)].size(-1)):
                 ax.plot(Time/ 3600.0, definitive_latent_vector_per_trajectory_AE[str(i)][:,dimension].cpu()[:])
                 minimum = np.min([minimum, np.min(definitive_latent_vector_per_trajectory_AE[str(i)][:,dimension].cpu().numpy())])
@@ -342,8 +343,8 @@ class Model_Test:
             dictionary_of_input_variables_76 = tc.tensor(np.array(f[trajectory]['dictionary_of_input_variables_76']), dtype=tc.float32, device = self.device)
             lower_plenum = tc.tensor(np.array(f[trajectory]['lower_plenum']), dtype=tc.float32, device = self.device)
             dictionary_of_input_variables_140 = tc.tensor(np.array(f[trajectory]['dictionary_of_input_variables_140']), dtype=tc.float32, device = self.device)
-            boundary_conditions = tc.tensor(np.array(f[trajectory]['boundary_conditions_and_time'][:, :,:-1]), dtype=tc.float32, device = self.device)
-            DT = tc.tensor(np.array(f[trajectory]['boundary_conditions_and_time'][:, :,-1]), dtype=tc.float32, device = self.device)
+            boundary_conditions = tc.tensor(np.array(f[trajectory]['boundary_conditions_and_time'][:, :,:-2]), dtype=tc.float32, device = self.device)
+            DT = tc.tensor(np.array(f[trajectory]['boundary_conditions_and_time'][:, :,-2]), dtype=tc.float32, device = self.device)
             time = tc.tensor(np.array(f[trajectory]['Time']), dtype=tc.float32, device = self.device)
 
         return [dictionary_of_input_variables_1, dictionary_of_input_variables_36, dictionary_of_input_variables_76, lower_plenum, dictionary_of_input_variables_140], boundary_conditions, time, DT #keep boundary conditions separated for ease
