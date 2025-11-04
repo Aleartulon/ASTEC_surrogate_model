@@ -80,7 +80,7 @@ def build_dictionary_of_variables():
                             'V_liq_face': []
                 },
                 'vessel_to_primary':{
-                    'Q_H20_connection':[],'Q_steam_connection':[], 'm_H20_connection':[], 'time':[] #only place where time information is stored
+                    'Q_H20_connection':[],'Q_steam_connection':[], 'm_H20_connection':[], 'dt':[] ,'time':[] #only place where time information is stored
                 },
                 'primary_to_vessel':{
                 'Q_H20_connection':[],'Q_steam_connection':[], 'm_H20_connection':[]
@@ -170,7 +170,8 @@ def fill_dictionary_of_variables(output_dict:dict, name:str, f:h5py._hl.files.Fi
     DT = next_time_step - previous_time_step
     DT = np.concatenate([next_time_step - previous_time_step, [DT[-1]]])
     
-    output_dict[name]['vessel_to_primary']['time'].append(DT)
+    output_dict[name]['vessel_to_primary']['dt'].append(DT) #used by AE_NODE
+    output_dict[name]['vessel_to_primary']['time'].append(f['dimensions/time_points'][0:index_stop]) #used by ONLY_DECODER
 
 def extract_input_output_bc_variables(path, array_of_datasets:list):
     output_dict = {}
@@ -211,8 +212,8 @@ def get_normalization_statistics(dictionary_unified:dict, type_of_normalization:
             minima_or_std[shape] = minimum
             maxima_or_mean[shape] = maximum
         
-        maxima_or_mean['boundary_conditions_and_time'][-1] = 1.0 #no normalization of dt
-        minima_or_std['boundary_conditions_and_time'][-1] = 0.0
+        maxima_or_mean['boundary_conditions_and_time'][-2] = 1.0 #no normalization of dt
+        minima_or_std['boundary_conditions_and_time'][-2] = 0.0
                     
     elif type_of_normalization == 'mean_std':
         for shape in shapes:
@@ -222,8 +223,8 @@ def get_normalization_statistics(dictionary_unified:dict, type_of_normalization:
             minima_or_std[shape] = std
             maxima_or_mean[shape] = mean
             
-        maxima_or_mean['boundary_conditions_and_time'][-1] = 0.0 #no normalization of dt
-        minima_or_std['boundary_conditions_and_time'][-1] = 1.0
+        maxima_or_mean['boundary_conditions_and_time'][-2] = 0.0 #no normalization of dt
+        minima_or_std['boundary_conditions_and_time'][-2] = 1.0
     
 
     else:
@@ -235,7 +236,7 @@ def get_normalization_statistics(dictionary_unified:dict, type_of_normalization:
 def normalize_fields(field: np.array, maximum_or_mean: dict, minimum_or_std: dict, normalization: str):
     size = np.shape(field)
     
-    if size[-1] == 7:
+    if size[-1] == 8:
         
         maximum_or_mean = maximum_or_mean['boundary_conditions_and_time']
         minimum_or_std = minimum_or_std['boundary_conditions_and_time']

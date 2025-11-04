@@ -11,7 +11,7 @@ loss_coefficients: # coefficients that are multiplied to the loss function terms
   AR: 1
   Random_DT: 1
   AR_strength: 0.0001
-  lambda_regularization: 0.001 #coefficients in front of the regularization term for the latent vector
+  lambda_regularization: 0.01 #coefficients in front of the regularization term for the latent vector
 
 loss_coefficients_not_coupled: # coefficients that are multiplied to the loss function terms when the trainin of AE and NODE is decoupled, signaling the relative importance of each [AE, TF, AUTOREGRESSIVE, TIME_GENERALIZATION]
   AE: [0,0] #first one is for the field reconstruction, second one for the latent reconstruction per shape
@@ -25,7 +25,7 @@ k: 4 # stage of the Runge-Kutta solver for the latent dynamics
 time_of_AE: 10 # number of initial epochs where only the AutoEncoder is trained, i.e., loss_coeff_TF_AR_together = [1, 0, 0, 0]. In parallel of this a linear warm-up of the learning rate is performed
 time_only_TF : 0 #number of initial epochs after warm up where only TF and not AR approach is used
 clipping: [0, 2.5] #[if 1 clipping is applied to f, maximum norm allowed to gradients]
-is_coupled : [false, 'NODE'] #if true the AutoEncoder (AE) is trained coupled with the NODE. if false, if 'AE' the AE is trained, if 'NODE' the NODE is trained.
+is_coupled : [true, 'NODE'] #if true the AutoEncoder (AE) is trained coupled with the NODE. if false, if 'AE' the AE is trained, if 'NODE' the NODE is trained.
 path_trained_AE : '../../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/saved_logs/AE_NODE/Models/only_AE_no_boundary_reconstruction_with_regularization/' #if is_coupled : [false, 'NODE'], provide the path to the models weights of the AE
 
 autoregressive_step:

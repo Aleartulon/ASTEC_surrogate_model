@@ -24,18 +24,14 @@ def build_dataset(batch_size:int, time_window: int, data_training_path: str, dat
     
     return training_loader, validation_loader
   
-def save_checkpoint(enco, f , dec, optimizer, scheduler, epoch, loss, loss_coeff_2, start_backprop,full_training_count,filepath):
+def save_checkpoint(dec, optimizer, scheduler, epoch, loss, full_training_count,filepath):
   
     checkpoint = {
-            'enco':enco.state_dict(),
-            'f':f.state_dict(),
             'dec':dec.state_dict(),
             'optim':optimizer.state_dict(),
             'scheduler':scheduler.state_dict(),
             'epoch' : epoch,
             'loss' : loss,
-            'loss_coeff_2': loss_coeff_2,
-            'start_backprop': start_backprop,
             'full_training_count' : full_training_count
         }
     tc.save(checkpoint, filepath)
@@ -72,10 +68,9 @@ class ASTEC_Dataset(Dataset):
             dictionary_of_input_variables_76 = tc.tensor(f['dictionary_of_input_variables_76'][idx], dtype=tc.float32)
             lower_plenum = tc.tensor(f['lower_plenum'][idx], dtype=tc.float32)
             dictionary_of_input_variables_140 = tc.tensor(f['dictionary_of_input_variables_140'][idx], dtype=tc.float32)
-            boundary_conditions = tc.tensor(f['boundary_conditions_and_time'][idx][:,:-2], dtype=tc.float32) #last one is t, not dt, not useful for this model
-            time = tc.tensor(f['boundary_conditions_and_time'][idx][:,-2], dtype=tc.float32) #last one is t, not dt, not useful for this model
-            length_of_padding = tc.tensor(f['length_of_padding'][idx], dtype=tc.float32)
-        return [dictionary_of_input_variables_1, dictionary_of_input_variables_36, dictionary_of_input_variables_76, lower_plenum, dictionary_of_input_variables_140], boundary_conditions, time, length_of_padding #keep boundary conditions separated for ease
+            boundary_conditions = f['boundary_conditions_and_time'][idx]
+            boundary_conditions_and_time = tc.tensor(np.concatenate([boundary_conditions[:,:-2], boundary_conditions[:,-2:-1]], axis = -1),dtype=tc.float32).squeeze(0) #excludes dt and takes time
+        return [dictionary_of_input_variables_1, dictionary_of_input_variables_36, dictionary_of_input_variables_76, lower_plenum, dictionary_of_input_variables_140], boundary_conditions_and_time #keep boundary conditions separated for ease
     
     def __len__(self):
         
