@@ -11,7 +11,7 @@ loss_coefficients: # coefficients that are multiplied to the loss function terms
   AR: 1
   Random_DT: 1
   AR_strength: 0.0001
-  lambda_regularization: 0.01 #coefficients in front of the regularization term for the latent vector
+  lambda_regularization: 0.001 #coefficients in front of the regularization term for the latent vector
 
 loss_coefficients_not_coupled: # coefficients that are multiplied to the loss function terms when the trainin of AE and NODE is decoupled, signaling the relative importance of each [AE, TF, AUTOREGRESSIVE, TIME_GENERALIZATION]
 
@@ -31,7 +31,6 @@ path_trained_AE : '../../../../../../../scratch/ROM_datasets_ale/ASTEC/saved_log
 
 
 autoregressive_step:
-  start_from_t0: false
   which_technique: 'fully_autoregressive' # this can be 'TBPP_from_end', 'TBPP_from_start', 'fully_autoregressive'
   TBPP_from_end_config: [1, 30, 40]  # [if 1 k_2 increases dynamically from k_2=1, number of epochs after which k_2 is increased by 1, max rvalue of k_2]
   TBPP_from_start_config: [1, 30, 40] #[if 1 k_2 increases dynamically from k_2=1, number of epochs after which k_2 is increased by 1, max rvalue of k_2]
