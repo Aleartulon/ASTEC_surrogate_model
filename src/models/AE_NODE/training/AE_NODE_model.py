@@ -23,6 +23,7 @@ class AE_NODE:
         self.is_coupled = model_information['is_coupled']
         self.autoregressive_step = model_information['autoregressive_step']
         
+        self.which_normalization = config_training['which_normalization']
         self.data_path = config_training['data_path']
         self.data_training_path = config_training['data_path'] + '/' + model_information['data_training_file']
         self.data_validation_path = config_training['data_path'] + '/' + model_information['data_validation_file']
@@ -48,7 +49,7 @@ class AE_NODE:
         #create datasets and dataloader for training and validation 
         if self.dynamic_dataset_generation_during_training:
             
-            self.training_loader, self.validation_loader = build_dataset(self.batch_sizes[0], self.time_windows[0], self.data_training_path_dynamic, self.data_validation_path_dynamic, self.number_of_workers, self.data_path)
+            self.training_loader, self.validation_loader = build_dataset(self.batch_sizes[0], self.time_windows[0], self.data_training_path_dynamic, self.data_validation_path_dynamic, self.number_of_workers, self.data_path, self.which_normalization)
         else:
             dataset_training = ASTEC_Dataset(self.data_training_path)
             self.training_loader = DataLoader(dataset_training, batch_size = self.batch_sizes[0], num_workers = self.number_of_workers, shuffle=True,drop_last=True,pin_memory=True)
@@ -68,7 +69,6 @@ class AE_NODE:
             self.maxima_or_mean[key] = tc.tensor(self.maxima_or_mean[key], device = self.device)
             self.minima_or_std[key] = tc.tensor(self.minima_or_std[key], device = self.device)
             
-        self.which_normalization = config_training['which_normalization']
 
         #define the ENCODER, the function f of the latent dynamics and the Decoder 
         self.encoder = Encoder(config_training, model_information)
