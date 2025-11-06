@@ -106,7 +106,7 @@ auto_encoding:
 
   # Final_reduction
   final_reduction_and_initial_increase:
-    output_dimension_encoder: 10 # THIS IS THE ACTUAL FINAL REDUCED DIMENSION
+    output_dimension_encoder: 6 # THIS IS THE ACTUAL FINAL REDUCED DIMENSION
 
     list_of_neurons_encoder: [10,10,10]
     last_activation_encoder: false
@@ -125,9 +125,9 @@ scaling_output_factor: 0.1
 #Global
 weight_decay:
 
-  encoder: 0.0
-  dfnn: 0.0
-  decoder: 0.0
+  encoder: 0.0000001
+  dfnn: 0.0000001
+  decoder: 0.0000001
 
 # for latent progression
 RK:
