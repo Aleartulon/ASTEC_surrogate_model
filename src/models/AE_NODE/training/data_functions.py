@@ -202,7 +202,6 @@ def dynamics_MSE(input: tc.tensor, target: tc.tensor, length_of_padding: tc.tens
     device = input[0].device
     loss_no_reduction = nn.MSELoss(reduction='none')
     loss = nn.MSELoss()
-    length_of_padding = tc.tensor([[197.]])
     if (length_of_padding is not None) and tc.any(length_of_padding != 0.0):
         mse = tc.tensor([], device = device)
         element_loss = loss_no_reduction(input, target) 
