@@ -136,60 +136,16 @@ class Training_Losses():
                     for index, field in enumerate(output_decoder):
                         reconstructed_fields_from_latent[index][:,count:count+1,:] = field
                     
-            l2_AR = dynamics_MSE(reconstructed_latent, true_latent[:,1:,:], True) 
+            l2_AR = dynamics_MSE(reconstructed_latent, true_latent[:,1:,:], F.relu((length_of_padding-1))) 
             
             if (not train):
                 reconstructed_fields_from_latent = standard_and_inverse_normalization_field(reconstructed_fields_from_latent, self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)
                 reconstructed_fields_from_latent = [tensor.squeeze(1) for tensor in reconstructed_fields_from_latent]
-                l_final, l_final_per_variable = auto_encoding_MSE(reconstructed_fields_from_latent, fields, is_denormalized_validation = True) #the boundary should not be taken into account here
+                l_final, l_final_per_variable = auto_encoding_MSE(reconstructed_fields_from_latent, fields, F.relu((length_of_padding-1)), is_denormalized_validation = True) 
+                
                 return l2_AR * loss_coeff, (l_final, l_final_per_variable)
             
             return l2_AR * loss_coeff, tc.tensor(0.0)
-        
-        elif self.start_backprop[0] == 1: #Encode ic and evolve in latent but TBPP
-
-            place_holder = tc.zeros((number_batches,number_of_time_steps-self.start_backprop[1], true_latent.size()[-1]), device = self.device)
-            next_latent, _, _, _ = self.encoder(input_encoder[:,0,...])
-            place_holder[:,0,:] = next_latent.clone()
-            with tc.no_grad():
-                for i in range(number_of_time_steps-self.start_backprop[1]-1):
-                    next_latent = self.processor_First_Order( next_latent, dt[:,i+1,:], latent_boundaries[:,i+1,:])
-                    place_holder[:,i+1,:] = next_latent.detach().clone()
-
-            place_holder = tc.reshape(place_holder,(number_batches*(number_of_time_steps-self.start_backprop[1]),true_latent.size()[-1]))
-            l2_AR_1 = tc.tensor(0.0,device=self.device)
-            next_latent, _, _, _ = self.encoder(input_encoder[:,0,...])
-            
-            for i in range(self.start_backprop[1]-1):
-                next_latent = self.processor_First_Order( next_latent, dt[:,i,:], latent_boundaries[:,i,:])
-                l2_AR_1 += self.L2_relative_loss_general(next_latent, true_latent[:,i+1,:], True)
-
-            l2_AR_2 = tc.tensor(0.0,device=self.device)
-            for i in range(self.start_backprop[1]):
-                place_holder = self.processor_First_Order(place_holder, dt[:,i:number_of_time_steps-self.start_backprop[1]+i,:].flatten().unsqueeze(-1), latent_boundaries[:,i:number_of_time_steps-self.start_backprop[1]+i,:].reshape(-1, latent_boundaries.size(-1)))
-            
-            place_holder = tc.reshape(place_holder,(number_batches,number_of_time_steps-self.start_backprop[1],true_latent.size()[-1]))
-            l2_AR_2 += self.L2_relative_loss_general(place_holder, true_latent[:,self.start_backprop[1]:,:], True)
-
-            return (l2_AR_1 * (self.start_backprop[1]-1) +l2_AR_2 *(number_of_time_steps-self.start_backprop[1]))/(number_of_time_steps-1) * loss_coeff, tc.tensor(0.0)
-            
-        elif self.start_backprop[0] == 2: # Encode full field self.start_backprop[1] steps in advance and from there TBPP
-
-            l2_AR_1 = tc.tensor(0.0,device=self.device)
-            next_latent, _, _, _ = self.encoder(input_encoder[:,0,...])
-            for i in range(self.start_backprop[1]-1):
-                next_latent = self.processor_First_Order(next_latent, dt[:,i,:], latent_boundaries[:,i,:])
-                l2_AR_1 += self.L2_relative_loss_general(next_latent, true_latent[:,i+1,:], True)
-
-            place_holder, _, _, _ = self.encoder(input_encoder)
-
-            for i in range(self.start_backprop[1]): 
-                place_holder = self.processor_First_Order( place_holder, dt[:,i:number_of_time_steps-self.start_backprop[1]+i,:].flatten().unsqueeze(-1) , latent_boundaries[:,i:number_of_time_steps-self.start_backprop[1]+i,:].reshape(-1, latent_boundaries.size(-1)))
-
-            place_holder = tc.reshape(place_holder,(number_batches,number_of_time_steps-self.start_backprop[1],true_latent.size()[-1]))
-            l2_AR_2 = self.L2_relative_loss_general(place_holder, true_latent[:,self.start_backprop[1]:,:], True)
-            
-            return (l2_AR_1 * (self.start_backprop[1]-1) +l2_AR_2 *(number_of_time_steps-self.start_backprop[1]))/(number_of_time_steps-1) * loss_coeff, tc.tensor(0.0)
             
     def processor_First_Order(self, definitive_latent:tc.tensor, dt:tc.tensor, latent_boudaries:tc.tensor):
 

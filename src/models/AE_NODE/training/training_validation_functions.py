@@ -133,6 +133,7 @@ class Training():
                 l3_loss += l3.detach().cpu().item()
                 regularization_loss += regularization_latent.detach().cpu().item()
                 count += 1
+                
         return l1_loss/count, l1_loss_per_shape/count, l1_loss_unnorm/count, l1_loss_unnorm_per_variable/count, l1_loss_latent/count, l2_TF_loss/count, l2_AR_loss/count , l3_loss/count, loss_real/count, loss_real_per_shape/count, regularization_loss/count , loss/count
 
 
@@ -225,7 +226,7 @@ class Training():
                     before_next_window_change-=1
                 
                 
-                if i > self.time_of_AE:
+                if i > self.time_of_lr_war_up:
                     self.scheduler.step()
                 else:
                     self.pre_scheduler.step()
