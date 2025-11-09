@@ -19,6 +19,7 @@ class AE_NODE:
         self.time_only_TF = model_information['time_only_TF']
         self.k = model_information['k']
         self.time_of_AE = model_information['time_of_AE']
+        self.time_of_lr_war_up = model_information['time_of_lr_war_up']
         self.clipping = model_information['clipping']
         self.is_coupled = model_information['is_coupled']
         self.autoregressive_step = model_information['autoregressive_step']
@@ -114,11 +115,9 @@ class AE_NODE:
 
         #define optimizer, the pre scheduler for the warmup of the model and the scheduler
         self.optim = tc.optim.Adam(params_to_optimize, lr=config_training['learning_rate'])
-        lambda1 = lambda i : i / model_information['time_of_AE']
+        lambda1 = lambda i : i / self.time_of_lr_war_up
         self.pre_scheduler = tc.optim.lr_scheduler.LambdaLR(self.optim,lambda1)
         self.scheduler = tc.optim.lr_scheduler.ExponentialLR(self.optim, config_training['gamma_lr'])
-        
-        
         
         for fields, _, _, _ in self.validation_loader:
             self.number_of_different_domains = len(fields)

@@ -294,19 +294,15 @@ class F_Latent(nn.Module):
                 for i in self.linears:
                     nn.init.kaiming_uniform_(i.weight)
                 
-                # zero initialization helps with stability
-                nn.init.zeros_(self.linears[-1].weight)
-                nn.init.zeros_(self.linears[-1].bias)
+                nn.init.kaiming_uniform_(self.linears[-1].weight)
                 
             else:
                 if self.param_dim > 0:
                     self.dfnn = nn.Linear(self.final_latent_dim + self.param_dim, self.final_latent_dim, bias = True)
-                    nn.init.zeros_(self.dfnn.weight)
-                    nn.init.zeros_(self.dfnn.bias)
+                    nn.init.kaiming_uniform_(i.weight)
                 else:
                     self.dfnn = nn.Linear(self.final_latent_dim, self.final_latent_dim, bias = True)
-                    nn.init.zeros_(self.dfnn.weight)
-                    nn.init.zeros_(self.dfnn.bias)
+                    nn.init.kaiming_uniform_(i.weight)
 
 
         elif self.parameter_information == 'FiLM':
@@ -323,10 +319,8 @@ class F_Latent(nn.Module):
 
             for i in self.linears:
                 nn.init.kaiming_uniform_(i.weight)
-            
-            # zero initialization helps with stability
-            nn.init.zeros_(self.linears[-1].weight)
-            nn.init.zeros_(self.linears[-1].bias)
+                
+            nn.init.kaiming_uniform_(self.linears[-1].weight)
             
         else:
             raise ValueError("Wrong name of the type of parameter information")
@@ -355,10 +349,8 @@ class F_Latent(nn.Module):
             
             # Middle layers with residual connections
             for i in self.linears[1:-1]:
-                residual = x
                 x = i(x)
                 x = self.activation(x)
-                x = x + residual  # Residual connection
             
             # Final layer
             x = self.linears[-1](x)
@@ -382,14 +374,12 @@ class F_Latent(nn.Module):
             
             # Middle layers with residual connections
             for count, i in enumerate(self.linears[1:-1], start=1):
-                residual = x
                 x = i(x)
                 if (count+1) < self.n_FiLM_conditioning:
                     parameter_vector_gamma = self.param_FiLM_gamma[count+1](parameter)
                     parameter_vector_beta = self.param_FiLM_beta[count+1](parameter)
                     x = parameter_vector_gamma * x + parameter_vector_beta
                 x = self.activation(x)
-                x = x + residual  # Residual connection
                 
             # Final layer
             x = self.linears[-1](x)

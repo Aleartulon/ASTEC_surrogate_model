@@ -135,13 +135,11 @@ def standard_and_inverse_normalization_field(x: list, maxima_or_mean: dict, mini
     return x_denormalized
 
 def create_padding_mask(size_of_tensor: list, length_of_padding: tc.tensor, device: tc.device):
-        
         mask = tc.ones(size_of_tensor, device = device)
         columns = tc.arange(size_of_tensor[1])
-        where_to_fill = columns>=length_of_padding
+        where_to_fill = columns>=(size_of_tensor[1]-length_of_padding)
         where_to_fill = where_to_fill[(...,) + (None,) * (len(size_of_tensor)-2)].expand(size_of_tensor).to(device)
         mask = mask.masked_fill(where_to_fill, 0.0)
-        
         return mask
 
 
@@ -153,7 +151,6 @@ def auto_encoding_MSE(input: list, target: list, length_of_padding: tc.tensor = 
     mse = tc.tensor([], device = device)
     mse_per_variable = []
     counting_elements = []
-
     if is_denormalized_validation:
         for count, i in enumerate(input):
             if is_denormalized_validation:

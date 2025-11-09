@@ -226,7 +226,7 @@ class Training():
                     before_next_window_change-=1
                 
                 
-                if i > self.time_of_AE:
+                if i > self.time_of_lr_war_up:
                     self.scheduler.step()
                 else:
                     self.pre_scheduler.step()
