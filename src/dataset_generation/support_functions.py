@@ -82,6 +82,12 @@ def build_dictionary_of_variables():
                 'vessel_to_primary':{
                     'Q_H20_connection':[],'Q_steam_connection':[], 'm_H20_connection':[], 'dt':[] ,'time':[] #only place where time information is stored
                 },
+                'VDO':{ 'T_gas_primary_volume': [],'x_alfa_primary_volume':[],'P_steam_primary_volume': [],'P_saturation_primary_volume': [],'P_H2_primary_volume': [],'P_primary_volume': [],
+                        'm_steam_primary_volume': [],'rho_liq_primary_volume':[], 'm_liq_primary_volume': [], 'T_sat_primary_volume': [],'x_steam_primary_volume': [],'T_liq_primary_volume': []
+                    },
+                'UPP_V001':{ 'T_gas_primary_volume': [],'x_alfa_primary_volume':[],'P_steam_primary_volume': [],'P_saturation_primary_volume': [],'P_H2_primary_volume': [],'P_primary_volume': [],
+                        'm_steam_primary_volume': [],'rho_liq_primary_volume':[], 'm_liq_primary_volume': [], 'T_sat_primary_volume': [],'x_steam_primary_volume': [],'T_liq_primary_volume': []
+                    },
                 'primary_to_vessel':{
                 'Q_H20_connection':[],'Q_steam_connection':[], 'm_H20_connection':[]
                 }
@@ -159,10 +165,43 @@ def fill_dictionary_of_variables(output_dict:dict, name:str, f:h5py._hl.files.Fi
             'm_H20_connection': f['connection/general/m_H20_connection'][:, 0],
         }
     
+    # PROMARY VOLUME VDO
+    VDO = {'T_gas_primary_volume': f['primary/volume/T_gas_primary_volume'][:][:,0],
+           'x_alfa_primary_volume': f['primary/volume/x_alfa_primary_volume'][:][:,0],
+           'P_steam_primary_volume': f['primary/volume/P_steam_primary_volume'][:][:,0],
+           'P_saturation_primary_volume': f['primary/volume/P_saturation_primary_volume'][:][:,0],
+           'P_H2_primary_volume': f['primary/volume/P_H2_primary_volume'][:][:,0],
+           'P_primary_volume': f['primary/volume/P_primary_volume'][:][:,0],
+           'm_steam_primary_volume': f['primary/volume/m_steam_primary_volume'][:][:,0],
+           'rho_liq_primary_volume': f['primary/volume/rho_liq_primary_volume'][:][:,0],
+           'm_liq_primary_volume': f['primary/volume/m_liq_primary_volume'][:][:,0],
+           'T_sat_primary_volume': f['primary/volume/T_sat_primary_volume'][:][:,0],
+           'x_steam_primary_volume': f['primary/volume/x_steam_primary_volume'][:][:,0],
+           'T_liq_primary_volume': f['primary/volume/T_liq_primary_volume'][:][:,0],
+           }
+    
+    UPP_V001 = {'T_gas_primary_volume': f['primary/volume/T_gas_primary_volume'][:][:,12],
+           'x_alfa_primary_volume': f['primary/volume/x_alfa_primary_volume'][:][:,12],
+           'P_steam_primary_volume': f['primary/volume/P_steam_primary_volume'][:][:,12],
+           'P_saturation_primary_volume': f['primary/volume/P_saturation_primary_volume'][:][:,12],
+           'P_H2_primary_volume': f['primary/volume/P_H2_primary_volume'][:][:,12],
+           'P_primary_volume': f['primary/volume/P_primary_volume'][:][:,12],
+           'm_steam_primary_volume': f['primary/volume/m_steam_primary_volume'][:][:,12],
+           'rho_liq_primary_volume': f['primary/volume/rho_liq_primary_volume'][:][:,12],
+           'm_liq_primary_volume': f['primary/volume/m_liq_primary_volume'][:][:,12],
+           'T_sat_primary_volume': f['primary/volume/T_sat_primary_volume'][:][:,12],
+           'x_steam_primary_volume': f['primary/volume/x_steam_primary_volume'][:][:,12],
+           'T_liq_primary_volume': f['primary/volume/T_liq_primary_volume'][:][:,12],
+           }
+    
     # === CREATE ORGANIZED BOUNDARY CONDITION DICTIONARY ===
     for i in ['Q_H20_connection','Q_steam_connection', 'm_H20_connection']:
         output_dict[name]['primary_to_vessel'][i].append(np.array(primary_inlet_bc[i])[0:index_stop])
         output_dict[name]['vessel_to_primary'][i].append(np.array(primary_outlet_bc[i])[0:index_stop])
+        
+    for i in ['T_gas_primary_volume','x_alfa_primary_volume', 'P_steam_primary_volume', 'P_saturation_primary_volume', 'P_H2_primary_volume','P_primary_volume', 'm_steam_primary_volume', 'rho_liq_primary_volume', 'm_liq_primary_volume', 'T_sat_primary_volume', 'x_steam_primary_volume', 'T_liq_primary_volume']:
+        output_dict[name]['VDO'][i].append(np.array(VDO[i])[0:index_stop])
+        output_dict[name]['UPP_V001'][i].append(np.array(UPP_V001[i])[0:index_stop])
         
     next_time_step = f['dimensions/time_points'][:][1:index_stop]
     previous_time_step = f['dimensions/time_points'][:][0:index_stop-1]
@@ -236,7 +275,7 @@ def get_normalization_statistics(dictionary_unified:dict, type_of_normalization:
 def normalize_fields(field: np.array, maximum_or_mean: dict, minimum_or_std: dict, normalization: str):
     size = np.shape(field)
     
-    if size[-1] == 8:
+    if size[-1] == 32:
         
         maximum_or_mean = maximum_or_mean['boundary_conditions_and_time']
         minimum_or_std = minimum_or_std['boundary_conditions_and_time']
@@ -268,7 +307,7 @@ def normalize_fields(field: np.array, maximum_or_mean: dict, minimum_or_std: dic
         minimum_or_std = minimum_or_std[None,None,:, None]
         
     else:
-        raise TypeError(f"Something is wrong with data")
+        raise TypeError(f"Something is wrong with data, shape is {size}")
     
     if normalization == 'min_max':
         

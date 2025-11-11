@@ -28,7 +28,11 @@ time_of_lr_war_up: 10 #number of epochs of the linear warm-up of the learning ra
 time_only_TF : 0 #number of initial epochs after warm up where only TF and not AR approach is used
 clipping: [0, 2.5] #[if 1 clipping is applied to f, maximum norm allowed to gradients]
 is_coupled : [true, 'NODE'] #if true the AutoEncoder (AE) is trained coupled with the NODE. if false, if 'AE' the AE is trained, if 'NODE' the NODE is trained.
+<<<<<<< HEAD
 path_trained_AE : '../../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/saved_logs/AE_NODE/Models/multiple_trajectories_only_AE/' #if is_coupled : [false, 'NODE'], provide the path to the models weights of the AE
+=======
+path_trained_AE : '../../../../../../../scratch/ROM_datasets_ale/ASTEC/saved_logs/AE_NODE/Models/multiple_trajectories_only_AE/' #if is_coupled : [false, 'NODE'], provide the path to the models weights of the AE
+>>>>>>> ac3defb6fb658ec14aa380cb04eacb73e018a369
 
 
 autoregressive_step:
@@ -58,8 +62,8 @@ auto_encoding:
 
   #Auto-Encoder boundaries
   auto_encoder_boundaries:
-    input_dimension_encoder: 6
-    output_dimension_encoder: 6 #dimension of the latent space
+    input_dimension_encoder: 30
+    output_dimension_encoder: 30 #dimension of the latent space
     list_of_neurons_encoder: []
     last_activation_encoder: false
 

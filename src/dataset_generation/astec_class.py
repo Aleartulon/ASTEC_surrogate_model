@@ -93,9 +93,12 @@ class Astec_Dataset():
                 dict[n_o_s][m_t] = concatenated_array
         # now mix the bcs
         for i in dict:
-            dict[i]['boundary_conditions_and_time'] = np.concatenate([dict[i]['primary_to_vessel'], dict[i]['vessel_to_primary']],axis = -1)
+
+            dict[i]['boundary_conditions_and_time'] = np.concatenate([dict[i]['primary_to_vessel'], dict[i]['VDO'], dict[i]['UPP_V001'], dict[i]['vessel_to_primary']],axis = -1)
             dict[i].pop('primary_to_vessel')
             dict[i].pop('vessel_to_primary')
+            dict[i].pop('VDO')
+            dict[i].pop('UPP_V001')
         
         return dict
     
@@ -144,16 +147,20 @@ class Astec_Dataset():
                 shape = np.shape(normalized_data)
                 if shape[-1] == 140:
                     normalized_data = make_faces_array(normalized_data)
+                    normalized_dict[variable] = normalized_data
                 elif shape[-1] == 36:
                     normalized_data = np.reshape(normalized_data, (shape[0],shape[1],shape[2],12,3))
+                    normalized_dict[variable] = normalized_data
                 elif shape[-1] == 76:
                     lower_plenum = normalized_data[:,:,:,0]
                     mesh = normalized_data[:,:,:,1:].reshape(shape[0],shape[1],shape[2],15,5)
                     normalized_data = mesh
+                    normalized_dict[variable] = normalized_data
                     normalized_dict['lower_plenum'] = lower_plenum
-                elif shape[-1] == 7 or shape[-1] == 13 and len(shape) !=2:
-                    normalized_data = np.reshape(normalized_data, (shape[0],shape[1],shape[2]))
-                normalized_dict[variable] = normalized_data
+                elif len(shape) == 3:
+                    normalized_dict[variable] = normalized_data
+                else:
+                    raise TypeError(f"Something is wrong with data, shape is {shape}")
             else:
                 normalized_dict[variable] = self.dictionary_of_sliced_windows[variable]
                 
