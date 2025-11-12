@@ -53,10 +53,10 @@ class AE_NODE:
             self.training_loader, self.validation_loader = build_dataset(self.batch_sizes[0], self.time_windows[0], self.data_training_path_dynamic, self.data_validation_path_dynamic, self.number_of_workers, self.data_path, self.which_normalization)
         else:
             dataset_training = ASTEC_Dataset(self.data_training_path)
-            self.training_loader = DataLoader(dataset_training, batch_size = self.batch_sizes[0], num_workers = self.number_of_workers, shuffle=True,drop_last=True,pin_memory=True)
+            self.training_loader = DataLoader(dataset_training, batch_size = self.batch_sizes[0], num_workers = self.number_of_workers, shuffle=True,drop_last=False,pin_memory=True)
         
             dataset_validation = ASTEC_Dataset(self.data_validation_path)
-            self.validation_loader = DataLoader(dataset_validation, batch_size = self.batch_sizes[0], num_workers = self.number_of_workers, shuffle=True,drop_last=True,pin_memory=True)
+            self.validation_loader = DataLoader(dataset_validation, batch_size = self.batch_sizes[0], num_workers = self.number_of_workers, shuffle=True,drop_last=False,pin_memory=True)
         #get normalization information
         
         with open(config_training['data_path']+'/maxima_or_mean.pkl', 'rb') as f:
