@@ -6,10 +6,10 @@ epochs: 5000 #maximum number of epochs
 learning_rate: 0.002 #initial learning rate
 gamma_lr: 0.999 # gamma of  tc.optim.lr_scheduler.ExponentialLR()
 early_stopping: 500
-batch_sizes: [128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128] #batch size
+batch_sizes: [128, 128, 128, 128, 128, 128, 128, 128] #batch size
 dynamic_dataset_generation_during_training : true
-time_windows : [10, 20, 30, 40, 50, 60, 70, 80, 90, 150,110, 120, 130, 140, 150, 160, 170, 180, 190, 200]
-waiting_epochs_before_new_dataset_creation : [150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150]
+time_windows : [10, 50, 100, 200, 300, 500, 1000, 2000]
+waiting_epochs_before_new_dataset_creation : [150, 150, 150, 150, 150, 150, 150, 150]
 number_of_workers: 8
 checkpoint: false  # if true uses existing checkpoint
 device : 'cuda' #device where to train
