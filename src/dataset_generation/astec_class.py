@@ -246,7 +246,7 @@ class Astec_Dataset():
     
     def get_operator_actions(self, trajectory):
         operator_actions_dict = {}
-        with h5py.File(self.path_to_hdf5+'/'+str(trajectory), 'r') as f:
+        with h5py.File(self.path_to_hdf5+'/'+str(trajectory)+'.h5', 'r') as f:
             operator_names = ['t_fbseb', 't1_srv', 'opensrv', 't2_srv', 'tendssg2', 'tpesp','tpessg', 'tcss', 'p_u5', 'tsg2tr']
             for op in operator_names:
                 operator_actions_dict[op] = (f['other/private/'+ op][0])/ 3600.0

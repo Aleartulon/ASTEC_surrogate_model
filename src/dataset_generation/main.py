@@ -4,6 +4,7 @@ import torch as tc
 import yaml
 import shutil
 import argparse
+import numpy as np
 from src.common_functions import load_config
 from src.dataset_generation.astec_class import Astec_Dataset
 
@@ -43,18 +44,23 @@ def main():
     testing = config_dataset['testing']
     print(f'Testing is {testing}!')
     
+    indeces_training = np.arange(config_dataset['indeces_training_boundaries'][0], config_dataset['indeces_training_boundaries'][1],1)
+    indeces_validation = np.arange(config_dataset['indeces_validation_boundaries'][0], config_dataset['indeces_validation_boundaries'][1],1)
+    indeces_testing = np.arange(config_dataset['indeces_testing_boundaries'][0], config_dataset['indeces_testing_boundaries'][1],1)
+    
+    
     if testing:
         # Build test data
         print('--------------------------------Build testing dataset--------------------------------')
-        astec_dataset.build_testing_dataset(config_dataset['indeces_testing'])
+        astec_dataset.build_testing_dataset(indeces_testing)
     else:
         # Build training data
         print('--------------------------------Build training dataset--------------------------------')
-        astec_dataset.build_training_dataset(config_dataset['indeces_training'], 'training')
+        astec_dataset.build_training_dataset(indeces_training, 'training')
         
         # Build validation data
         print('--------------------------------Build validation dataset--------------------------------')
-        astec_dataset.build_training_dataset(config_dataset['indeces_validation'], 'validation')
+        astec_dataset.build_training_dataset(indeces_validation, 'validation')
 
 if __name__ == '__main__':
     main()

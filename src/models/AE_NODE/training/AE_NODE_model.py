@@ -1,6 +1,7 @@
 import numpy as np
 import torch as tc
 import pickle
+import shutil
 from src.models.AE_NODE.training.architecture import *
 from src.models.AE_NODE.training.data_functions import *
 from src.models.AE_NODE.training.training_validation_functions import Training
@@ -38,6 +39,9 @@ class AE_NODE:
         self.waiting_epochs_before_new_dataset_creation = config_training['waiting_epochs_before_new_dataset_creation']
         self.dynamic_dataset_generation_during_training = config_training['dynamic_dataset_generation_during_training']
         self.time_windows = config_training['time_windows']
+        
+        #save conversion name file 
+        shutil.copy( self.data_path + '/rename_log.txt', self.PATH_logs + '/rename_log.txt')
         
         if len(self.batch_sizes) + len(self.waiting_epochs_before_new_dataset_creation) + len(self.time_windows) != len(self.time_windows) * 3:
             raise TypeError("Length of array of time_windows is not equal to length of array of batch_sizes or of waiting_epochs_before_new_dataset_creation")
