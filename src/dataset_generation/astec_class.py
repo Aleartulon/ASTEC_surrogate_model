@@ -9,6 +9,7 @@ class Astec_Dataset():
     def __init__(self , config_dataset: dict):
         
         self.path_to_hdf5 = config_dataset['path_to_hdf5']
+        self.where_to_save_data = config_dataset['where_to_save_data']
         self.t_W = config_dataset['t_W']
         self.save_dictionary_per_time_lengths = config_dataset['save_dictionary_per_time_lengths']
         self.which_normalization = config_dataset['which_normalization']
@@ -21,7 +22,7 @@ class Astec_Dataset():
         
         #save dictionary_per_simulation to hdf5s if self.save_dictionary_per_time_lengths is true
         if self.save_dictionary_per_time_lengths:
-            with h5py.File(self.path_to_hdf5+'/data_'+self.purpose_of_data+'.h5', 'w') as f:
+            with h5py.File(self.where_to_save_data+'/data_'+self.purpose_of_data+'.h5', 'w') as f:
                 dict_to_hdf5(self.dictionary_per_simulation, f) 
         
         #get normalization statistics
@@ -42,18 +43,18 @@ class Astec_Dataset():
             self.minima_or_std = {k: np.float32(v) for k, v in self.minima_or_std.items()}
             
             #save normalization statistics for training and testing
-            with open(self.path_to_hdf5+'/maxima_or_mean.pkl', 'wb') as f:
+            with open(self.where_to_save_data+'/maxima_or_mean.pkl', 'wb') as f:
                 pickle.dump(self.maxima_or_mean, f)
 
-            with open(self.path_to_hdf5+'/minima_or_std.pkl', 'wb') as f:
+            with open(self.where_to_save_data+'/minima_or_std.pkl', 'wb') as f:
                 pickle.dump(self.minima_or_std, f)
                 
         elif purpose_of_data == 'validation':
             
-            with open(self.path_to_hdf5 + '/maxima_or_mean.pkl', 'rb') as file:
+            with open(self.where_to_save_data + '/maxima_or_mean.pkl', 'rb') as file:
                 self.maxima_or_mean = pickle.load(file)
             
-            with open(self.path_to_hdf5 + '/minima_or_std.pkl', 'rb') as file:
+            with open(self.where_to_save_data + '/minima_or_std.pkl', 'rb') as file:
                 self.minima_or_std = pickle.load(file)
             
         #divide datasets in time windows of length t_W, pad and mix the trajectories
@@ -73,7 +74,7 @@ class Astec_Dataset():
         for key in self.dictionary_of_sliced_windows:
             print(key, np.shape(self.dictionary_of_sliced_windows[key]))
         #save normalized dictionary with sliced windows
-        with h5py.File(f'{self.path_to_hdf5}/data_{self.purpose_of_data}_normalized_t_W_'+str(self.t_W)+'.h5', 'w') as f:
+        with h5py.File(f'{self.where_to_save_data}/data_{self.purpose_of_data}_normalized_t_W_'+str(self.t_W)+'.h5', 'w') as f:
             dict_to_hdf5(self.dictionary_of_sliced_windows, f)
             
         return 0
@@ -176,10 +177,10 @@ class Astec_Dataset():
                 
     def build_testing_dataset(self, indeces):
         
-        with open(self.path_to_hdf5 + '/maxima_or_mean.pkl', 'rb') as file:
+        with open(self.where_to_save_data + '/maxima_or_mean.pkl', 'rb') as file:
             maxima_or_mean = pickle.load(file)
         
-        with open(self.path_to_hdf5 + '/minima_or_std.pkl', 'rb') as file:
+        with open(self.where_to_save_data + '/minima_or_std.pkl', 'rb') as file:
             minima_or_std = pickle.load(file)
         
         dictionary_per_trajectory, self.time_of_simulations = extract_input_output_bc_variables(self.path_to_hdf5, indeces) #build dictionary of data divided by numbers of simulations
@@ -206,7 +207,7 @@ class Astec_Dataset():
                 print(f"shape {number_of_simulation}, {shape}", np.shape(dictionary_per_trajectory[number_of_simulation][shape]))
             
         #save dictionary_per_simulation to hdf5s if self.save_dictionary_per_time_lengths is true
-        with h5py.File(self.path_to_hdf5+'/data_testing.h5', 'w') as f:
+        with h5py.File(self.where_to_save_data+'/data_testing.h5', 'w') as f:
             dict_to_hdf5(dictionary_per_trajectory, f) 
     
     def normalize_testing_dataset(self, dictionary_per_trajectory:dict, maxima_or_mean : dict, minima_or_std: dict):
@@ -245,7 +246,7 @@ class Astec_Dataset():
     
     def get_operator_actions(self, trajectory):
         operator_actions_dict = {}
-        with h5py.File(self.path_to_hdf5+'/'+str(trajectory)+'.h5', 'r') as f:
+        with h5py.File(self.path_to_hdf5+'/'+str(trajectory), 'r') as f:
             operator_names = ['t_fbseb', 't1_srv', 'opensrv', 't2_srv', 'tendssg2', 'tpesp','tpessg', 'tcss', 'p_u5', 'tsg2tr']
             for op in operator_names:
                 operator_actions_dict[op] = (f['other/private/'+ op][0])/ 3600.0

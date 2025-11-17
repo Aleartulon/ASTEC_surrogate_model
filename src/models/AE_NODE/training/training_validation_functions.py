@@ -141,8 +141,8 @@ class Training():
         
         if not self.checkpoint:
             # create losses file
-            os.makedirs(self.PATH+'/losses/',exist_ok=True)
-            os.makedirs(self.PATH+'/checkpoint/',exist_ok=True)
+            os.makedirs(self.PATH_logs+'/losses/',exist_ok=True)
+            os.makedirs(self.PATH_logs+'/checkpoint/',exist_ok=True)
             
             #start the training
 
@@ -216,7 +216,7 @@ class Training():
                 if self.dynamic_dataset_generation_during_training and i > (self.time_only_TF + self.time_of_AE) and how_many_datasets_creations < len(self.time_windows):
                     
                     if before_next_window_change == 0:
-                        self.training_loader, self.validation_loader = build_dataset(self.batch_sizes[how_many_datasets_creations], self.time_windows[how_many_datasets_creations], self.data_training_path_dynamic, self.data_validation_path_dynamic, self.number_of_workers, self.data_path, self.which_normalization)
+                        self.training_loader, self.validation_loader = build_dataset(self.batch_sizes[how_many_datasets_creations], self.time_windows[how_many_datasets_creations], self.data_training_path_dynamic, self.data_validation_path_dynamic, self.number_of_workers, self.data_path, self.where_to_save_data, self.which_normalization)
                         before_next_window_change = self.waiting_epochs_before_new_dataset_creation[how_many_datasets_creations]
                         how_many_datasets_creations+=1
                         os.remove(self.data_training_path_dynamic + str(self.time_windows[how_many_datasets_creations-2]) + '.h5')
@@ -252,26 +252,26 @@ class Training():
                 valid_regularization[i] = valid_regularization_data
                 valid_loss_tot[i] = valid_loss_data
 
-                np.save(self.PATH + "/losses/train_l1.npy", train_l1)
-                np.save(self.PATH + "/losses/train_l1_per_shape.npy", train_l1_per_shape)
-                np.save(self.PATH + "/losses/train_l1_latent.npy", train_l1_latent)
-                np.save(self.PATH + "/losses/train_l2_TF.npy", train_l2_TF)
-                np.save(self.PATH + "/losses/train_l2_AR.npy", train_l2_AR)
-                np.save(self.PATH + "/losses/train_l3.npy", train_l3)
-                np.save(self.PATH + "/losses/train_regularization.npy", train_regularization)
-                np.save(self.PATH + "/losses/train_loss_tot.npy", train_loss_tot)
+                np.save(self.PATH_logs + "/losses/train_l1.npy", train_l1)
+                np.save(self.PATH_logs + "/losses/train_l1_per_shape.npy", train_l1_per_shape)
+                np.save(self.PATH_logs + "/losses/train_l1_latent.npy", train_l1_latent)
+                np.save(self.PATH_logs + "/losses/train_l2_TF.npy", train_l2_TF)
+                np.save(self.PATH_logs + "/losses/train_l2_AR.npy", train_l2_AR)
+                np.save(self.PATH_logs + "/losses/train_l3.npy", train_l3)
+                np.save(self.PATH_logs + "/losses/train_regularization.npy", train_regularization)
+                np.save(self.PATH_logs + "/losses/train_loss_tot.npy", train_loss_tot)
 
-                np.save(self.PATH + "/losses/valid_l1.npy", valid_l1)
-                np.save(self.PATH + "/losses/valid_l1_per_shape.npy", valid_l1_per_shape)
-                np.save(self.PATH + "/losses/valid_l1_unnorm.npy", valid_l1_unnorm_per_variable)
-                np.save(self.PATH + "/losses/valid_l1_unnorm_per_variable.npy", valid_l1_unnorm_per_variable)
-                np.save(self.PATH + "/losses/valid_l1_latent.npy", valid_l1_latent)
-                np.save(self.PATH + "/losses/valid_l2_TF.npy", valid_l2_TF)
-                np.save(self.PATH + "/losses/valid_l2_AR.npy", valid_l2_AR)
-                np.save(self.PATH + "/losses/valid_l3.npy", valid_l3)
-                np.save(self.PATH + "/losses/valid_real.npy", valid_real)
-                np.save(self.PATH + "/losses/valid_regularization.npy", valid_regularization)
-                np.save(self.PATH + "/losses/valid_loss_tot.npy", valid_loss_tot)
+                np.save(self.PATH_logs + "/losses/valid_l1.npy", valid_l1)
+                np.save(self.PATH_logs + "/losses/valid_l1_per_shape.npy", valid_l1_per_shape)
+                np.save(self.PATH_logs + "/losses/valid_l1_unnorm.npy", valid_l1_unnorm_per_variable)
+                np.save(self.PATH_logs + "/losses/valid_l1_unnorm_per_variable.npy", valid_l1_unnorm_per_variable)
+                np.save(self.PATH_logs + "/losses/valid_l1_latent.npy", valid_l1_latent)
+                np.save(self.PATH_logs + "/losses/valid_l2_TF.npy", valid_l2_TF)
+                np.save(self.PATH_logs + "/losses/valid_l2_AR.npy", valid_l2_AR)
+                np.save(self.PATH_logs + "/losses/valid_l3.npy", valid_l3)
+                np.save(self.PATH_logs + "/losses/valid_real.npy", valid_real)
+                np.save(self.PATH_logs + "/losses/valid_regularization.npy", valid_regularization)
+                np.save(self.PATH_logs + "/losses/valid_loss_tot.npy", valid_loss_tot)
 
 
                 print("Epoch: " +str(i)+', ' + str(time2-time1)+ ' s')
@@ -323,12 +323,12 @@ class Training():
                 if np.mean(valid_loss_data) < loss_value: #careful valid loss tot!!
                     loss_value = np.mean(valid_loss_data)
                     print('Models saved!')
-                    save_checkpoint(self.encoder, self.f , self.decoder, self.optim, self.scheduler, i, loss_value, self.loss_coefficients['AR'] , self.autoregressive_step, full_training_count,self.PATH+'/checkpoint/check.pt')
+                    save_checkpoint(self.encoder, self.f , self.decoder, self.optim, self.scheduler, i, loss_value, self.loss_coefficients['AR'] , self.autoregressive_step, full_training_count,self.PATH_logs+'/checkpoint/check.pt')
                     early_stopping = 0
         
         else:
 
-            self.encoder, self.f, self.decoder, self.optim, scheduler, start_epoch, loss, self.loss_coefficients['AR'], self.start_backprop, full_training_count = load_checkpoint(self.encoder, self.f , self.decoder, self.optim, scheduler, self.PATH+'/checkpoint/check.pt', self.device)
+            self.encoder, self.f, self.decoder, self.optim, scheduler, start_epoch, loss, self.loss_coefficients['AR'], self.start_backprop, full_training_count = load_checkpoint(self.encoder, self.f , self.decoder, self.optim, scheduler, self.PATH_logs+'/checkpoint/check.pt', self.device)
             self.encoder.to(self.device)
             self.f.to(self.device)
             self.decoder.to(self.device) 
@@ -338,21 +338,21 @@ class Training():
             loss_value = loss
             early_stopping = 0 
 
-            train_l1 = np.load(self.PATH + "/losses/train_l1.npy", allow_pickle=True)
-            train_l2_TF = np.load(self.PATH + "/losses/train_l2_TF.npy",allow_pickle=True)
-            train_l2_AR = np.load(self.PATH + "/losses/train_l2_AR.npy",allow_pickle=True)
-            train_l3 = np.load(self.PATH + "/losses/train_l3.npy",allow_pickle=True)
-            train_regularization = np.load(self.PATH + "/losses/train_regularization.npy",allow_pickle=True)
-            train_loss_tot = np.load(self.PATH + "/losses/train_loss_tot.npy",allow_pickle=True)
+            train_l1 = np.load(self.PATH_logs + "/losses/train_l1.npy", allow_pickle=True)
+            train_l2_TF = np.load(self.PATH_logs + "/losses/train_l2_TF.npy",allow_pickle=True)
+            train_l2_AR = np.load(self.PATH_logs + "/losses/train_l2_AR.npy",allow_pickle=True)
+            train_l3 = np.load(self.PATH_logs + "/losses/train_l3.npy",allow_pickle=True)
+            train_regularization = np.load(self.PATH_logs + "/losses/train_regularization.npy",allow_pickle=True)
+            train_loss_tot = np.load(self.PATH_logs + "/losses/train_loss_tot.npy",allow_pickle=True)
             
-            valid_l1 = np.load(self.PATH + "/losses/valid_l1.npy",allow_pickle=True)
-            valid_l1_unnorm = np.load(self.PATH + "/losses/valid_l1_unnorm.npy",allow_pickle=True)
-            valid_l2_TF = np.load(self.PATH + "/losses/valid_l2_TF.npy",allow_pickle=True)
-            valid_l2_AR = np.load(self.PATH + "/losses/valid_l2_AR.npy",allow_pickle=True)
-            valid_l3 = np.load(self.PATH + "/losses/valid_l3.npy",allow_pickle=True)
-            valid_regularization = np.load(self.PATH + "/losses/valid_regularization.npy",allow_pickle=True)
-            valid_loss_tot = np.load(self.PATH + "/losses/valid_loss_tot.npy",allow_pickle=True)
-            valid_real = np.load(self.PATH + "/losses/valid_real.npy",allow_pickle=True)
+            valid_l1 = np.load(self.PATH_logs + "/losses/valid_l1.npy",allow_pickle=True)
+            valid_l1_unnorm = np.load(self.PATH_logs + "/losses/valid_l1_unnorm.npy",allow_pickle=True)
+            valid_l2_TF = np.load(self.PATH_logs + "/losses/valid_l2_TF.npy",allow_pickle=True)
+            valid_l2_AR = np.load(self.PATH_logs + "/losses/valid_l2_AR.npy",allow_pickle=True)
+            valid_l3 = np.load(self.PATH_logs + "/losses/valid_l3.npy",allow_pickle=True)
+            valid_regularization = np.load(self.PATH_logs + "/losses/valid_regularization.npy",allow_pickle=True)
+            valid_loss_tot = np.load(self.PATH_logs + "/losses/valid_loss_tot.npy",allow_pickle=True)
+            valid_real = np.load(self.PATH_logs + "/losses/valid_real.npy",allow_pickle=True)
 
             for i in np.arange(start_epoch+1, self.epochs+1, 1):
 
@@ -404,21 +404,21 @@ class Training():
                 valid_regularization[i] = valid_regularization_data
                 valid_loss_tot[i] = valid_loss_data
 
-                np.save(self.PATH + "/losses/train_l1.npy", train_l1)
-                np.save(self.PATH + "/losses/train_l2_TF.npy", train_l2_TF)
-                np.save(self.PATH + "/losses/train_l2_AR.npy", train_l2_AR)
-                np.save(self.PATH + "/losses/train_l3.npy", train_l3)
-                np.save(self.PATH + "/losses/train_regularization.npy", train_regularization)
-                np.save(self.PATH + "/losses/train_loss_tot.npy", train_loss_tot)
+                np.save(self.PATH_logs + "/losses/train_l1.npy", train_l1)
+                np.save(self.PATH_logs + "/losses/train_l2_TF.npy", train_l2_TF)
+                np.save(self.PATH_logs + "/losses/train_l2_AR.npy", train_l2_AR)
+                np.save(self.PATH_logs + "/losses/train_l3.npy", train_l3)
+                np.save(self.PATH_logs + "/losses/train_regularization.npy", train_regularization)
+                np.save(self.PATH_logs + "/losses/train_loss_tot.npy", train_loss_tot)
 
-                np.save(self.PATH + "/losses/valid_l1.npy", valid_l1)
-                np.save(self.PATH + "/losses/valid_l1_unnorm.npy", valid_l1_unnorm)
-                np.save(self.PATH + "/losses/valid_l2_TF.npy", valid_l2_TF)
-                np.save(self.PATH + "/losses/valid_l2_AR.npy", valid_l2_AR)
-                np.save(self.PATH + "/losses/valid_l3.npy", valid_l3)
-                np.save(self.PATH + "/losses/valid_real.npy", valid_real)
-                np.save(self.PATH + "/losses/valid_regularization.npy", valid_regularization)
-                np.save(self.PATH + "/losses/valid_loss_tot.npy", valid_loss_tot)
+                np.save(self.PATH_logs + "/losses/valid_l1.npy", valid_l1)
+                np.save(self.PATH_logs + "/losses/valid_l1_unnorm.npy", valid_l1_unnorm)
+                np.save(self.PATH_logs + "/losses/valid_l2_TF.npy", valid_l2_TF)
+                np.save(self.PATH_logs + "/losses/valid_l2_AR.npy", valid_l2_AR)
+                np.save(self.PATH_logs + "/losses/valid_l3.npy", valid_l3)
+                np.save(self.PATH_logs + "/losses/valid_real.npy", valid_real)
+                np.save(self.PATH_logs + "/losses/valid_regularization.npy", valid_regularization)
+                np.save(self.PATH_logs + "/losses/valid_loss_tot.npy", valid_loss_tot)
 
 
                 print("Epoch: " +str(i)+', ' + str(time2-time1)+ ' s')
@@ -440,6 +440,6 @@ class Training():
                 if valid_loss_data < loss_value: #careful valid loss tot!!
                     loss_value = valid_loss_data
                     print('Models saved!')
-                    save_checkpoint(self.encoder, self.f , self.decoder, self.optim, scheduler, i, loss_value, self.loss_coefficients['AR'] , self.start_backprop, full_training_count,self.PATH+'/checkpoint/check.pt')
+                    save_checkpoint(self.encoder, self.f , self.decoder, self.optim, scheduler, i, loss_value, self.loss_coefficients['AR'] , self.start_backprop, full_training_count,self.PATH_logs+'/checkpoint/check.pt')
                     early_stopping = 0
 

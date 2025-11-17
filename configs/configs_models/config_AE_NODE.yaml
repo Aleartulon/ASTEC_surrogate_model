@@ -109,10 +109,10 @@ auto_encoding:
   final_reduction_and_initial_increase:
     output_dimension_encoder: 6 # THIS IS THE ACTUAL FINAL REDUCED DIMENSION
 
-    list_of_neurons_encoder: [10,10,10]
+    list_of_neurons_encoder: [50,50,50]
     last_activation_encoder: false
 
-    list_of_neurons_decoder: [10,10,10]
+    list_of_neurons_decoder: [50,50,50]
     last_activation_decoder: false
 
 #NODE
@@ -121,7 +121,7 @@ parameter_information: "concatenation" #how the parameter information is passed 
 n_FiLM_conditioning : 1 #number of FiLM layers (if FiLM is chosen instead of concatenation). FiLM = 1 only applies to the latent vector
 n_neurons_f: 200 #number of neurons of each layer of f
 NODE: true
-scaling_output_factor: 0.1
+scaling_output_factor: 0.5
 
 #Global
 weight_decay:

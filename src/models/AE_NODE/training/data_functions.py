@@ -7,13 +7,13 @@ from torch import nn
 from torch.utils.data import DataLoader
 import subprocess
 
-def build_dataset(batch_size:int, time_window: int, data_training_path: str, data_validation_path:str, number_of_workers:int, path_to_data: str, which_normalization:str):
+def build_dataset(batch_size:int, time_window: int, data_training_path: str, data_validation_path:str, number_of_workers:int, path_to_data: str, where_to_save:str , which_normalization:str):
     
     training_path = data_training_path + str(time_window) + '.h5'
     validation_path = data_validation_path +  str(time_window) + '.h5'
     
     #build dataset made out of 'time_window' chunks
-    subprocess.run(['python', '-m', 'src.dataset_generation.main', '--t_W', str(time_window), '--testing', 'false', '--path_to_hdf5', path_to_data, '--which_normalization', which_normalization])
+    subprocess.run(['python', '-m', 'src.dataset_generation.main', '--t_W', str(time_window), '--testing', 'false', '--path_to_hdf5', path_to_data, '--where_to_save_data', where_to_save, '--which_normalization', which_normalization])
     
     # build dataset and dataloader
     dataset_training = ASTEC_Dataset(training_path)
