@@ -1,6 +1,7 @@
 physics_model : '../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/saved_logs/' # this is the Path to a directory for the training on a given dataset
-description : '/multiple_trajectories_NODE_128_b_s_0.00001_AR_until_2000_latent_10_gamma_0.999_0.1_scaling_output_factor/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
-data_path : '../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/' #path of training and validation data
+description : 'try/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
+data_path : '../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/original_hdf5/' #path of training and validation data
+where_to_save_data : '../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/' #if dynamic_dataset_generation_during_training this is where data is saved, else it is where data for training is found
 model: 'AE_NODE'
 epochs: 10000 #maximum number of epochs
 learning_rate: 0.002 #initial learning rate
