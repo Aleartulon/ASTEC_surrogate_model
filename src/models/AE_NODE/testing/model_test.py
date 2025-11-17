@@ -59,12 +59,16 @@ class Model_Test:
         self.device = tc.device(information['device']) if tc.cuda.is_available() else tc.device("cpu")
         print('Device: ', self.device)
         self.trajectories_to_be_plotted = information['trajectories_to_be_plotted']
+        for count, i in enumerate(self.trajectories_to_be_plotted):
+            self.trajectories_to_be_plotted[count] = str(i)
         self.autoencoding_figures = information['autoencoding_figures']
         self.autoencoding_latent_figures = information['autoencoding_latent_figures']
         self.latent_prediction_figures = information['latent_prediction_figures']
         self.actual_latent_prediction_figures = information['actual_latent_prediction_figures']
         self.actual_fields_prediction_figures = information['actual_fields_prediction_figures']
         self.operator_actions_indeces = information['operator_actions_indeces']
+        for count, i in enumerate(self.operator_actions_indeces):
+            self.operator_actions_indeces[count] = str(i)
         self.TF_fields_prediction_figures = information['TF_fields_prediction_figures']
         self.TF_latent_prediction_figures = information['TF_latent_prediction_figures']
         self.compute_TF = information['compute_TF']

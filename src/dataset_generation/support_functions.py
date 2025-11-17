@@ -215,8 +215,9 @@ def fill_dictionary_of_variables(output_dict:dict, name:str, f:h5py._hl.files.Fi
 def extract_input_output_bc_variables(path, array_of_datasets:list):
     output_dict = {}
     time_of_simulations = []
-    for i in array_of_datasets:
-        with h5py.File(path+'/'+str(i)+'.h5', 'r') as f:
+    for j in array_of_datasets:
+        name_simulation = str(j) + '.h5'
+        with h5py.File(path+'/'+str(name_simulation), 'r') as f:
             vessel_rupture_time = f['other/global/vessel_rupture_time'][:][-1]
             if not np.isnan(vessel_rupture_time):
                 index_stop = np.where(f['dimensions/time_points'][:] >= vessel_rupture_time)[0][0]
@@ -224,9 +225,9 @@ def extract_input_output_bc_variables(path, array_of_datasets:list):
             else:
                 index_stop = len(f['dimensions/time_points'][:])
             time_of_simulations.append(f['dimensions/time_points'][:][0:index_stop])   
-            output_dict[i] = build_dictionary_of_variables()
-            fill_dictionary_of_variables(output_dict, i, f, index_stop)
-    
+            output_dict[j] = build_dictionary_of_variables()
+            fill_dictionary_of_variables(output_dict, j, f, index_stop)
+
     return output_dict, time_of_simulations
 
 def dict_to_hdf5(dictionary, h5file, path=''):

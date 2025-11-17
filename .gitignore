@@ -8,3 +8,6 @@ __pycache__/
 *.out
 testing_pipeline-old.ipynb
 /saved_logs
+/downloads
+downloads/
+assas_data_downloader.log

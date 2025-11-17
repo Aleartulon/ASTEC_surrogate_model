@@ -4,6 +4,7 @@ import torch as tc
 import yaml
 import shutil
 import argparse
+import numpy as np
 from src.common_functions import load_config
 from src.dataset_generation.astec_class import Astec_Dataset
 
@@ -13,6 +14,7 @@ def main():
     parser.add_argument('--t_W', type=int, default=None,help='Override temporal window for time subsets')
     parser.add_argument('--testing', type=lambda x: x.lower() == 'true', default=None)
     parser.add_argument('--path_to_hdf5', type=str, default=None)
+    parser.add_argument('--where_to_save_data', type=str, default=None)
     parser.add_argument('--which_normalization', type=str, default=None)
     
     args = parser.parse_args()
@@ -27,6 +29,8 @@ def main():
         config_dataset['testing'] = args.testing
     if args.path_to_hdf5 is not None:
         config_dataset['path_to_hdf5'] = args.path_to_hdf5
+    if args.where_to_save_data is not None:
+        config_dataset['where_to_save_data'] = args.where_to_save_data
     if args.which_normalization is not None:
         config_dataset['which_normalization'] = args.which_normalization
     
@@ -40,18 +44,23 @@ def main():
     testing = config_dataset['testing']
     print(f'Testing is {testing}!')
     
+    indeces_training = np.arange(config_dataset['indeces_training_boundaries'][0], config_dataset['indeces_training_boundaries'][1],1)
+    indeces_validation = np.arange(config_dataset['indeces_validation_boundaries'][0], config_dataset['indeces_validation_boundaries'][1],1)
+    indeces_testing = np.arange(config_dataset['indeces_testing_boundaries'][0], config_dataset['indeces_testing_boundaries'][1],1)
+    
+    
     if testing:
         # Build test data
         print('--------------------------------Build testing dataset--------------------------------')
-        astec_dataset.build_testing_dataset(config_dataset['indeces_testing'])
+        astec_dataset.build_testing_dataset(indeces_testing)
     else:
         # Build training data
         print('--------------------------------Build training dataset--------------------------------')
-        astec_dataset.build_training_dataset(config_dataset['indeces_training'], 'training')
+        astec_dataset.build_training_dataset(indeces_training, 'training')
         
         # Build validation data
         print('--------------------------------Build validation dataset--------------------------------')
-        astec_dataset.build_training_dataset(config_dataset['indeces_validation'], 'validation')
+        astec_dataset.build_training_dataset(indeces_validation, 'validation')
 
 if __name__ == '__main__':
     main()
