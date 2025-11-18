@@ -237,8 +237,11 @@ class Astec_Dataset():
         for number_of_simulation in dictionary_per_trajectory:
             shapes = list(dictionary_per_trajectory[number_of_simulation].keys())
             for shape in shapes:
-                if shape != 'Operator_actions':
-                    if np.isnan(dictionary_per_trajectory[number_of_simulation][shape]).any() or not np.isfinite(dictionary_per_trajectory[number_of_simulation][shape]).any():
+                if shape != 'Operator_actions' and shape != 'Time':
+                    if tc.isnan(dictionary_per_trajectory[number_of_simulation][shape]).any() or (~tc.isfinite(dictionary_per_trajectory[number_of_simulation][shape])).any():
+                        raise TypeError(f"There are still NaN values in final data, check please in simulation {number_of_simulation}, shape {shape}")
+                elif shape == 'Time':
+                    if np.isnan(dictionary_per_trajectory[number_of_simulation][shape]).any() or (~np.isfinite(dictionary_per_trajectory[number_of_simulation][shape])).any():
                         raise TypeError(f"There are still NaN values in final data, check please in simulation {number_of_simulation}, shape {shape}")
             
         #check shapes
@@ -269,19 +272,19 @@ class Astec_Dataset():
             variables = dictionary_per_trajectory[trajectory].keys()
             for variable in variables:
                 original_data = dictionary_per_trajectory[trajectory][variable]
-                shape = np.shape(original_data)
+                shape = original_data.size()
                 if shape[-1] == 140:
-                    original_data = make_faces_array(original_data)
+                    original_data = make_faces_array(original_data, self.device)
                 elif shape[-1] == 36:
-                    original_data = np.reshape(original_data, (shape[0],shape[1],shape[2],12,3))
+                    original_data = tc.reshape(original_data, (shape[0],shape[1],shape[2],12,3)).cpu()
                 elif shape[-1] == 76:
                     lower_plenum = original_data[:,:,:,0]
                     mesh = original_data[:,:,:,1:].reshape(shape[0],shape[1],shape[2],15,5)
                     original_data = mesh
                     reshaped_dict.setdefault(trajectory, {})['lower_plenum'] = lower_plenum
                 elif shape[-1] == 7 or shape[-1] == 13 and len(shape) !=2:
-                    original_data = np.reshape(original_data, (shape[0],shape[1],shape[2]))
-                reshaped_dict.setdefault(trajectory, {})[variable] = original_data
+                    original_data = tc.reshape(original_data, (shape[0],shape[1],shape[2]))
+                reshaped_dict.setdefault(trajectory, {})[variable] = original_data.cpu()
             
             reshaped_dict.setdefault(trajectory, {})['Time'] = self.time_of_simulations[count]
             op_acts = self.get_operator_actions(trajectory)
