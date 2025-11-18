@@ -16,6 +16,7 @@ def main():
     parser.add_argument('--path_to_hdf5', type=str, default=None)
     parser.add_argument('--where_to_save_data', type=str, default=None)
     parser.add_argument('--which_normalization', type=str, default=None)
+    parser.add_argument('--device', type=str, default=None)
     
     args = parser.parse_args()
     
@@ -33,7 +34,8 @@ def main():
         config_dataset['where_to_save_data'] = args.where_to_save_data
     if args.which_normalization is not None:
         config_dataset['which_normalization'] = args.which_normalization
-    
+    if args.device is not None:
+        config_dataset['device'] = args.device
     # Initialize dataset
     astec_dataset = Astec_Dataset(config_dataset)
     
@@ -48,19 +50,23 @@ def main():
     indeces_validation = np.arange(config_dataset['indeces_validation_boundaries'][0], config_dataset['indeces_validation_boundaries'][1],1)
     indeces_testing = np.arange(config_dataset['indeces_testing_boundaries'][0], config_dataset['indeces_testing_boundaries'][1],1)
     
-    
-    if testing:
-        # Build test data
-        print('--------------------------------Build testing dataset--------------------------------')
-        astec_dataset.build_testing_dataset(indeces_testing)
-    else:
-        # Build training data
-        print('--------------------------------Build training dataset--------------------------------')
-        astec_dataset.build_training_dataset(indeces_training, 'training')
-        
-        # Build validation data
-        print('--------------------------------Build validation dataset--------------------------------')
-        astec_dataset.build_training_dataset(indeces_validation, 'validation')
+    with tc.no_grad():
+        if testing:
+            # Build test data
+            print('--------------------------------Build testing dataset--------------------------------')
+            astec_dataset.build_testing_dataset(indeces_testing)
+            del astec_dataset 
+            tc.cuda.empty_cache()
+        else:
+            # Build training data
+            print('--------------------------------Build training dataset--------------------------------')
+            astec_dataset.build_training_dataset(indeces_training, 'training')
+            tc.cuda.empty_cache()
+            # Build validation data
+            print('--------------------------------Build validation dataset--------------------------------')
+            astec_dataset.build_training_dataset(indeces_validation, 'validation')
+            del astec_dataset 
+            tc.cuda.empty_cache()
 
 if __name__ == '__main__':
     main()
