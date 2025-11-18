@@ -55,7 +55,7 @@ class AE_NODE:
         #create datasets and dataloader for training and validation 
         if self.dynamic_dataset_generation_during_training:
             
-            self.training_loader, self.validation_loader = build_dataset(self.batch_sizes[0], self.time_windows[0], self.data_training_path_dynamic, self.data_validation_path_dynamic, self.number_of_workers, self.data_path, self.where_to_save_data, self.which_normalization)
+            self.training_loader, self.validation_loader = build_dataset(self.batch_sizes[0], self.time_windows[0], self.data_training_path_dynamic, self.data_validation_path_dynamic, self.number_of_workers, self.data_path, self.where_to_save_data, self.which_normalization, self.device)
         else:
             dataset_training = ASTEC_Dataset(self.data_training_path)
             self.training_loader = DataLoader(dataset_training, batch_size = self.batch_sizes[0], num_workers = self.number_of_workers, shuffle=True,drop_last=False,pin_memory=True)
@@ -72,10 +72,9 @@ class AE_NODE:
             
         for key in self.maxima_or_mean:
             
-            self.maxima_or_mean[key] = tc.tensor(self.maxima_or_mean[key], device = self.device)
-            self.minima_or_std[key] = tc.tensor(self.minima_or_std[key], device = self.device)
+            self.maxima_or_mean[key] = self.maxima_or_mean[key].to(self.device)
+            self.minima_or_std[key] = self.minima_or_std[key].to(self.device)
             
-
         #define the ENCODER, the function f of the latent dynamics and the Decoder 
         self.encoder = Encoder(config_training, model_information)
         self.decoder = Decoder(config_training, model_information)
