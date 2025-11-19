@@ -182,7 +182,6 @@ class Training():
             before_next_window_change = self.waiting_epochs_before_new_dataset_creation[0]
             how_many_datasets_creations = 1
             for i in range(self.epochs):
-
                 early_stopping += 1
                 if early_stopping == self.early_stopping:
                     print('Training stopped due to early stopping')
@@ -224,7 +223,6 @@ class Training():
                         loss_value = 100
                         
                     before_next_window_change-=1
-                
                 
                 if i > self.time_of_lr_war_up:
                     self.scheduler.step()

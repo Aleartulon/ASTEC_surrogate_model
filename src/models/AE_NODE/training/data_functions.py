@@ -13,7 +13,7 @@ def build_dataset(batch_size:int, time_window: int, data_training_path: str, dat
     validation_path = data_validation_path +  str(time_window) + '.h5'
     
     #build dataset made out of 'time_window' chunks
-    subprocess.run(['python', '-m', 'src.dataset_generation.main', '--t_W', str(time_window), '--testing', 'false', '--path_to_hdf5', path_to_data, '--where_to_save_data', where_to_save, '--which_normalization', which_normalization,'--device', device])
+    subprocess.run(['python', '-m', 'src.dataset_generation.sliced_dataset.main', '--t_W', str(time_window), '--path_to_hdf5', path_to_data, '--where_to_save_data', where_to_save, '--device', device])
     tc.cuda.empty_cache()
     # build dataset and dataloader
     dataset_training = ASTEC_Dataset(training_path)

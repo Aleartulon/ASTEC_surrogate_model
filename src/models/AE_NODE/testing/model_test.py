@@ -6,7 +6,6 @@ import pickle
 from ..training.architecture import Encoder, Decoder, F_Latent, Fully_Connected_Encoder, Convolutional_Encoder
 from src.common_functions import load_config
 import h5py
-from src.dataset_generation.support_functions import normalize_fields
 from src.models.AE_NODE.training.data_functions import standard_and_inverse_normalization_field
 from src.models.AE_NODE.training.method_functions import Training_Losses
 from src.models.AE_NODE.testing.support_functions import *
