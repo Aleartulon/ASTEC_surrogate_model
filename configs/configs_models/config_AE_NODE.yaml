@@ -121,7 +121,7 @@ parameter_information: "concatenation" #how the parameter information is passed 
 n_FiLM_conditioning : 1 #number of FiLM layers (if FiLM is chosen instead of concatenation). FiLM = 1 only applies to the latent vector
 n_neurons_f: 200 #number of neurons of each layer of f
 NODE: true
-scaling_output_factor: 0.5
+scaling_output_factor: 0.1
 
 #Global
 weight_decay:

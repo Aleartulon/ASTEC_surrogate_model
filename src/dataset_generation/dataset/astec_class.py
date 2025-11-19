@@ -1,0 +1,299 @@
+from src.dataset_generation.dataset.support_functions import *
+import h5py
+import numpy as np
+import torch as tc
+import pickle
+import time
+import gc
+
+
+class Astec_Dataset():
+    def __init__(self , config_dataset: dict):
+        
+        self.path_to_hdf5 = config_dataset['path_to_hdf5']
+        self.where_to_save_data = config_dataset['where_to_save_data']
+        self.save_dictionary_per_time_lengths = config_dataset['save_dictionary_per_time_lengths']
+        self.which_normalization = config_dataset['which_normalization']
+        self.device = config_dataset['device']
+        
+    def build_training_dataset(self, indeces, purpose_of_data):
+        self.purpose_of_data = purpose_of_data
+        t1 = time.time()
+        self.dictionary_per_simulation, _ = extract_input_output_bc_variables(self.path_to_hdf5, indeces) #build dictionary of data divided by number of simulation
+        t2 = time.time()
+        print(f'Build dictionary of data divided by number of simulation: {t2-t1} seconds')
+        self.dictionary_per_simulation = self.make_channels_for_dictionary_per_simulation(self.dictionary_per_simulation) #build dictionary of data divided by simulations and make channels per spatial domain
+        t3 = time.time()
+        print(f'build dictionary of data divided by simulations and make channels per spatial domain: {t3-t2} seconds')
+        self.dictionary_per_simulation = self.substitute_NaN_with_zeros(self.dictionary_per_simulation) #substitute with zeros the NaN values
+        t4 = time.time()
+        print(f'substitute with zeros the NaN values: {t4-t3} seconds')
+        
+        #save dictionary_per_simulation to hdf5s if self.save_dictionary_per_time_lengths is true
+        if self.save_dictionary_per_time_lengths:
+            with h5py.File(self.where_to_save_data+'/data_'+self.purpose_of_data+'.h5', 'w') as f:
+                dict_to_hdf5(self.dictionary_per_simulation, f) 
+                
+        #combine different simulations into unique dictionary with shapes as keys
+        t5 = time.time()
+        self.dictionary_unified = self.make_dictionary_unified()
+        t6 = time.time()
+        print(f'combine different simulations into unique dictionary with shapes as keys: {t6-t5} seconds')
+        for i in self.dictionary_unified:
+            print(f'Shape {i}: {np.shape(self.dictionary_unified[i])}')
+
+        #get normalization statistics
+        if purpose_of_data == 'training': 
+            # get unified dataset to get the normalizations statistics
+            t7 = time.time()
+            self.maxima_or_mean, self.minima_or_std = get_normalization_statistics(self.dictionary_unified, self.which_normalization) 
+            t8 = time.time()
+            print(f'get unified dataset to get the normalizations statistics: {t8-t7} seconds')
+            for key in self.maxima_or_mean:
+                print(f'maxima_or_mean {key}, ',self.maxima_or_mean[key])
+                
+            print(' ')
+            
+            for key in self.minima_or_std:
+                print(f'minima_or_std {key}, ',self.minima_or_std[key])
+            
+            self.maxima_or_mean = {k: tc.tensor(v, dtype=tc.float32) for k, v in self.maxima_or_mean.items()}
+            self.minima_or_std = {k: tc.tensor(v, dtype=tc.float32) for k, v in self.minima_or_std.items()}
+            
+            #save normalization statistics for training and testing
+            with open(self.where_to_save_data+'/maxima_or_mean.pkl', 'wb') as f:
+                pickle.dump(self.maxima_or_mean, f)
+
+            with open(self.where_to_save_data+'/minima_or_std.pkl', 'wb') as f:
+                pickle.dump(self.minima_or_std, f)
+                
+        elif purpose_of_data == 'validation':
+            
+            with open(self.where_to_save_data + '/maxima_or_mean.pkl', 'rb') as file:
+                self.maxima_or_mean = pickle.load(file)
+            
+            with open(self.where_to_save_data + '/minima_or_std.pkl', 'rb') as file:
+                self.minima_or_std = pickle.load(file)
+        #normalize dictionary with sliced windows and reshape in correct shapes
+        t9 = time.time()
+        self.dictionary_unified = self.normalize_dictionary_unified()
+        t10 = time.time()
+        print(f'normalize dictionary with sliced windows and reshape in correct shapes: {t10-t9} seconds')
+        #check if there are nan values in the dictionary before saving
+        for key in self.dictionary_unified:
+            if tc.isnan(self.dictionary_unified[key]).any() or (~tc.isfinite(self.dictionary_unified[key])).any():
+                raise TypeError(f"There are still NaN values in final data, check please in {key}")
+        #check shapes
+        print('')
+        print('CHECK SHAPES PLEASE!')  
+        print('')
+        for key in self.dictionary_unified:
+            print(key, self.dictionary_unified[key].size())
+        #save normalized dictionary 
+        with h5py.File(f'{self.where_to_save_data}/data_{self.purpose_of_data}.h5', 'w') as f:
+            dict_to_hdf5(self.dictionary_unified, f)
+        
+        # Clear GPU memory immediately after saving
+        del self.dictionary_per_simulation
+        del self.dictionary_unified
+        
+        
+        gc.collect()
+        tc.cuda.empty_cache()
+    
+        print(f"GPU memory after build_{purpose_of_data}: {tc.cuda.memory_allocated()/1e9:.2f} GB")
+            
+        return 0
+    
+    def make_channels_for_dictionary_per_simulation(self, dict: dict):
+        for n_o_s in dict:  # n_o_s is number of simulation
+            for m_t in dict[n_o_s]:  # m_t is the mesh type (so 1, 76, 32 and so on)
+                field_dict = dict[n_o_s][m_t]
+                fields = list(field_dict.keys())
+                
+                # Get first field to determine structure
+                first_field = field_dict[fields[0]]
+                size_field = first_field.ndim  # More efficient than len(np.shape())
+                
+                if size_field == 2:
+                    stacked = np.stack([field_dict[field] for field in fields], axis=0)
+                    concatenated_array = stacked[None, :, :, :].transpose(0, 2, 1, 3)
+                    
+                elif size_field == 1:
+                    stacked = np.stack([field_dict[field] for field in fields], axis=0)
+                    concatenated_array = stacked[None, :, :].transpose(0, 2, 1)
+                    
+                else:
+                    raise TypeError("Something is wrong with data structure")
+                dict[n_o_s][m_t] = concatenated_array
+    
+        for i in dict:
+            bc_arrays = [
+                dict[i]['primary_to_vessel'],
+                dict[i]['VDO'],
+                dict[i]['UPP_V001'],
+                dict[i]['vessel_to_primary']
+            ]
+            dict[i]['boundary_conditions_and_time'] = np.concatenate(bc_arrays, axis=-1)
+            
+            for key in ['primary_to_vessel', 'vessel_to_primary', 'VDO', 'UPP_V001']:
+                dict[i].pop(key)
+    
+        return dict
+    
+    def make_dictionary_unified(self):
+        numbers_of_simulation = list(self.dictionary_per_simulation.keys())
+        dictionary_unified = {}
+        variables = self.dictionary_per_simulation[numbers_of_simulation[0]].keys()
+        
+        for variable in variables:
+            dictionary_unified[variable] = []
+            
+        for numbers_of_simulation in numbers_of_simulation:
+            sim_data = self.dictionary_per_simulation[numbers_of_simulation]
+            for variable in variables:
+                field = sim_data[variable]
+                size = field.shape
+                reshaped_field = field.reshape((size[0] * size[1],)+size[2:])
+                dictionary_unified[variable].append(reshaped_field)
+                sim_data[variable] = None # no need for 2 copies
+        for variable in variables:
+            dictionary_unified[variable] = np.concatenate(dictionary_unified[variable], axis=0)
+        return dictionary_unified
+            
+    def normalize_dictionary_unified(self):
+        
+        normalized_dict = {}
+        variables = self.dictionary_unified.keys()
+        for variable in variables:
+            print(variable)
+            t1 = time.time()
+            normalized_data = normalize_fields(self.dictionary_unified[variable], self.maxima_or_mean, self.minima_or_std, self.which_normalization, self.device)
+            t2 = time.time()
+            print('time to normalize: ',t2-t1)
+            shape = np.shape(normalized_data)
+            if shape[-1] == 140:
+                normalized_data = make_faces_array(normalized_data, self.device)
+                normalized_dict[variable] = normalized_data.cpu()
+            elif shape[-1] == 36:
+                normalized_data = tc.reshape(normalized_data, (shape[0],shape[1],12,3))
+                normalized_dict[variable] = normalized_data.cpu()
+            elif shape[-1] == 76:
+                lower_plenum = normalized_data[:,:,0]
+                mesh = normalized_data[:,:,1:].reshape(shape[0],shape[1],15,5)
+                normalized_data = mesh
+                normalized_dict[variable] = normalized_data.cpu()
+                normalized_dict['lower_plenum'] = lower_plenum.cpu()
+            elif len(shape) == 2:
+                normalized_dict[variable] = normalized_data.cpu()
+            else:
+                raise TypeError(f"Something is wrong with data, shape is {shape}")
+        t3 = time.time()
+        print('time to reshape: ',t3-t2)
+        return normalized_dict
+    
+    def substitute_NaN_with_zeros(self, dictionary):
+        for trajectory in dictionary:
+            for shape in dictionary[trajectory]:
+                arr = dictionary[trajectory][shape]
+                if np.isnan(arr).any():
+                    arr[np.isnan(arr)] = 0.0
+        return dictionary
+                
+    def build_testing_dataset(self, indeces):
+        
+        with open(self.where_to_save_data + '/maxima_or_mean.pkl', 'rb') as file:
+            maxima_or_mean = pickle.load(file)
+        
+        with open(self.where_to_save_data + '/minima_or_std.pkl', 'rb') as file:
+            minima_or_std = pickle.load(file)
+        
+        dictionary_per_trajectory, self.time_of_simulations = extract_input_output_bc_variables(self.path_to_hdf5, indeces) #build dictionary of data divided by numbers of simulations
+        
+        dictionary_per_trajectory = self.make_channels_for_dictionary_per_simulation(dictionary_per_trajectory) #build dictionary of data divided by numbers of simulation and make channels per spatial domain
+        dictionary_per_trajectory = self.substitute_NaN_with_zeros(dictionary_per_trajectory)
+        dictionary_per_trajectory = self.normalize_testing_dataset(dictionary_per_trajectory, maxima_or_mean, minima_or_std) #normalize testing dataset according to training statistics
+        dictionary_per_trajectory = self.squeeze_first_dimension(dictionary_per_trajectory) #normalize testing dataset according to training statistics
+        dictionary_per_trajectory = self.reshape_testing_dataset(dictionary_per_trajectory) #reshape dictionary
+        
+        #check if there are nan values in the dictionary before saving
+        for number_of_simulation in dictionary_per_trajectory:
+            shapes = list(dictionary_per_trajectory[number_of_simulation].keys())
+            for shape in shapes:
+                if shape != 'Operator_actions' and shape != 'Time':
+                    if tc.isnan(dictionary_per_trajectory[number_of_simulation][shape]).any() or (~tc.isfinite(dictionary_per_trajectory[number_of_simulation][shape])).any():
+                        raise TypeError(f"There are still NaN values in final data, check please in simulation {number_of_simulation}, shape {shape}")
+                elif shape == 'Time':
+                    if np.isnan(dictionary_per_trajectory[number_of_simulation][shape]).any() or (~np.isfinite(dictionary_per_trajectory[number_of_simulation][shape])).any():
+                        raise TypeError(f"There are still NaN values in final data, check please in simulation {number_of_simulation}, shape {shape}")
+            
+        #check shapes
+        print('')
+        print('CHECK SHAPES PLEASE!')  
+        print('')
+        for number_of_simulation in dictionary_per_trajectory:
+            shapes = list(dictionary_per_trajectory[number_of_simulation].keys())
+            for shape in shapes:
+                if shape != 'Time' and shape != 'Operator_actions':
+                    size = dictionary_per_trajectory[number_of_simulation][shape].size()
+                elif shape == 'Time':
+                    size = dictionary_per_trajectory[number_of_simulation][shape].size
+                else:
+                    continue
+                print(f"trajectory {number_of_simulation}, shape {shape}: {size} ")
+            
+        #save dictionary_per_simulation to hdf5s if self.save_dictionary_per_time_lengths is true
+        with h5py.File(self.where_to_save_data+'/data_testing.h5', 'w') as f:
+            dict_to_hdf5(dictionary_per_trajectory, f) 
+            
+    def squeeze_first_dimension(self, dictionary_per_trajectory:dict):
+        for i in dictionary_per_trajectory:
+            for k in dictionary_per_trajectory[i]:
+                dictionary_per_trajectory[i][k] = dictionary_per_trajectory[i][k].squeeze(0)
+        return dictionary_per_trajectory      
+    
+    def normalize_testing_dataset(self, dictionary_per_trajectory:dict, maxima_or_mean : dict, minima_or_std: dict):
+        normalized_dict = {}
+        for number_of_simulation in dictionary_per_trajectory:
+            for variable in dictionary_per_trajectory[number_of_simulation]:
+                normalized_field = normalize_fields(dictionary_per_trajectory[number_of_simulation][variable], maxima_or_mean, minima_or_std, self.which_normalization, self.device)
+                normalized_dict.setdefault(number_of_simulation, {})[variable] = normalized_field
+        return normalized_dict
+        
+    def reshape_testing_dataset(self, dictionary_per_trajectory):
+        reshaped_dict = {}
+        trajectories = dictionary_per_trajectory.keys()
+        for count, trajectory in enumerate(trajectories):
+            variables = dictionary_per_trajectory[trajectory].keys()
+            for variable in variables:
+                original_data = dictionary_per_trajectory[trajectory][variable]
+                shape = original_data.size()
+                if shape[-1] == 140:
+                    original_data = make_faces_array(original_data, self.device)
+                elif shape[-1] == 36:
+                    original_data = tc.reshape(original_data, (shape[0],shape[1],12,3)).cpu()
+                elif shape[-1] == 76:
+                    lower_plenum = original_data[:,:,0]
+                    mesh = original_data[:,:,1:].reshape(shape[0],shape[1],15,5)
+                    original_data = mesh
+                    reshaped_dict.setdefault(trajectory, {})['lower_plenum'] = lower_plenum
+                elif shape[-1] == 7 or shape[-1] == 13 and len(shape) !=1:
+                    original_data = tc.reshape(original_data, (shape[0],shape[1]))
+                reshaped_dict.setdefault(trajectory, {})[variable] = original_data.cpu()
+            
+            reshaped_dict.setdefault(trajectory, {})['Time'] = self.time_of_simulations[count]
+            op_acts = self.get_operator_actions(trajectory)
+            reshaped_dict.setdefault(trajectory, {})['Operator_actions'] = op_acts
+            
+        return reshaped_dict
+    
+    def get_operator_actions(self, trajectory):
+        operator_actions_dict = {}
+        with h5py.File(self.path_to_hdf5+'/'+str(trajectory)+'.h5', 'r') as f:
+            operator_names = ['t_fbseb', 't1_srv', 'opensrv', 't2_srv', 'tendssg2', 'tpesp','tpessg', 'tcss', 'p_u5', 'tsg2tr']
+            for op in operator_names:
+                operator_actions_dict[op] = (f['other/private/'+ op][0])/ 3600.0
+                if np.isnan(f['other/private/'+ op][0]).any() or not np.isfinite(f['other/private/'+ op][0]).any():
+                    raise TypeError(f"Operator action {op} in simulation {trajectory} is NaN")
+        return operator_actions_dict
+                
