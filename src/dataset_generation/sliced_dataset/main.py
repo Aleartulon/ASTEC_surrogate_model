@@ -8,6 +8,10 @@ import numpy as np
 from src.common_functions import load_config
 from src.dataset_generation.sliced_dataset.sliced_dataset_class import Sliced_Dataset
 
+def parse_int_list(s):
+    """Convert comma-separated string to list of integers."""
+    return [int(x.strip()) for x in s.split(',')]
+
 def main():
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description='Build sliced dataset')
@@ -15,6 +19,8 @@ def main():
     parser.add_argument('--path_to_hdf5', type=str, default=None)
     parser.add_argument('--where_to_save_data', type=str, default=None)
     parser.add_argument('--device', type=str, default=None)
+    parser.add_argument('--indeces_training_boundaries', type=parse_int_list, default=None)
+    parser.add_argument('--indeces_validation_boundaries', type=parse_int_list, default=None)
     
     args = parser.parse_args()
     
@@ -30,6 +36,11 @@ def main():
         config_dataset['where_to_save_data'] = args.where_to_save_data
     if args.device is not None:
         config_dataset['device'] = args.device
+    if args.indeces_training_boundaries is not None:
+        config_dataset['indeces_training_boundaries'] = args.indeces_training_boundaries
+    if args.indeces_validation_boundaries is not None:
+        config_dataset['indeces_validation_boundaries'] = args.indeces_validation_boundaries
+        
     # Initialize dataset
     sliced_dataset = Sliced_Dataset(config_dataset)
     

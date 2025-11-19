@@ -1,8 +1,10 @@
 physics_model : '../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/saved_logs/' # this is the Path to a directory for the training on a given dataset
-description : 'big_dataset_try/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
+description : 'dataset_1_5/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
 data_path : '../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/original_hdf5/' #path of training and validation data
 where_to_save_data : '../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/' #if dynamic_dataset_generation_during_training this is where data is saved, else it is where data for training is found
 model: 'AE_NODE'
+indeces_training_boundaries : [1, 5] #need to know which dataset to access
+indeces_validation_boundaries : [1, 5] #need to know which dataset to access
 epochs: 10000 #maximum number of epochs
 learning_rate: 0.002 #initial learning rate
 gamma_lr: 0.999 # gamma of  tc.optim.lr_scheduler.ExponentialLR()
@@ -55,49 +57,28 @@ batch_sizes: [
 ]
 
 waiting_epochs_before_new_dataset_creation: [
-    68, 68, 68, 68, 68, 68, 68, 68, 68, 68,
-    68, 68, 68, 68, 68, 68, 68, 68, 68, 68,
-    68, 68, 68, 68, 68, 68, 68, 68, 68, 68,
-    68, 68, 68, 68, 68, 68, 68, 68, 68, 68,
-    68, 68, 68, 68, 68, 68, 68, 68, 68, 68,
-    68, 68, 68, 68, 68, 68, 68, 68, 68, 68,
-    68, 68, 68, 68, 68, 68, 68, 68, 68, 68,
-    68, 68, 68, 68, 68, 68, 68, 68, 68, 68,
-    68, 68, 68, 68, 68, 68, 68, 68, 68, 68,
-    68, 68, 68, 68, 68, 68, 68, 68, 68, 68,
-    68, 68, 68, 68, 68, 68, 68, 68, 68, 68,
-    68, 68, 68, 68, 68, 68, 68, 68, 68, 68,
-    68, 68, 68, 68, 68, 68, 68, 68, 68, 68,
-    68, 68, 68, 68, 68, 68, 68, 68, 68, 68,
-    68, 68, 68, 68, 68, 68, 68, 68, 68, 68,
-    68, 68, 68, 68, 68, 68, 68, 68, 68, 68,
-    68, 68, 68, 68, 68, 68, 68, 68, 68, 68,
-    68, 68, 68, 68, 68, 68, 68, 68, 68, 68,
-    68, 68, 68, 68, 68, 68, 68, 68, 68, 68,
-    68, 68, 68, 68, 68, 68, 68, 68, 68, 68
+    50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
+    50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
+    50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
+    50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
+    50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
+    50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
+    50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
+    50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
+    50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
+    50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
+    50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
+    50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
+    50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
+    50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
+    50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
+    50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
+    50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
+    50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
+    50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
+    50, 50, 50, 50, 50, 50, 50, 50, 50, 68
 ]
 
-waiting_epochs_before_new_dataset_creation: [
-    50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
-    50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
-    50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
-    50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
-    50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
-    50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
-    50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
-    50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
-    50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
-    50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
-    50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
-    50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
-    50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
-    50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
-    50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
-    50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
-    50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
-    50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
-    50, 50, 50, 50, 50, 50, 50, 50, 50, 50
-]
 number_of_workers: 8
 checkpoint: false  # if true uses existing checkpoint
 device : 'cuda' #device where to train

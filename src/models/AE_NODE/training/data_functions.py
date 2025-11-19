@@ -7,13 +7,19 @@ from torch import nn
 from torch.utils.data import DataLoader
 import subprocess
 
-def build_dataset(batch_size:int, time_window: int, data_training_path: str, data_validation_path:str, number_of_workers:int, path_to_data: str, where_to_save:str , which_normalization:str, device =tc.device):
+def build_dataset(batch_size:int, time_window: int, data_training_path: str, data_validation_path:str, number_of_workers:int, path_to_data: str, where_to_save:str , which_normalization:str, device :tc.device, training_boundaries:list, validation_boundaries:list):
     
-    training_path = data_training_path + str(time_window) + '.h5'
-    validation_path = data_validation_path +  str(time_window) + '.h5'
+    training_path = f"{data_training_path}{str(time_window)}_{training_boundaries[0]}_{training_boundaries[1]}.h5"
+    validation_path = f"{data_validation_path}{str(time_window)}_{validation_boundaries[0]}_{validation_boundaries[1]}.h5"
     
     #build dataset made out of 'time_window' chunks
-    subprocess.run(['python', '-m', 'src.dataset_generation.sliced_dataset.main', '--t_W', str(time_window), '--path_to_hdf5', path_to_data, '--where_to_save_data', where_to_save, '--device', device])
+    subprocess.run(['python', '-m', 'src.dataset_generation.sliced_dataset.main', 
+                '--t_W', str(time_window), 
+                '--path_to_hdf5', path_to_data, 
+                '--where_to_save_data', where_to_save, 
+                '--device', device, 
+                '--indeces_training_boundaries', ' ,'.join(map(str, training_boundaries)),
+                '--indeces_validation_boundaries', ' ,'.join(map(str, validation_boundaries))])
     tc.cuda.empty_cache()
     # build dataset and dataloader
     dataset_training = ASTEC_Dataset(training_path)

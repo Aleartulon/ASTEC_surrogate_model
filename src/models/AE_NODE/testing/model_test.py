@@ -9,7 +9,7 @@ import h5py
 from src.models.AE_NODE.training.data_functions import standard_and_inverse_normalization_field
 from src.models.AE_NODE.training.method_functions import Training_Losses
 from src.models.AE_NODE.testing.support_functions import *
-from src.dataset_generation.support_functions import build_dictionary_of_variables
+from src.dataset_generation.dataset.support_functions import build_dictionary_of_variables
 
 import matplotlib.pyplot as plt
 
@@ -81,8 +81,8 @@ class Model_Test:
             self.minima_or_std = pickle.load(file)
         
         for key in self.maxima_or_mean:
-            self.maxima_or_mean[key] = tc.tensor(self.maxima_or_mean[key], device = self.device)
-            self.minima_or_std[key] = tc.tensor(self.minima_or_std[key], device = self.device)
+            self.maxima_or_mean[key] = self.maxima_or_mean[key].to(self.device)
+            self.minima_or_std[key] = self.minima_or_std[key].to(self.device)
             
         print('Minima or std', self.minima_or_std)
         print('Maxima or mean', self.maxima_or_mean)
@@ -421,13 +421,13 @@ class Model_Test:
     def access_trajectory(self, trajectory):
         
         with h5py.File(self.path_to_test_data + self.name_test_file, 'r') as f:
-            dictionary_of_input_variables_1 = tc.tensor(np.array(f[trajectory]['dictionary_of_input_variables_1']), dtype=tc.float32, device = self.device)
-            dictionary_of_input_variables_36 = tc.tensor(np.array(f[trajectory]['dictionary_of_input_variables_36']), dtype=tc.float32, device = self.device)
-            dictionary_of_input_variables_76 = tc.tensor(np.array(f[trajectory]['dictionary_of_input_variables_76']), dtype=tc.float32, device = self.device)
-            lower_plenum = tc.tensor(np.array(f[trajectory]['lower_plenum']), dtype=tc.float32, device = self.device)
-            dictionary_of_input_variables_140 = tc.tensor(np.array(f[trajectory]['dictionary_of_input_variables_140']), dtype=tc.float32, device = self.device)
-            boundary_conditions = tc.tensor(np.array(f[trajectory]['boundary_conditions_and_time'][:, :,:-2]), dtype=tc.float32, device = self.device)
-            DT = tc.tensor(np.array(f[trajectory]['boundary_conditions_and_time'][:, :,-2]), dtype=tc.float32, device = self.device)
+            dictionary_of_input_variables_1 = tc.tensor(np.array(f[trajectory]['dictionary_of_input_variables_1']), dtype=tc.float32, device = self.device).unsqueeze(0)
+            dictionary_of_input_variables_36 = tc.tensor(np.array(f[trajectory]['dictionary_of_input_variables_36']), dtype=tc.float32, device = self.device).unsqueeze(0)
+            dictionary_of_input_variables_76 = tc.tensor(np.array(f[trajectory]['dictionary_of_input_variables_76']), dtype=tc.float32, device = self.device).unsqueeze(0)
+            lower_plenum = tc.tensor(np.array(f[trajectory]['lower_plenum']), dtype=tc.float32, device = self.device).unsqueeze(0)
+            dictionary_of_input_variables_140 = tc.tensor(np.array(f[trajectory]['dictionary_of_input_variables_140']), dtype=tc.float32, device = self.device).unsqueeze(0)
+            boundary_conditions = tc.tensor(np.array(f[trajectory]['boundary_conditions_and_time'][ :,:-2]), dtype=tc.float32, device = self.device).unsqueeze(0)
+            DT = tc.tensor(np.array(f[trajectory]['boundary_conditions_and_time'][ :,-2]), dtype=tc.float32, device = self.device).unsqueeze(0)
             time = tc.tensor(np.array(f[trajectory]['Time']), dtype=tc.float32, device = self.device)
 
         return [dictionary_of_input_variables_1, dictionary_of_input_variables_36, dictionary_of_input_variables_76, lower_plenum, dictionary_of_input_variables_140], boundary_conditions, time, DT #keep boundary conditions separated for ease

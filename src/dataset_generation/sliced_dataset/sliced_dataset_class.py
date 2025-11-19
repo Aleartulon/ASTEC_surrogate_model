@@ -14,14 +14,16 @@ class Sliced_Dataset():
         self.where_to_save_data = config_dataset['where_to_save_data']
         self.t_W = config_dataset['t_W']
         self.device = config_dataset['device']
+        self.indeces_training_boundaries = config_dataset['indeces_training_boundaries']
+        self.indeces_validation_boundaries = config_dataset['indeces_validation_boundaries']
         
     def build_sliced_training_dataset(self, purpose_of_data):
         self.purpose_of_data = purpose_of_data
         
         if self.purpose_of_data  == 'training':
-            name_file = 'data_training.h5'
+            name_file = f'data_training_{self.indeces_training_boundaries[0]}_{self.indeces_training_boundaries[1]}.h5'
         elif self.purpose_of_data == 'validation':
-            name_file = 'data_validation.h5'
+            name_file = f'data_validation_{self.indeces_validation_boundaries[0]}_{self.indeces_validation_boundaries[1]}.h5'
             
         # open dataset
         with h5py.File(self.where_to_save_data + name_file, 'r') as f:
@@ -38,8 +40,12 @@ class Sliced_Dataset():
                 print(key, self.dictionary_of_sliced_windows[key].size())
                 
             #save dictionary with sliced windows
-            with h5py.File(f'{self.where_to_save_data}/data_{self.purpose_of_data}_normalized_t_W_'+str(self.t_W)+'.h5', 'w') as f:
-                dict_to_hdf5(self.dictionary_of_sliced_windows, f)
+            if self.purpose_of_data == 'training':
+                with h5py.File(f'{self.where_to_save_data}/data_training_normalized_t_W_{self.t_W}_{self.indeces_training_boundaries[0]}_{self.indeces_training_boundaries[1]}.h5', 'w') as f:
+                    dict_to_hdf5(self.dictionary_of_sliced_windows, f)
+            elif self.purpose_of_data == 'validation':
+                with h5py.File(f'{self.where_to_save_data}/data_validation_normalized_t_W_{self.t_W}_{self.indeces_validation_boundaries[0]}_{self.indeces_validation_boundaries[1]}.h5', 'w') as f:
+                    dict_to_hdf5(self.dictionary_of_sliced_windows, f)
             
             # Clear GPU memory immediately after saving
             del self.dictionary_of_sliced_windows

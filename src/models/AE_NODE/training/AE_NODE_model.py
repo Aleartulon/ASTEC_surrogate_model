@@ -40,6 +40,9 @@ class AE_NODE:
         self.dynamic_dataset_generation_during_training = config_training['dynamic_dataset_generation_during_training']
         self.time_windows = config_training['time_windows']
         
+        self.indeces_training_boundaries = config_training['indeces_training_boundaries']
+        self.indeces_validation_boundaries = config_training['indeces_validation_boundaries']
+        
         #save conversion name file 
         shutil.copy( self.data_path + '/rename_log.txt', self.PATH_logs + '/rename_log.txt')
         
@@ -55,7 +58,7 @@ class AE_NODE:
         #create datasets and dataloader for training and validation 
         if self.dynamic_dataset_generation_during_training:
             
-            self.training_loader, self.validation_loader = build_dataset(self.batch_sizes[0], self.time_windows[0], self.data_training_path_dynamic, self.data_validation_path_dynamic, self.number_of_workers, self.data_path, self.where_to_save_data, self.which_normalization, self.device)
+            self.training_loader, self.validation_loader = build_dataset(self.batch_sizes[0], self.time_windows[0], self.data_training_path_dynamic, self.data_validation_path_dynamic, self.number_of_workers, self.data_path, self.where_to_save_data, self.which_normalization, self.device, self.indeces_training_boundaries, self.indeces_validation_boundaries)
         else:
             dataset_training = ASTEC_Dataset(self.data_training_path)
             self.training_loader = DataLoader(dataset_training, batch_size = self.batch_sizes[0], num_workers = self.number_of_workers, shuffle=True,drop_last=False,pin_memory=True)
