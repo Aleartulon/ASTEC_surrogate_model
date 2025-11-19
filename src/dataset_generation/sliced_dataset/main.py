@@ -40,11 +40,11 @@ def main():
     with tc.no_grad():
         # Build training data
         print('--------------------------------Build sliced training dataset--------------------------------')
-        sliced_dataset.build_sliced_training_dataset(indeces_training, 'training')
+        sliced_dataset.build_sliced_training_dataset( 'training')
         tc.cuda.empty_cache()
         # Build validation data
         print('--------------------------------Build sliced validation dataset--------------------------------')
-        sliced_dataset.build_sliced_training_dataset(indeces_validation, 'validation')
+        sliced_dataset.build_sliced_training_dataset('validation')
         del sliced_dataset 
         tc.cuda.empty_cache()
 
