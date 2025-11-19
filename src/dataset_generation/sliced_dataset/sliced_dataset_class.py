@@ -1,4 +1,4 @@
-from src.dataset_generation.support_functions import *
+from src.dataset_generation.sliced_dataset.support_functions import *
 import h5py
 import numpy as np
 import torch as tc
@@ -7,14 +7,12 @@ import time
 import gc
 
 
-class Astec_Dataset():
+class Sliced_Dataset():
     def __init__(self , config_dataset: dict):
         
         self.path_to_hdf5 = config_dataset['path_to_hdf5']
         self.where_to_save_data = config_dataset['where_to_save_data']
         self.t_W = config_dataset['t_W']
-        self.save_dictionary_per_time_lengths = config_dataset['save_dictionary_per_time_lengths']
-        self.which_normalization = config_dataset['which_normalization']
         self.device = config_dataset['device']
         
     def build_training_dataset(self, indeces, purpose_of_data):
