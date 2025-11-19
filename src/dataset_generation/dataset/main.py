@@ -6,12 +6,11 @@ import shutil
 import argparse
 import numpy as np
 from src.common_functions import load_config
-from src.dataset_generation.astec_class import Astec_Dataset
+from src.dataset_generation.dataset.astec_class import Astec_Dataset
 
 def main():
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description='Build ASTEC dataset')
-    parser.add_argument('--t_W', type=int, default=None,help='Override temporal window for time subsets')
     parser.add_argument('--testing', type=lambda x: x.lower() == 'true', default=None)
     parser.add_argument('--path_to_hdf5', type=str, default=None)
     parser.add_argument('--where_to_save_data', type=str, default=None)
@@ -24,8 +23,6 @@ def main():
     config_dataset = load_config('configs/config_dataset.yaml')
     
     # Override t_W if provided via command line
-    if args.t_W is not None:
-        config_dataset['t_W'] = args.t_W
     if args.testing is not None:
         config_dataset['testing'] = args.testing
     if args.path_to_hdf5 is not None:

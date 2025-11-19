@@ -1,0 +1,4 @@
+path_to_hdf5 : '../../../../../scratch/ROM_datasets_ale/ASTEC/original_hdf5/'
+where_to_save_data: '../../../../../scratch/ROM_datasets_ale/ASTEC/'
+device : 'cuda:1'
+t_W : 10 #temporal window for time subsets of time series

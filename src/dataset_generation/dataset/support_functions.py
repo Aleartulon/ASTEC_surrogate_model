@@ -18,19 +18,19 @@ def make_faces_array(x, device:tc.device):
     
     # Create output array
     shape_x = x.shape
-    reshaped_faces = tc.zeros((shape_x[0], shape_x[1], shape_x[2], 16, 9), device = device)
+    reshaped_faces = tc.zeros((shape_x[0], shape_x[1], 16, 9), device = device)
     
     # Vectorized assignment for normal indices
     normal_mask = ~needs_averaging
     normal_indices = matrix_of_indices[normal_mask]
     i_coords, j_coords = tc.where(normal_mask)
-    reshaped_faces[:, :, :, i_coords, j_coords] = x[:, :, :, normal_indices]
+    reshaped_faces[ :, :, i_coords, j_coords] = x[ :, :, normal_indices]
     
     # Vectorized assignment for averaged indices
     avg_indices = matrix_of_indices[needs_averaging]
     i_coords, j_coords = tc.where(needs_averaging)
-    reshaped_faces[:, :, :, i_coords, j_coords] = (
-        x[:, :, :, avg_indices - 5] + x[:, :, :, avg_indices - 4]
+    reshaped_faces[ :, :, i_coords, j_coords] = (
+        x[ :, :, avg_indices - 5] + x[ :, :, avg_indices - 4]
     ) / 2
     
     return reshaped_faces
@@ -281,41 +281,42 @@ def get_normalization_statistics(dictionary_unified:dict, type_of_normalization:
     return maxima_or_mean, minima_or_std
 
 def normalize_fields(field: np.array, maximum_or_mean: dict, minimum_or_std: dict, normalization: str, device):
-    size = np.shape(field)
+    field = tc.tensor(field)
+    size = field.size()
     field = field.to(device)
     if size[-1] == 32:
         
         maximum_or_mean = maximum_or_mean['boundary_conditions_and_time'].to(device)
         minimum_or_std = minimum_or_std['boundary_conditions_and_time'].to(device)
-        maximum_or_mean = maximum_or_mean[None,None,:]
-        minimum_or_std = minimum_or_std[None,None,:]
+        maximum_or_mean = maximum_or_mean[None,:]
+        minimum_or_std = minimum_or_std[None,:]
         
     elif size[-1] == 4:
         maximum_or_mean = maximum_or_mean['dictionary_of_input_variables_1'].to(device)
         minimum_or_std = minimum_or_std['dictionary_of_input_variables_1'].to(device)
-        maximum_or_mean = maximum_or_mean[None,None,:]
-        minimum_or_std = minimum_or_std[None,None,:]
+        maximum_or_mean = maximum_or_mean[None,:]
+        minimum_or_std = minimum_or_std[None,:]
 
     elif size[-1] == 140:
         maximum_or_mean = maximum_or_mean['dictionary_of_input_variables_140'].to(device)
         minimum_or_std = minimum_or_std['dictionary_of_input_variables_140'].to(device)
-        maximum_or_mean = maximum_or_mean[None,None,:, None]
-        minimum_or_std = minimum_or_std[None,None,:, None]
+        maximum_or_mean = maximum_or_mean[None,:, None]
+        minimum_or_std = minimum_or_std[None,:, None]
 
     elif size[-1] == 36:
         maximum_or_mean = maximum_or_mean['dictionary_of_input_variables_36'].to(device)
         minimum_or_std = minimum_or_std['dictionary_of_input_variables_36'].to(device)
-        maximum_or_mean = maximum_or_mean[None,None,:, None]
-        minimum_or_std = minimum_or_std[None,None,:, None]
+        maximum_or_mean = maximum_or_mean[None,:, None]
+        minimum_or_std = minimum_or_std[None,:, None]
 
     elif size[-1] == 76:
         maximum_or_mean = maximum_or_mean['dictionary_of_input_variables_76'].to(device)
         minimum_or_std = minimum_or_std['dictionary_of_input_variables_76'].to(device)
-        maximum_or_mean = maximum_or_mean[None,None,:, None]
-        minimum_or_std = minimum_or_std[None,None,:, None]
+        maximum_or_mean = maximum_or_mean[None,:, None]
+        minimum_or_std = minimum_or_std[None,:, None]
         
     else:
-        raise TypeError(f"Something is wrong with data, shape is {size}")
+        raise TypeError(f"Something is wrong with data, shape is {size[-1]}")
     
     if normalization == 'min_max':
         denom = maximum_or_mean - minimum_or_std
