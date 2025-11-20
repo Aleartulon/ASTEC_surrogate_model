@@ -215,11 +215,11 @@ class Training():
                 if self.dynamic_dataset_generation_during_training and i > (self.time_only_TF + self.time_of_AE) and how_many_datasets_creations < len(self.time_windows):
                     
                     if before_next_window_change == 0:
-                        self.training_loader, self.validation_loader = build_dataset(self.batch_sizes[how_many_datasets_creations], self.time_windows[how_many_datasets_creations], self.data_training_path_dynamic, self.data_validation_path_dynamic, self.number_of_workers, self.data_path, self.where_to_save_data, self.which_normalization, self.device)
+                        self.training_loader, self.validation_loader = build_dataset(self.batch_sizes[how_many_datasets_creations], self.time_windows[how_many_datasets_creations], self.data_training_path_dynamic, self.data_validation_path_dynamic, self.number_of_workers, self.data_path, self.where_to_save_data, self.which_normalization, self.device, self.indeces_training_boundaries, self.indeces_validation_boundaries)
                         before_next_window_change = self.waiting_epochs_before_new_dataset_creation[how_many_datasets_creations]
                         how_many_datasets_creations+=1
-                        os.remove(self.data_training_path_dynamic + str(self.time_windows[how_many_datasets_creations-2]) + '.h5')
-                        os.remove(self.data_validation_path_dynamic + str(self.time_windows[how_many_datasets_creations-2]) + '.h5')
+                        os.remove(f"{self.data_training_path_dynamic}{str(self.time_windows[how_many_datasets_creations-2])}_{self.indeces_training_boundaries[0]}_{self.indeces_training_boundaries[1]}.h5")
+                        os.remove(f"{self.data_validation_path_dynamic}{str(self.time_windows[how_many_datasets_creations-2])}_{self.indeces_validation_boundaries[0]}_{self.indeces_validation_boundaries[1]}.h5")
                         loss_value = 100
                         
                     before_next_window_change-=1

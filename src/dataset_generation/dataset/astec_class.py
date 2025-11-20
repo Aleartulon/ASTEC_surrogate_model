@@ -16,6 +16,9 @@ class Astec_Dataset():
         self.device = tc.device(config_dataset['device'] if tc.cuda.is_available() else 'cpu')
         print('Device: ', self.device)
         self.testing = config_dataset['testing']
+        self.indeces_training_boundaries = config_dataset['indeces_training_boundaries']
+        self.indeces_validation_boundaries = config_dataset['indeces_validation_boundaries']
+        self.indeces_testing_boundaries = config_dataset['indeces_testing_boundaries']
         
     def build_training_dataset(self, indeces, purpose_of_data):
         self.purpose_of_data = purpose_of_data
@@ -105,9 +108,12 @@ class Astec_Dataset():
             for shape in self.dictionary_per_simulation[simulation]:
                 print(f"Simulation: {simulation}, shape {shape}, size: {self.dictionary_per_simulation[simulation][shape].size()}")
         #save normalized dictionary 
-        with h5py.File(f'{self.where_to_save_data}/data_{self.purpose_of_data}.h5', 'w') as f:
-            dict_to_hdf5(self.dictionary_per_simulation, f)
-        
+        if self.purpose_of_data == 'training':
+            with h5py.File(f'{self.where_to_save_data}/data_training_{self.indeces_training_boundaries[0]}_{self.indeces_training_boundaries[1]}.h5', 'w') as f:
+                dict_to_hdf5(self.dictionary_per_simulation, f)
+        elif self.purpose_of_data == 'validation':
+            with h5py.File(f'{self.where_to_save_data}/data_validation_{self.indeces_validation_boundaries[0]}_{self.indeces_validation_boundaries[1]}.h5', 'w') as f:
+                dict_to_hdf5(self.dictionary_per_simulation, f)
         # Clear GPU memory immediately after saving
         del self.dictionary_per_simulation
         gc.collect()
@@ -160,7 +166,7 @@ class Astec_Dataset():
                 print(f"trajectory {number_of_simulation}, shape {shape}: {size} ")
             
         #save dictionary_per_simulation to hdf5s if self.save_dictionary_per_time_lengths is true
-        with h5py.File(self.where_to_save_data+'/data_testing.h5', 'w') as f:
+        with h5py.File(f"{self.where_to_save_data}/data_testing_{self.indeces_testing_boundaries[0]}_{self.indeces_testing_boundaries[1]}.h5", 'w') as f:
             dict_to_hdf5(dictionary_per_trajectory, f) 
             
     def make_channels_for_dictionary_per_simulation(self, dict: dict):
