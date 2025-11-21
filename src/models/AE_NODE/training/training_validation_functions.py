@@ -2,7 +2,6 @@ import os
 import numpy as np
 import time
 import torch as tc
-from src.models.AE_NODE.training.AE_NODE_model import initialize_model_to_last_checkpoint
 from src.models.AE_NODE.training.data_functions import *
 from src.models.AE_NODE.training.method_functions import Training_Losses
 

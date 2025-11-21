@@ -5,6 +5,7 @@ import h5py
 from torch.utils.data import Dataset
 from torch import nn
 from torch.utils.data import DataLoader
+from src.models.AE_NODE.training.architecture import *
 import subprocess
 
 def build_dataset(batch_size:int, time_window: int, data_training_path: str, data_validation_path:str, number_of_workers:int, path_to_data: str, where_to_save:str , which_normalization:str, device :tc.device, training_boundaries:list, validation_boundaries:list):
@@ -236,3 +237,24 @@ def dynamics_MSE(input: tc.tensor, target: tc.tensor, length_of_padding: tc.tens
     
 
     
+def initialize_model_to_last_checkpoint(config_training:dict, models_information:dict, device : tc.device, path_to_checkpoint:str ):
+    
+    encoder = Encoder(config_training, models_information)
+    f = F_Latent(config_training, models_information)
+    decoder = Decoder(config_training, models_information)
+    encoder, f, decoder = load_checkpoint_on_models(encoder, f, decoder, device, path_to_checkpoint )
+    
+    return encoder, f, decoder
+    
+def load_checkpoint_on_models(encoder, f, decoder, device:tc.device, path_to_checkpoint:str):
+        
+    checkpoint = tc.load(path_to_checkpoint, map_location=device, weights_only=False)
+    
+    encoder.load_state_dict(checkpoint['enco'])
+    f.load_state_dict(checkpoint['f'])
+    decoder.load_state_dict(checkpoint['dec'])
+    
+    encoder.to(device)
+    f.to(device)
+    decoder.to(device)
+    return encoder, f, decoder
