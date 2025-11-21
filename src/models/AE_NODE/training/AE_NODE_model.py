@@ -67,10 +67,10 @@ class AE_NODE:
             self.validation_loader = DataLoader(dataset_validation, batch_size = self.batch_sizes[0], num_workers = self.number_of_workers, shuffle=True,drop_last=False,pin_memory=True)
         #get normalization information
         
-        with open(config_training['where_to_save_data']+'/maxima_or_mean.pkl', 'rb') as f:
+        with open(f"{config_training['where_to_save_data']}/maxima_or_mean_{self.indeces_training_boundaries[0]}_{self.indeces_training_boundaries[1]}.pkl", 'rb') as f:
             self.maxima_or_mean = pickle.load(f)
 
-        with open(config_training['where_to_save_data']+'/minima_or_std.pkl', 'rb') as f:
+        with open(f"{config_training['where_to_save_data']}/minima_or_std_{self.indeces_training_boundaries[0]}_{self.indeces_training_boundaries[1]}.pkl", 'rb') as f:
             self.minima_or_std = pickle.load(f)
             
         for key in self.maxima_or_mean:

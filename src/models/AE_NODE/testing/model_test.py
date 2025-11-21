@@ -72,12 +72,18 @@ class Model_Test:
         self.TF_latent_prediction_figures = information['TF_latent_prediction_figures']
         self.compute_TF = information['compute_TF']
         
+        self.models_information = load_config(self.path_to_model + 'scripts/configs/configs_models/config_AE_NODE.yaml')
+        self.config_training = load_config(self.path_to_model + 'scripts/configs/config_training.yaml')
+        self.which_normalization = self.config_training['which_normalization']
+        self.latent_dimension = self.models_information['auto_encoding']['final_reduction_and_initial_increase']['output_dimension_encoder']
+        self.config_training['device'] = self.device
+        self.indeces_training_boundaries =  self.config_training['indeces_training_boundaries']
         #get normalization
         
-        with open(self.path_to_test_data + '/maxima_or_mean.pkl', 'rb') as file:
+        with open(f"{self.path_to_test_data}/maxima_or_mean_{self.indeces_training_boundaries[0]}_{self.indeces_training_boundaries[1]}.pkl", 'rb') as file:
             self.maxima_or_mean = pickle.load(file)
         
-        with open(self.path_to_test_data + '/minima_or_std.pkl', 'rb') as file:
+        with open(f"{self.path_to_test_data}/minima_or_std_{self.indeces_training_boundaries[0]}_{self.indeces_training_boundaries[1]}.pkl", 'rb') as file:
             self.minima_or_std = pickle.load(file)
         
         for key in self.maxima_or_mean:
@@ -87,12 +93,6 @@ class Model_Test:
         print('Minima or std', self.minima_or_std)
         print('Maxima or mean', self.maxima_or_mean)
         
-        self.models_information = load_config(self.path_to_model + 'scripts/configs/configs_models/config_AE_NODE.yaml')
-        self.config_training = load_config(self.path_to_model + 'scripts/configs/config_training.yaml')
-        self.which_normalization = self.config_training['which_normalization']
-        self.latent_dimension = self.models_information['auto_encoding']['final_reduction_and_initial_increase']['output_dimension_encoder']
-        
-        self.config_training['device'] = self.device
         #define models and load saved checkpoint  
         self.encoder = Encoder(self.config_training, self.models_information)
         self.f = F_Latent(self.config_training, self.models_information)
@@ -485,6 +485,9 @@ class Model_Test:
                                 vmin=vmin, vmax=vmax)
             im = axs[1, count].imshow(denormalized_fields[trajectory][shape_index][0, time_indices[count], variable_index].cpu(),
                                     vmin=vmin, vmax=vmax)
+            
+            if which_prediction == 'TF' or which_prediction == 'AE_NODE':
+                i = i+1
             axs[0, count].set_title(f't = {Time[trajectory][i]/3600:.2g} h', fontsize=fontsize)
             axs[1, count].set_title(f't = {Time[trajectory][i]/3600:.2g} h', fontsize=fontsize)
         axs[0, 0].set_ylabel('Prediction', fontsize=fontsize, fontweight='bold')
