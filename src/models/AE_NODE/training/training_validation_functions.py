@@ -2,6 +2,7 @@ import os
 import numpy as np
 import time
 import torch as tc
+from src.models.AE_NODE.training.AE_NODE_model import initialize_model_to_last_checkpoint
 from src.models.AE_NODE.training.data_functions import *
 from src.models.AE_NODE.training.method_functions import Training_Losses
 
@@ -221,6 +222,13 @@ class Training():
                         os.remove(f"{self.data_training_path_dynamic}{str(self.time_windows[how_many_datasets_creations-2])}_{self.indeces_training_boundaries[0]}_{self.indeces_training_boundaries[1]}.h5")
                         os.remove(f"{self.data_validation_path_dynamic}{str(self.time_windows[how_many_datasets_creations-2])}_{self.indeces_validation_boundaries[0]}_{self.indeces_validation_boundaries[1]}.h5")
                         loss_value = 100
+                        
+                        #fetch the best model of previous iteration
+                        if self.reinitialize_model_at_each_dataset_reshape:
+                            del self.encoder
+                            del self.f
+                            del self.decoder
+                            self.encoder, self.f, self.decoder = initialize_model_to_last_checkpoint(self.config_training, self.model_information, self.device, self.PATH_logs+'/checkpoint/check.pt')
                         
                     before_next_window_change-=1
                 

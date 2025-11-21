@@ -11,10 +11,14 @@ from src.models.AE_NODE.training.training_validation_functions import Training
 class AE_NODE:
     def __init__(self , config_training: dict, model_information: dict):
         
+        self.config_training = config_training
+        self.model_information = model_information
+        
         self.device = config_training['device']
         self.epochs = config_training['epochs']
         self.PATH_logs = config_training['PATH']
         self.checkpoint = config_training['checkpoint']
+        
 
         self.loss_coefficients = model_information['loss_coefficients'] if model_information['is_coupled'][0] else model_information['loss_coefficients_not_coupled']
         self.time_only_TF = model_information['time_only_TF']
@@ -42,6 +46,8 @@ class AE_NODE:
         
         self.indeces_training_boundaries = config_training['indeces_training_boundaries']
         self.indeces_validation_boundaries = config_training['indeces_validation_boundaries']
+        
+        self.reinitialize_model_at_each_dataset_reshape = config_training['reinitialize_model_at_each_dataset_reshape']
         
         #save conversion name file 
         shutil.copy( self.data_path + '/rename_log.txt', self.PATH_logs + '/rename_log.txt')
@@ -142,3 +148,27 @@ class AE_NODE:
         if isinstance(val, str):
             return eval(val)
         return val
+        
+    
+
+def initialize_model_to_last_checkpoint(config_training:dict, models_information:dict, device : tc.device, path_to_checkpoint:str ):
+    
+    encoder = Encoder(config_training, models_information)
+    f = F_Latent(config_training, models_information)
+    decoder = Decoder(config_training, models_information)
+    encoder, f, decoder = load_checkpoint_on_models(encoder, f, decoder, device, path_to_checkpoint )
+    
+    return encoder, f, decoder
+    
+def load_checkpoint_on_models(encoder, f, decoder, device:tc.device, path_to_checkpoint:str):
+        
+    checkpoint = tc.load(path_to_checkpoint, map_location=device, weights_only=False)
+    
+    encoder.load_state_dict(checkpoint['enco'])
+    f.load_state_dict(checkpoint['f'])
+    decoder.load_state_dict(checkpoint['dec'])
+    
+    encoder.to(device)
+    f.to(device)
+    decoder.to(device)
+    return encoder, f, decoder
