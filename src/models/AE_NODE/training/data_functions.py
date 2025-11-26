@@ -5,15 +5,22 @@ import h5py
 from torch.utils.data import Dataset
 from torch import nn
 from torch.utils.data import DataLoader
+from src.models.AE_NODE.training.architecture import *
 import subprocess
 
-def build_dataset(batch_size:int, time_window: int, data_training_path: str, data_validation_path:str, number_of_workers:int, path_to_data: str, where_to_save:str , which_normalization:str, device =tc.device):
+def build_dataset(batch_size:int, time_window: int, data_training_path: str, data_validation_path:str, number_of_workers:int, path_to_data: str, where_to_save:str , which_normalization:str, device :tc.device, training_boundaries:list, validation_boundaries:list):
     
-    training_path = data_training_path + str(time_window) + '.h5'
-    validation_path = data_validation_path +  str(time_window) + '.h5'
+    training_path = f"{data_training_path}{str(time_window)}_{training_boundaries[0]}_{training_boundaries[1]}.h5"
+    validation_path = f"{data_validation_path}{str(time_window)}_{validation_boundaries[0]}_{validation_boundaries[1]}.h5"
     
     #build dataset made out of 'time_window' chunks
-    subprocess.run(['python', '-m', 'src.dataset_generation.sliced_dataset.main', '--t_W', str(time_window), '--path_to_hdf5', path_to_data, '--where_to_save_data', where_to_save, '--device', device])
+    subprocess.run(['python', '-m', 'src.dataset_generation.sliced_dataset.main', 
+                '--t_W', str(time_window), 
+                '--path_to_hdf5', path_to_data, 
+                '--where_to_save_data', where_to_save, 
+                '--device', device, 
+                '--indeces_training_boundaries', ' ,'.join(map(str, training_boundaries)),
+                '--indeces_validation_boundaries', ' ,'.join(map(str, validation_boundaries))])
     tc.cuda.empty_cache()
     # build dataset and dataloader
     dataset_training = ASTEC_Dataset(training_path)
@@ -70,19 +77,20 @@ import h5py
 from torch.utils.data import Dataset, DataLoader, get_worker_info
 
 class ASTEC_Dataset(Dataset):
-
     def __init__(self, path):
         self.path = path
-        self.file_handle = None 
+        # Don't store file handle here - it can't be shared across workers
         with h5py.File(self.path, 'r') as f:
             self.dataset_keys = list(f.keys())
             self.size = f['dictionary_of_input_variables_1'].shape[0]
     
     def __getitem__(self, idx):
-        if self.file_handle is None:
-            self.file_handle = h5py.File(self.path, 'r')
+        # Each worker opens its own file handle on first access
+        # Use thread/process-local storage
+        if not hasattr(self, '_file_handle'):
+            self._file_handle = h5py.File(self.path, 'r')
         
-        f = self.file_handle
+        f = self._file_handle
         
         dictionary_of_input_variables_1 = tc.from_numpy(f['dictionary_of_input_variables_1'][idx]).float()
         dictionary_of_input_variables_36 = tc.from_numpy(f['dictionary_of_input_variables_36'][idx]).float()
@@ -93,9 +101,12 @@ class ASTEC_Dataset(Dataset):
         bc_data = f['boundary_conditions_and_time'][idx]
         boundary_conditions = tc.from_numpy(bc_data[:, :-2]).float()
         time = tc.from_numpy(bc_data[:, -2]).float()
+        
         length_of_padding = tc.from_numpy(f['length_of_padding'][idx]).float()
         
-        return [dictionary_of_input_variables_1, dictionary_of_input_variables_36, dictionary_of_input_variables_76, lower_plenum, dictionary_of_input_variables_140], boundary_conditions, time, length_of_padding
+        return [dictionary_of_input_variables_1, dictionary_of_input_variables_36, 
+                dictionary_of_input_variables_76, lower_plenum, 
+                dictionary_of_input_variables_140], boundary_conditions, time, length_of_padding
     
     def __len__(self):
         return self.size
@@ -230,3 +241,24 @@ def dynamics_MSE(input: tc.tensor, target: tc.tensor, length_of_padding: tc.tens
     
 
     
+def initialize_model_to_last_checkpoint(config_training:dict, models_information:dict, device : tc.device, path_to_checkpoint:str ):
+    
+    encoder = Encoder(config_training, models_information)
+    f = F_Latent(config_training, models_information)
+    decoder = Decoder(config_training, models_information)
+    encoder, f, decoder = load_checkpoint_on_models(encoder, f, decoder, device, path_to_checkpoint )
+    
+    return encoder, f, decoder
+    
+def load_checkpoint_on_models(encoder, f, decoder, device:tc.device, path_to_checkpoint:str):
+        
+    checkpoint = tc.load(path_to_checkpoint, map_location=device, weights_only=False)
+    
+    encoder.load_state_dict(checkpoint['enco'])
+    f.load_state_dict(checkpoint['f'])
+    decoder.load_state_dict(checkpoint['dec'])
+    
+    encoder.to(device)
+    f.to(device)
+    decoder.to(device)
+    return encoder, f, decoder

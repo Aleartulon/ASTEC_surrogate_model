@@ -11,10 +11,14 @@ from src.models.AE_NODE.training.training_validation_functions import Training
 class AE_NODE:
     def __init__(self , config_training: dict, model_information: dict):
         
+        self.config_training = config_training
+        self.model_information = model_information
+        
         self.device = config_training['device']
         self.epochs = config_training['epochs']
         self.PATH_logs = config_training['PATH']
         self.checkpoint = config_training['checkpoint']
+        
 
         self.loss_coefficients = model_information['loss_coefficients'] if model_information['is_coupled'][0] else model_information['loss_coefficients_not_coupled']
         self.time_only_TF = model_information['time_only_TF']
@@ -40,6 +44,11 @@ class AE_NODE:
         self.dynamic_dataset_generation_during_training = config_training['dynamic_dataset_generation_during_training']
         self.time_windows = config_training['time_windows']
         
+        self.indeces_training_boundaries = config_training['indeces_training_boundaries']
+        self.indeces_validation_boundaries = config_training['indeces_validation_boundaries']
+        
+        self.reinitialize_model_at_each_dataset_reshape = config_training['reinitialize_model_at_each_dataset_reshape']
+        
         #save conversion name file 
         shutil.copy( self.data_path + '/rename_log.txt', self.PATH_logs + '/rename_log.txt')
         
@@ -55,7 +64,7 @@ class AE_NODE:
         #create datasets and dataloader for training and validation 
         if self.dynamic_dataset_generation_during_training:
             
-            self.training_loader, self.validation_loader = build_dataset(self.batch_sizes[0], self.time_windows[0], self.data_training_path_dynamic, self.data_validation_path_dynamic, self.number_of_workers, self.data_path, self.where_to_save_data, self.which_normalization, self.device)
+            self.training_loader, self.validation_loader = build_dataset(self.batch_sizes[0], self.time_windows[0], self.data_training_path_dynamic, self.data_validation_path_dynamic, self.number_of_workers, self.data_path, self.where_to_save_data, self.which_normalization, self.device, self.indeces_training_boundaries, self.indeces_validation_boundaries)
         else:
             dataset_training = ASTEC_Dataset(self.data_training_path)
             self.training_loader = DataLoader(dataset_training, batch_size = self.batch_sizes[0], num_workers = self.number_of_workers, shuffle=True,drop_last=False,pin_memory=True)
@@ -64,10 +73,10 @@ class AE_NODE:
             self.validation_loader = DataLoader(dataset_validation, batch_size = self.batch_sizes[0], num_workers = self.number_of_workers, shuffle=True,drop_last=False,pin_memory=True)
         #get normalization information
         
-        with open(config_training['where_to_save_data']+'/maxima_or_mean.pkl', 'rb') as f:
+        with open(f"{config_training['where_to_save_data']}/maxima_or_mean_{self.indeces_training_boundaries[0]}_{self.indeces_training_boundaries[1]}.pkl", 'rb') as f:
             self.maxima_or_mean = pickle.load(f)
 
-        with open(config_training['where_to_save_data']+'/minima_or_std.pkl', 'rb') as f:
+        with open(f"{config_training['where_to_save_data']}/minima_or_std_{self.indeces_training_boundaries[0]}_{self.indeces_training_boundaries[1]}.pkl", 'rb') as f:
             self.minima_or_std = pickle.load(f)
             
         for key in self.maxima_or_mean:
@@ -139,3 +148,4 @@ class AE_NODE:
         if isinstance(val, str):
             return eval(val)
         return val
+        

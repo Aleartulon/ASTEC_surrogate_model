@@ -54,6 +54,7 @@ class Training():
         self.decoder.train()
             
         for fields, boundary_conditions, dt, length_of_padding in self.training_loader:
+            t0 =time.time()
             
             l1,l2_TF,l2_AR,l3, _,regularization_latent = self.training_losses.loss_sup_mixed(fields, boundary_conditions, dt, length_of_padding, loss_coefficients, True)
             
@@ -83,6 +84,8 @@ class Training():
             
             regularization_loss += regularization_latent.detach().cpu().item()
             count += 1
+            t1 =time.time()
+            print('training: ', t1-t0)
         return l1_loss/count, l1_loss_per_shape/count, l1_loss_latent/count ,l2_TF_loss/count, l2_AR_loss/count ,l3_loss/count, regularization_loss/count, loss/count
         
 
@@ -110,6 +113,7 @@ class Training():
             
         with tc.no_grad():
             for fields, boundary_conditions, dt, length_of_padding in self.validation_loader:
+                t0 = time.time()
                 l1,l2_TF,l2_AR,l3, l_final, regularization_latent  = self.training_losses.loss_sup_mixed(fields, boundary_conditions, dt, length_of_padding, loss_coefficients, False)
                 l1_mean = l1[0]
                 l1_mean_per_shape = l1[1]
@@ -133,7 +137,8 @@ class Training():
                 l3_loss += l3.detach().cpu().item()
                 regularization_loss += regularization_latent.detach().cpu().item()
                 count += 1
-                
+                t1 = time.time()
+                print('validation: ', t1-t0)
         return l1_loss/count, l1_loss_per_shape/count, l1_loss_unnorm/count, l1_loss_unnorm_per_variable/count, l1_loss_latent/count, l2_TF_loss/count, l2_AR_loss/count , l3_loss/count, loss_real/count, loss_real_per_shape/count, regularization_loss/count , loss/count
 
 
@@ -215,12 +220,19 @@ class Training():
                 if self.dynamic_dataset_generation_during_training and i > (self.time_only_TF + self.time_of_AE) and how_many_datasets_creations < len(self.time_windows):
                     
                     if before_next_window_change == 0:
-                        self.training_loader, self.validation_loader = build_dataset(self.batch_sizes[how_many_datasets_creations], self.time_windows[how_many_datasets_creations], self.data_training_path_dynamic, self.data_validation_path_dynamic, self.number_of_workers, self.data_path, self.where_to_save_data, self.which_normalization, self.device)
+                        self.training_loader, self.validation_loader = build_dataset(self.batch_sizes[how_many_datasets_creations], self.time_windows[how_many_datasets_creations], self.data_training_path_dynamic, self.data_validation_path_dynamic, self.number_of_workers, self.data_path, self.where_to_save_data, self.which_normalization, self.device, self.indeces_training_boundaries, self.indeces_validation_boundaries)
                         before_next_window_change = self.waiting_epochs_before_new_dataset_creation[how_many_datasets_creations]
                         how_many_datasets_creations+=1
-                        os.remove(self.data_training_path_dynamic + str(self.time_windows[how_many_datasets_creations-2]) + '.h5')
-                        os.remove(self.data_validation_path_dynamic + str(self.time_windows[how_many_datasets_creations-2]) + '.h5')
+                        os.remove(f"{self.data_training_path_dynamic}{str(self.time_windows[how_many_datasets_creations-2])}_{self.indeces_training_boundaries[0]}_{self.indeces_training_boundaries[1]}.h5")
+                        os.remove(f"{self.data_validation_path_dynamic}{str(self.time_windows[how_many_datasets_creations-2])}_{self.indeces_validation_boundaries[0]}_{self.indeces_validation_boundaries[1]}.h5")
                         loss_value = 100
+                        
+                        #fetch the best model of previous iteration
+                        if self.reinitialize_model_at_each_dataset_reshape:
+                            del self.encoder
+                            del self.f
+                            del self.decoder
+                            self.encoder, self.f, self.decoder = initialize_model_to_last_checkpoint(self.config_training, self.model_information, self.device, self.PATH_logs+'/checkpoint/check.pt')
                         
                     before_next_window_change-=1
                 
