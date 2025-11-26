@@ -1,6 +1,6 @@
 path_to_test_data : '../../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/'
-name_test_file: 'data_testing_1_5.h5'
-path_to_model: '../../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/saved_logs/AE_NODE/Models/new_dataset_creation/'
+name_test_file: 'data_testing_1_4.h5'
+path_to_model: '../../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/saved_logs/AE_NODE/Models/dataset_1_4/'
 device: 'cuda'
 trajectories_to_be_plotted : [1,2,3]
 autoencoding_figures : true

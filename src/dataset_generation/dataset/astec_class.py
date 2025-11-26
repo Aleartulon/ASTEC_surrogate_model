@@ -67,18 +67,18 @@ class Astec_Dataset():
             self.minima_or_std = {k: tc.tensor(v, dtype=tc.float32) for k, v in self.minima_or_std.items()}
             
             #save normalization statistics for training and testing
-            with open(self.where_to_save_data+'/maxima_or_mean.pkl', 'wb') as f:
+            with open(f"{self.where_to_save_data}/maxima_or_mean_{self.indeces_training_boundaries[0]}_{self.indeces_training_boundaries[1]}.pkl", 'wb') as f:
                 pickle.dump(self.maxima_or_mean, f)
 
-            with open(self.where_to_save_data+'/minima_or_std.pkl', 'wb') as f:
+            with open(f"{self.where_to_save_data}/minima_or_std_{self.indeces_training_boundaries[0]}_{self.indeces_training_boundaries[1]}.pkl", 'wb') as f:
                 pickle.dump(self.minima_or_std, f)
                 
         elif purpose_of_data == 'validation':
             
-            with open(self.where_to_save_data + '/maxima_or_mean.pkl', 'rb') as file:
+            with open(f"{self.where_to_save_data}/maxima_or_mean_{self.indeces_training_boundaries[0]}_{self.indeces_training_boundaries[1]}.pkl", 'rb') as file:
                 self.maxima_or_mean = pickle.load(file)
             
-            with open(self.where_to_save_data + '/minima_or_std.pkl', 'rb') as file:
+            with open(f"{self.where_to_save_data}/minima_or_std_{self.indeces_training_boundaries[0]}_{self.indeces_training_boundaries[1]}.pkl", 'rb') as file:
                 self.minima_or_std = pickle.load(file)
                 
         #normalize dictionary_per_simulation 
@@ -125,10 +125,10 @@ class Astec_Dataset():
     
     def build_testing_dataset(self, indeces):
         
-        with open(self.where_to_save_data + '/maxima_or_mean.pkl', 'rb') as file:
+        with open(f"{self.where_to_save_data}/maxima_or_mean_{self.indeces_training_boundaries[0]}_{self.indeces_training_boundaries[1]}.pkl", 'rb') as file:
             maxima_or_mean = pickle.load(file)
-        
-        with open(self.where_to_save_data + '/minima_or_std.pkl', 'rb') as file:
+            
+        with open(f"{self.where_to_save_data}/minima_or_std_{self.indeces_training_boundaries[0]}_{self.indeces_training_boundaries[1]}.pkl", 'rb') as file:
             minima_or_std = pickle.load(file)
         
         dictionary_per_trajectory, self.time_of_simulations = extract_input_output_bc_variables(self.path_to_hdf5, indeces) #build dictionary of data divided by numbers of simulations
