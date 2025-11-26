@@ -7,12 +7,12 @@ class Training_Losses():
         self.__dict__.update(training_instance.__dict__)
         
     def loss_sup_mixed(self, fields:list, boundary_conditions:tc.tensor, dt:tc.tensor, length_of_padding: tc.tensor, loss_coeff:list, train: bool):
-        
-        for count, i in enumerate(fields):
-            fields[count] = i.to(self.device)
-        boundary_conditions = boundary_conditions.to(self.device)
-        
-        dt = dt.to(self.device)
+        if not self.all_on_gpu:
+            for count, i in enumerate(fields):
+                fields[count] = i.to(self.device)
+            boundary_conditions = boundary_conditions.to(self.device)
+            
+            dt = dt.to(self.device)
         
         original_size = fields[0].size()
         

@@ -1,11 +1,10 @@
-
 path_to_hdf5 : '../../../../../../scratch/ROM_datasets_ale/ASTEC/original_hdf5/'
 where_to_save_data: '../../../../../../scratch/ROM_datasets_ale/ASTEC/'
 indeces_training_boundaries : [1, 71] #
 indeces_validation_boundaries : [71, 91]
 indeces_testing_boundaries : [91,100]
-device : 'cuda'
+device : 'cuda:2'
 save_dictionary_per_time_lengths : false
 which_normalization : 'mean_std' #min_max or mean_std
-testing: true
+testing: false
 

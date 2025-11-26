@@ -8,7 +8,10 @@ from torch.utils.data import DataLoader
 from src.models.AE_NODE.training.architecture import *
 import subprocess
 
-def build_dataset(batch_size:int, time_window: int, data_training_path: str, data_validation_path:str, number_of_workers:int, path_to_data: str, where_to_save:str , which_normalization:str, device :tc.device, training_boundaries:list, validation_boundaries:list):
+def build_dataset(batch_size:int, time_window: int, data_training_path: str, data_validation_path:str, 
+                  number_of_workers:int, path_to_data: str, where_to_save:str , 
+                  which_normalization:str, device :tc.device, training_boundaries:list, 
+                  validation_boundaries:list, all_on_gpu:bool, pin_memory: bool):
     
     training_path = f"{data_training_path}{str(time_window)}_{training_boundaries[0]}_{training_boundaries[1]}.h5"
     validation_path = f"{data_validation_path}{str(time_window)}_{validation_boundaries[0]}_{validation_boundaries[1]}.h5"
@@ -23,7 +26,7 @@ def build_dataset(batch_size:int, time_window: int, data_training_path: str, dat
                 '--indeces_validation_boundaries', ' ,'.join(map(str, validation_boundaries))])
     tc.cuda.empty_cache()
     # build dataset and dataloader
-    dataset_training = ASTEC_Dataset(training_path)
+    dataset_training = ASTEC_Dataset(training_path, all_on_gpu, device)
     length_dataset = dataset_training.size
     if batch_size > length_dataset:
         batch_size = max(1, length_dataset // 10)
@@ -31,10 +34,10 @@ def build_dataset(batch_size:int, time_window: int, data_training_path: str, dat
     print('Length dataset: ', length_dataset)
     print('Batch size: ', batch_size)
     print('-------------------------------------------')
-    training_loader = DataLoader(dataset_training, batch_size = batch_size, num_workers = number_of_workers, shuffle=True,drop_last=False,pin_memory=True)
+    training_loader = DataLoader(dataset_training, batch_size = batch_size, num_workers = number_of_workers, shuffle=True,drop_last=False,pin_memory=pin_memory)
     
-    dataset_validation = ASTEC_Dataset(validation_path)
-    validation_loader = DataLoader(dataset_validation, batch_size = batch_size, num_workers = number_of_workers, shuffle=True,drop_last=False,pin_memory=True)
+    dataset_validation = ASTEC_Dataset(validation_path, all_on_gpu, device)
+    validation_loader = DataLoader(dataset_validation, batch_size = batch_size, num_workers = number_of_workers, shuffle=True,drop_last=False,pin_memory=pin_memory)
     
     return training_loader, validation_loader
   
@@ -77,36 +80,63 @@ import h5py
 from torch.utils.data import Dataset, DataLoader, get_worker_info
 
 class ASTEC_Dataset(Dataset):
-    def __init__(self, path):
+    def __init__(self, path:str, all_on_gpu:bool, device:tc.device):
         self.path = path
-        # Don't store file handle here - it can't be shared across workers
-        with h5py.File(self.path, 'r') as f:
-            self.dataset_keys = list(f.keys())
-            self.size = f['dictionary_of_input_variables_1'].shape[0]
+        self.all_on_gpu = all_on_gpu
+        if not all_on_gpu:
+            with h5py.File(self.path, 'r') as f:
+                self.size = f['dictionary_of_input_variables_1'].shape[0]
+        else:
+            # Load all data into GPU memory at initialization
+            with h5py.File(path, 'r') as f:
+                self.dict_vars_1 = tc.from_numpy(f['dictionary_of_input_variables_1'][:]).float().to(device)
+                self.dict_vars_36 = tc.from_numpy(f['dictionary_of_input_variables_36'][:]).float().to(device)
+                self.dict_vars_76 = tc.from_numpy(f['dictionary_of_input_variables_76'][:]).float().to(device)
+                self.lower_plenum = tc.from_numpy(f['lower_plenum'][:]).float().to(device)
+                self.dict_vars_140 = tc.from_numpy(f['dictionary_of_input_variables_140'][:]).float().to(device)
+                
+                bc_data = tc.from_numpy(f['boundary_conditions_and_time'][:]).float().to(device)
+                self.boundary_conditions = bc_data[:, :, :-2]
+                self.time = bc_data[:, :, -2]
+                
+                self.length_of_padding = tc.from_numpy(f['length_of_padding'][:]).float().to(device)
+                
+                self.size = self.dict_vars_1.shape[0]
+            
     
     def __getitem__(self, idx):
-        # Each worker opens its own file handle on first access
-        # Use thread/process-local storage
-        if not hasattr(self, '_file_handle'):
-            self._file_handle = h5py.File(self.path, 'r')
-        
-        f = self._file_handle
-        
-        dictionary_of_input_variables_1 = tc.from_numpy(f['dictionary_of_input_variables_1'][idx]).float()
-        dictionary_of_input_variables_36 = tc.from_numpy(f['dictionary_of_input_variables_36'][idx]).float()
-        dictionary_of_input_variables_76 = tc.from_numpy(f['dictionary_of_input_variables_76'][idx]).float()
-        lower_plenum = tc.from_numpy(f['lower_plenum'][idx]).float()
-        dictionary_of_input_variables_140 = tc.from_numpy(f['dictionary_of_input_variables_140'][idx]).float()
-        
-        bc_data = f['boundary_conditions_and_time'][idx]
-        boundary_conditions = tc.from_numpy(bc_data[:, :-2]).float()
-        time = tc.from_numpy(bc_data[:, -2]).float()
-        
-        length_of_padding = tc.from_numpy(f['length_of_padding'][idx]).float()
-        
-        return [dictionary_of_input_variables_1, dictionary_of_input_variables_36, 
-                dictionary_of_input_variables_76, lower_plenum, 
-                dictionary_of_input_variables_140], boundary_conditions, time, length_of_padding
+        if not self.all_on_gpu:
+            # Each worker opens its own file handle on first access
+            # Use thread/process-local storage
+            if not hasattr(self, '_file_handle'):
+                self._file_handle = h5py.File(self.path, 'r')
+            
+            f = self._file_handle
+            
+            dictionary_of_input_variables_1 = tc.from_numpy(f['dictionary_of_input_variables_1'][idx]).float()
+            dictionary_of_input_variables_36 = tc.from_numpy(f['dictionary_of_input_variables_36'][idx]).float()
+            dictionary_of_input_variables_76 = tc.from_numpy(f['dictionary_of_input_variables_76'][idx]).float()
+            lower_plenum = tc.from_numpy(f['lower_plenum'][idx]).float()
+            dictionary_of_input_variables_140 = tc.from_numpy(f['dictionary_of_input_variables_140'][idx]).float()
+            
+            bc_data = f['boundary_conditions_and_time'][idx]
+            boundary_conditions = tc.from_numpy(bc_data[:, :-2]).float()
+            time = tc.from_numpy(bc_data[:, -2]).float()
+            
+            length_of_padding = tc.from_numpy(f['length_of_padding'][idx]).float()
+            
+            return [dictionary_of_input_variables_1, dictionary_of_input_variables_36, 
+                    dictionary_of_input_variables_76, lower_plenum, 
+                    dictionary_of_input_variables_140], boundary_conditions, time, length_of_padding
+        else:
+            return ([self.dict_vars_1[idx], 
+                 self.dict_vars_36[idx], 
+                 self.dict_vars_76[idx], 
+                 self.lower_plenum[idx], 
+                 self.dict_vars_140[idx]], 
+                self.boundary_conditions[idx], 
+                self.time[idx], 
+                self.length_of_padding[idx])
     
     def __len__(self):
         return self.size

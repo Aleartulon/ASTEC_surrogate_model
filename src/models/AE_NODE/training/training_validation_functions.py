@@ -85,7 +85,7 @@ class Training():
             regularization_loss += regularization_latent.detach().cpu().item()
             count += 1
             t1 =time.time()
-            print('training: ', t1-t0)
+            #print('training: ', t1-t0)
         return l1_loss/count, l1_loss_per_shape/count, l1_loss_latent/count ,l2_TF_loss/count, l2_AR_loss/count ,l3_loss/count, regularization_loss/count, loss/count
         
 
@@ -138,7 +138,7 @@ class Training():
                 regularization_loss += regularization_latent.detach().cpu().item()
                 count += 1
                 t1 = time.time()
-                print('validation: ', t1-t0)
+                #print('validation: ', t1-t0)
         return l1_loss/count, l1_loss_per_shape/count, l1_loss_unnorm/count, l1_loss_unnorm_per_variable/count, l1_loss_latent/count, l2_TF_loss/count, l2_AR_loss/count , l3_loss/count, loss_real/count, loss_real_per_shape/count, regularization_loss/count , loss/count
 
 
@@ -152,8 +152,6 @@ class Training():
             #start the training
 
             #check for coupled_system
-            if not self.is_coupled[0] and self.is_coupled[1] == 'NODE':
-                self.time_of_AE = 0
 
             print("------------------TRAINING STARTS------------------")
             loss_value = 100

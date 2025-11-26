@@ -27,6 +27,8 @@ class AE_NODE:
         self.time_of_lr_war_up = model_information['time_of_lr_war_up']
         self.clipping = model_information['clipping']
         self.is_coupled = model_information['is_coupled']
+        if not self.is_coupled[0]:
+            self.time_of_AE = 0
         self.autoregressive_step = model_information['autoregressive_step']
         
         self.which_normalization = config_training['which_normalization']
@@ -39,7 +41,15 @@ class AE_NODE:
         self.batch_sizes = config_training['batch_sizes']
         self.early_stopping = config_training['early_stopping']
         self.number_of_workers = config_training['number_of_workers']
+        self.all_on_gpu = config_training['all_on_gpu']
+
         
+        if self.all_on_gpu:
+            self.number_of_workers = 0
+            self.pin_memory = False
+        else:
+            self.pin_memory = True
+            
         self.waiting_epochs_before_new_dataset_creation = config_training['waiting_epochs_before_new_dataset_creation']
         self.dynamic_dataset_generation_during_training = config_training['dynamic_dataset_generation_during_training']
         self.time_windows = config_training['time_windows']
@@ -64,13 +74,16 @@ class AE_NODE:
         #create datasets and dataloader for training and validation 
         if self.dynamic_dataset_generation_during_training:
             
-            self.training_loader, self.validation_loader = build_dataset(self.batch_sizes[0], self.time_windows[0], self.data_training_path_dynamic, self.data_validation_path_dynamic, self.number_of_workers, self.data_path, self.where_to_save_data, self.which_normalization, self.device, self.indeces_training_boundaries, self.indeces_validation_boundaries)
+            self.training_loader, self.validation_loader = build_dataset(self.batch_sizes[0], self.time_windows[0], self.data_training_path_dynamic, self.data_validation_path_dynamic, 
+                                                                         self.number_of_workers, self.data_path, self.where_to_save_data, self.which_normalization, 
+                                                                         self.device, self.indeces_training_boundaries, self.indeces_validation_boundaries, 
+                                                                         self.all_on_gpu, self.pin_memory)
         else:
-            dataset_training = ASTEC_Dataset(self.data_training_path)
-            self.training_loader = DataLoader(dataset_training, batch_size = self.batch_sizes[0], num_workers = self.number_of_workers, shuffle=True,drop_last=False,pin_memory=True)
+            dataset_training = ASTEC_Dataset(self.data_training_path, self.all_on_gpu, self.device)
+            self.training_loader = DataLoader(dataset_training, batch_size = self.batch_sizes[0], num_workers = self.number_of_workers, shuffle=True,drop_last=False,pin_memory=self.pin_memory)
         
-            dataset_validation = ASTEC_Dataset(self.data_validation_path)
-            self.validation_loader = DataLoader(dataset_validation, batch_size = self.batch_sizes[0], num_workers = self.number_of_workers, shuffle=True,drop_last=False,pin_memory=True)
+            dataset_validation = ASTEC_Dataset(self.data_validation_path, self.all_on_gpu, self.device)
+            self.validation_loader = DataLoader(dataset_validation, batch_size = self.batch_sizes[0], num_workers = self.number_of_workers, shuffle=True,drop_last=False,pin_memory=self.pin_memory)
         #get normalization information
         
         with open(f"{config_training['where_to_save_data']}/maxima_or_mean_{self.indeces_training_boundaries[0]}_{self.indeces_training_boundaries[1]}.pkl", 'rb') as f:
