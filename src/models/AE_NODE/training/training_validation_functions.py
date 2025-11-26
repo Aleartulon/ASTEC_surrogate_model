@@ -54,6 +54,7 @@ class Training():
         self.decoder.train()
             
         for fields, boundary_conditions, dt, length_of_padding in self.training_loader:
+            t0 =time.time()
             
             l1,l2_TF,l2_AR,l3, _,regularization_latent = self.training_losses.loss_sup_mixed(fields, boundary_conditions, dt, length_of_padding, loss_coefficients, True)
             
@@ -83,6 +84,8 @@ class Training():
             
             regularization_loss += regularization_latent.detach().cpu().item()
             count += 1
+            t1 =time.time()
+            print('training: ', t1-t0)
         return l1_loss/count, l1_loss_per_shape/count, l1_loss_latent/count ,l2_TF_loss/count, l2_AR_loss/count ,l3_loss/count, regularization_loss/count, loss/count
         
 
@@ -110,6 +113,7 @@ class Training():
             
         with tc.no_grad():
             for fields, boundary_conditions, dt, length_of_padding in self.validation_loader:
+                t0 = time.time()
                 l1,l2_TF,l2_AR,l3, l_final, regularization_latent  = self.training_losses.loss_sup_mixed(fields, boundary_conditions, dt, length_of_padding, loss_coefficients, False)
                 l1_mean = l1[0]
                 l1_mean_per_shape = l1[1]
@@ -133,7 +137,8 @@ class Training():
                 l3_loss += l3.detach().cpu().item()
                 regularization_loss += regularization_latent.detach().cpu().item()
                 count += 1
-                
+                t1 = time.time()
+                print('validation: ', t1-t0)
         return l1_loss/count, l1_loss_per_shape/count, l1_loss_unnorm/count, l1_loss_unnorm_per_variable/count, l1_loss_latent/count, l2_TF_loss/count, l2_AR_loss/count , l3_loss/count, loss_real/count, loss_real_per_shape/count, regularization_loss/count , loss/count
 
 

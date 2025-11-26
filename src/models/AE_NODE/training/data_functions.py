@@ -77,19 +77,20 @@ import h5py
 from torch.utils.data import Dataset, DataLoader, get_worker_info
 
 class ASTEC_Dataset(Dataset):
-
     def __init__(self, path):
         self.path = path
-        self.file_handle = None 
+        # Don't store file handle here - it can't be shared across workers
         with h5py.File(self.path, 'r') as f:
             self.dataset_keys = list(f.keys())
             self.size = f['dictionary_of_input_variables_1'].shape[0]
     
     def __getitem__(self, idx):
-        if self.file_handle is None:
-            self.file_handle = h5py.File(self.path, 'r')
+        # Each worker opens its own file handle on first access
+        # Use thread/process-local storage
+        if not hasattr(self, '_file_handle'):
+            self._file_handle = h5py.File(self.path, 'r')
         
-        f = self.file_handle
+        f = self._file_handle
         
         dictionary_of_input_variables_1 = tc.from_numpy(f['dictionary_of_input_variables_1'][idx]).float()
         dictionary_of_input_variables_36 = tc.from_numpy(f['dictionary_of_input_variables_36'][idx]).float()
@@ -100,9 +101,12 @@ class ASTEC_Dataset(Dataset):
         bc_data = f['boundary_conditions_and_time'][idx]
         boundary_conditions = tc.from_numpy(bc_data[:, :-2]).float()
         time = tc.from_numpy(bc_data[:, -2]).float()
+        
         length_of_padding = tc.from_numpy(f['length_of_padding'][idx]).float()
         
-        return [dictionary_of_input_variables_1, dictionary_of_input_variables_36, dictionary_of_input_variables_76, lower_plenum, dictionary_of_input_variables_140], boundary_conditions, time, length_of_padding
+        return [dictionary_of_input_variables_1, dictionary_of_input_variables_36, 
+                dictionary_of_input_variables_76, lower_plenum, 
+                dictionary_of_input_variables_140], boundary_conditions, time, length_of_padding
     
     def __len__(self):
         return self.size

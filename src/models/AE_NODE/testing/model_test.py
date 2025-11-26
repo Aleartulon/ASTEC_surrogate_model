@@ -2,6 +2,7 @@ import torch as tc
 import numpy as np
 import os
 import sys
+import time
 import pickle
 from ..training.architecture import Encoder, Decoder, F_Latent, Fully_Connected_Encoder, Convolutional_Encoder
 from src.common_functions import load_config
@@ -340,11 +341,12 @@ class Model_Test:
         
         
         for trajectory in self.trajectories:
-            fields, boundary_conditions, time, DT = self.access_trajectory(trajectory)
+            fields, boundary_conditions, Time, DT = self.access_trajectory(trajectory)
             
             #no need to normalize because data is already normalized in the testing
             
             #encode initial condition
+            t0 = time.time()
             definitive_latent_vector, per_shape_latent_vectors , latent_boundaries_variables, _ = self.encoder(fields, boundary_conditions)
             next_latent_vector = definitive_latent_vector[0:1]
             predicted_latents = tc.zeros((len(DT[0])-1, self.latent_dimension), device = self.device)
@@ -358,6 +360,8 @@ class Model_Test:
             reconstructed_fields, reconstructed_latent_vectors_per_field = self.decoder(predicted_latents)
             reconstructed_fields = [reconstructed_field.unsqueeze(0) for reconstructed_field in reconstructed_fields]
             reconstructed_fields = standard_and_inverse_normalization_field(reconstructed_fields, self.maxima_or_mean, self.minima_or_std, self.which_normalization, inverse = True)
+            t1 = time.time()
+            print(f"Time to predict trajectory {trajectory}: {t1-t0}")
             reconstructed_fields_per_trajectory_AE_NODE[trajectory] = reconstructed_fields
             latent_vectors_per_trajectory_per_shape_AE_NODE[trajectory] = reconstructed_latent_vectors_per_field
             final_latent_vector_per_trajectory_AE_NODE[trajectory] = predicted_latents
@@ -380,11 +384,11 @@ class Model_Test:
             error_latent_per_variable_per_trajectory_AE_NODE = compute_errors(trajectory, reconstructed_latent_vectors_per_field, per_shape_latent_vectors, False)
             
             #print out errors in files and generate images of errors in time for field reconstruction
-            self.generate_pictures_errors_field_reconstruction(trajectory, error_fields_per_trajectory_AE_NODE, time, self.directory_images_AE_NODE_errors_fields, 'AE_NODE')
+            self.generate_pictures_errors_field_reconstruction(trajectory, error_fields_per_trajectory_AE_NODE, Time, self.directory_images_AE_NODE_errors_fields, 'AE_NODE')
             
             #print out errors in files and generate images of errors in time for field reconstruction
-            self.generate_pictures_errors_latent_NODE_definitive(trajectory, error_definitive_latent_per_trajectory_AE_NODE, time)
-            self.generate_pictures_errors_latent_NODE_per_shape(trajectory, error_latent_per_variable_per_trajectory_AE_NODE, time)
+            self.generate_pictures_errors_latent_NODE_definitive(trajectory, error_definitive_latent_per_trajectory_AE_NODE, Time)
+            self.generate_pictures_errors_latent_NODE_per_shape(trajectory, error_latent_per_variable_per_trajectory_AE_NODE, Time)
             
         return reconstructed_fields_per_trajectory_AE_NODE, latent_vectors_per_trajectory_per_shape_AE_NODE, final_latent_vector_per_trajectory_AE_NODE
         
@@ -487,9 +491,12 @@ class Model_Test:
                                     vmin=vmin, vmax=vmax)
             
             if which_prediction == 'TF' or which_prediction == 'AE_NODE':
-                i = i+1
-            axs[0, count].set_title(f't = {Time[trajectory][i]/3600:.2g} h', fontsize=fontsize)
-            axs[1, count].set_title(f't = {Time[trajectory][i]/3600:.2g} h', fontsize=fontsize)
+                axs[0, count].set_title(f't = {Time[trajectory][i+1]/3600:.2g} h', fontsize=fontsize)
+                axs[1, count].set_title(f't = {Time[trajectory][i+1]/3600:.2g} h', fontsize=fontsize)
+            else:
+                axs[0, count].set_title(f't = {Time[trajectory][i]/3600:.2g} h', fontsize=fontsize)
+                axs[1, count].set_title(f't = {Time[trajectory][i]/3600:.2g} h', fontsize=fontsize)
+            
         axs[0, 0].set_ylabel('Prediction', fontsize=fontsize, fontweight='bold')
         axs[1, 0].set_ylabel('Ground truth', fontsize=fontsize, fontweight='bold')
         
@@ -584,86 +591,86 @@ class Model_Test:
         
         # generate figure of dictionary_of_input_variables_1 
         
-        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 0, variable_index = 0 ,field_name = 'm_cum_H2', ylabel =  'm_cum_H2', figsize=(5, 5), fontsize=16)
-        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 0, variable_index =1 , field_name = 'm_tot_cor', ylabel = 'm_tot_cor', figsize=(5, 5), fontsize=16)
-        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 0, variable_index = 2 , field_name = 'FP_A_heat', ylabel = 'FP_A_heat', figsize=(5, 5), fontsize=16)
-        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 0, variable_index =3 , field_name = 'sat_core_mesh', ylabel = 'sat_core_mesh', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 0, variable_index = 0 ,field_name = 'm_cum_H2', ylabel =  'm cum H2', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 0, variable_index =1 , field_name = 'm_tot_cor', ylabel = 'm tot cor', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 0, variable_index = 2 , field_name = 'FP_A_heat', ylabel = 'FP A heat', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 0, variable_index =3 , field_name = 'sat_core_mesh', ylabel = 'sat core mesh', figsize=(5, 5), fontsize=16)
         
         # generate figure of core 
         
-        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='T_comp_fuel', shape_index = 1, variable_index=0, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16)
-        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='T_comp_clad', shape_index = 1, variable_index=1, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16)
-        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='state_fuel', shape_index = 1, variable_index=2, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16)
-        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='state_clad', shape_index = 1, variable_index=3, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='T comp fuel', shape_index = 1, variable_index=0, time_indices=[0, 1000, 10000, -2], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='T comp clad', shape_index = 1, variable_index=1, time_indices=[0, 1000, 10000, -2], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='state fuel', shape_index = 1, variable_index=2, time_indices=[0, 1000, 10000, -2], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='state clad', shape_index = 1, variable_index=3, time_indices=[0, 1000, 10000, -2], figsize=(10, 8), fontsize=16)
         
         # generate figure of the vessel
         
-        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='P_vessel', shape_index = 2, variable_index=0, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16)
-        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='T_gas_vessel', shape_index = 2, variable_index=1, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16)
-        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='T_liq_vessel', shape_index = 2, variable_index=2, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16)
-        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='x_alfa_vessel', shape_index = 2, variable_index=3, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16)
-        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='T_sat_vessel', shape_index = 2, variable_index=4, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16)
-        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='P_H2_vessel', shape_index = 2, variable_index=5, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16)
-        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='P_steam_vessel', shape_index = 2, variable_index=6, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16)
-        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='m_gas_vessel', shape_index = 2, variable_index=7, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16)
-        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='m_liq_vessel_mesh', shape_index = 2, variable_index=8, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16)
-        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='rho_gas_vessel', shape_index = 2, variable_index=9, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16)
-        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='rho_liq_vessel', shape_index = 2, variable_index=10, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16)
-        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='Q_liq_vap_vessel', shape_index = 2, variable_index=11, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16)
-        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='porosity_vessel', shape_index = 2, variable_index=12, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16)
-        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='V_deb_vessel', shape_index = 2, variable_index=13, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16)
-        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='V_mag_vessel', shape_index = 2, variable_index=14, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16)
-        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='m_magma_vessel', shape_index = 2, variable_index=15, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16)
-        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='m_debris_0_vessel', shape_index = 2, variable_index=16, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16)
-        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='m_debris_1_vessel', shape_index = 2, variable_index=17, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='P vessel', shape_index = 2, variable_index=0, time_indices=[0, 1000, 10000, -2], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='T gas_vessel', shape_index = 2, variable_index=1, time_indices=[0, 1000, 10000, -2], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='T liq_vessel', shape_index = 2, variable_index=2, time_indices=[0, 1000, 10000, -2], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='x alfa vessel', shape_index = 2, variable_index=3, time_indices=[0, 1000, 10000, -2], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='T sat vessel', shape_index = 2, variable_index=4, time_indices=[0, 1000, 10000, -2], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='P H2 vessel', shape_index = 2, variable_index=5, time_indices=[0, 1000, 10000, -2], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='P steam vessel', shape_index = 2, variable_index=6, time_indices=[0, 1000, 10000, -2], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='m gas vessel', shape_index = 2, variable_index=7, time_indices=[0, 1000, 10000, -2], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='m liq vessel mesh', shape_index = 2, variable_index=8, time_indices=[0, 1000, 10000, -2], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='rho gas vessel', shape_index = 2, variable_index=9, time_indices=[0, 1000, 10000, -2], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='rho liq vessel', shape_index = 2, variable_index=10, time_indices=[0, 1000, 10000, -2], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='Q liq vap vessel', shape_index = 2, variable_index=11, time_indices=[0, 1000, 10000, -2], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='porosity vessel', shape_index = 2, variable_index=12, time_indices=[0, 1000, 10000, -2], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='V deb vessel', shape_index = 2, variable_index=13, time_indices=[0, 1000, 10000, -2], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='V mag vessel', shape_index = 2, variable_index=14, time_indices=[0, 1000, 10000, -2], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='m magma vessel', shape_index = 2, variable_index=15, time_indices=[0, 1000, 10000, -2], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='m debris 0 vessel', shape_index = 2, variable_index=16, time_indices=[0, 1000, 10000, -2], figsize=(10, 8), fontsize=16)
+        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='m debris 1 vessel', shape_index = 2, variable_index=17, time_indices=[0, 1000, 10000, -2], figsize=(10, 8), fontsize=16)
         
         # generate figure of lower plenum
         
-        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 0 ,field_name = 'P_lower_plenum', ylabel =  'P_lower_plenum', figsize=(5, 5), fontsize=16)
-        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 1 , field_name = 'T_gas_lower_plenum', ylabel = 'T_gas_lower_plenum', figsize=(5, 5), fontsize=16)
-        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 2 , field_name = 'T_liq_lower_plenum', ylabel = 'T_liq_lower_plenum', figsize=(5, 5), fontsize=16)
-        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 3 , field_name = 'x_alfa_lower_plenum', ylabel = 'x_alfa_lower_plenum', figsize=(5, 5), fontsize=16)
-        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 4 ,field_name = 'T_sat_lower_plenum', ylabel =  'T_sat_lower_plenum', figsize=(5, 5), fontsize=16)
-        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 5 , field_name = 'P_H2_lower_plenum', ylabel = 'P_H2_lower_plenum', figsize=(5, 5), fontsize=16)
-        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 6 , field_name = 'P_steam_lower_plenum', ylabel = 'P_steam_lower_plenum', figsize=(5, 5), fontsize=16)
-        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 7 , field_name = 'm_gas_lower_plenum', ylabel = 'm_gas_lower_plenum', figsize=(5, 5), fontsize=16)
-        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 8 ,field_name = 'm_liq_lower_plenum', ylabel =  'm_liq_vessel_lower_plenum', figsize=(5, 5), fontsize=16)
-        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 9 , field_name = 'rho_gas_lower_plenum', ylabel = 'rho_gas_lower_plenum', figsize=(5, 5), fontsize=16)
-        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 10 , field_name = 'rho_liq_lower_plenum', ylabel = 'rho_liq_lower_plenum', figsize=(5, 5), fontsize=16)
-        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 11 , field_name = 'Q_liq_vap_lower_plenum', ylabel = 'Q_liq_vap_lower_plenum', figsize=(5, 5), fontsize=16)
-        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 12 ,field_name = 'porosity_lower_plenum', ylabel =  'porosity_lower_plenum', figsize=(5, 5), fontsize=16)
-        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 13 , field_name = 'V_deb_lower_plenum', ylabel = 'V_deb_lower_plenum', figsize=(5, 5), fontsize=16)
-        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 14 , field_name = 'V_mag_lower_plenum', ylabel = 'V_mag_lower_plenum', figsize=(5, 5), fontsize=16)
-        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 15 , field_name = 'm_magma_lower_plenum', ylabel = 'm_magma_lower_plenum', figsize=(5, 5), fontsize=16)
-        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 16 ,field_name = 'm_debris_0_lower_plenum', ylabel =  'm_debris_0_lower_plenum', figsize=(5, 5), fontsize=16)
-        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 17 , field_name = 'm_debris_1_lower_plenum', ylabel = 'm_debris_1_lower_plenum', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 0 ,field_name = 'P_lower_plenum', ylabel =  'P lower plenum', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 1 , field_name = 'T_gas_lower_plenum', ylabel = 'T gas lower plenum', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 2 , field_name = 'T_liq_lower_plenum', ylabel = 'T liq lower plenum', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 3 , field_name = 'x_alfa_lower_plenum', ylabel = 'x alfa lower plenum', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 4 ,field_name = 'T_sat_lower_plenum', ylabel =  'T sat lower plenum', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 5 , field_name = 'P_H2_lower_plenum', ylabel = 'P H2 lower plenum', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 6 , field_name = 'P_steam_lower_plenum', ylabel = 'P steam lower plenum', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 7 , field_name = 'm_gas_lower_plenum', ylabel = 'm gas lower plenum', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 8 ,field_name = 'm_liq_lower_plenum', ylabel =  'm liq vessel lower plenum', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 9 , field_name = 'rho_gas_lower_plenum', ylabel = 'rho gas lower plenum', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 10 , field_name = 'rho_liq_lower_plenum', ylabel = 'rho liq lower plenum', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 11 , field_name = 'Q_liq_vap_lower_plenum', ylabel = 'Q liq vap lower plenum', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 12 ,field_name = 'porosity_lower_plenum', ylabel =  'porosity lower plenum', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 13 , field_name = 'V_deb_lower_plenum', ylabel = 'V deb lower plenum', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 14 , field_name = 'V_mag_lower_plenum', ylabel = 'V mag lower plenum', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 15 , field_name = 'm_magma_lower_plenum', ylabel = 'm magma lower plenum', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 16 ,field_name = 'm_debris_0_lower_plenum', ylabel =  'm debris 0 lower plenum', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 17 , field_name = 'm_debris_1_lower_plenum', ylabel = 'm debris 1 lower plenum', figsize=(5, 5), fontsize=16)
 
         
         # generate figure of faces
         
-        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='Q_m_liq_face', shape_index = 4, variable_index=0, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16, faces = True)
-        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='V_gas_face', shape_index = 4, variable_index=1, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16, faces = True)
-        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='V_liq_face', shape_index = 4, variable_index=2, time_indices=[0, 1000, 10000, -1], figsize=(10, 8), fontsize=16, faces = True)
+        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='Q m liq face', shape_index = 4, variable_index=0, time_indices=[0, 1000, 10000, -2], figsize=(10, 8), fontsize=16, faces = True)
+        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='V gas face', shape_index = 4, variable_index=1, time_indices=[0, 1000, 10000, -2], figsize=(10, 8), fontsize=16, faces = True)
+        self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='V liq face', shape_index = 4, variable_index=2, time_indices=[0, 1000, 10000, -2], figsize=(10, 8), fontsize=16, faces = True)
         
     def generate_pictures_latent_space(self, trajectory_to_be_plotted, latent_vectors_per_trajectory_per_shape_AE:dict, definitive_latent_vector_per_trajectory_AE: dict, Time:dict, which_prediction: str, latent_vectors_per_trajectory_per_shape_AE_NODE:dict = None, definitive_latent_vector_per_trajectory_AE_NODE:dict = None):
             
         #save fig of latent space of scalar values
-        self.plot_latent_space_per_shape(trajectory_to_be_plotted, Time, latent_vectors_per_trajectory_per_shape_AE, latent_vectors_per_trajectory_per_shape_AE_NODE, which_prediction, shape_index = 0, ylabel='latent_scalar', figsize=(15, 5), fontsize=16)
+        self.plot_latent_space_per_shape(trajectory_to_be_plotted, Time, latent_vectors_per_trajectory_per_shape_AE, latent_vectors_per_trajectory_per_shape_AE_NODE, which_prediction, shape_index = 0, ylabel='latent scalar', figsize=(15, 5), fontsize=16)
         #save fig of latent space of core
-        self.plot_latent_space_per_shape(trajectory_to_be_plotted, Time, latent_vectors_per_trajectory_per_shape_AE, latent_vectors_per_trajectory_per_shape_AE_NODE, which_prediction, shape_index = 1, ylabel='latent_core', figsize=(15, 5), fontsize=16)
+        self.plot_latent_space_per_shape(trajectory_to_be_plotted, Time, latent_vectors_per_trajectory_per_shape_AE, latent_vectors_per_trajectory_per_shape_AE_NODE, which_prediction, shape_index = 1, ylabel='latent core', figsize=(15, 5), fontsize=16)
         #save fig of latent space of vessel 
-        self.plot_latent_space_per_shape(trajectory_to_be_plotted, Time, latent_vectors_per_trajectory_per_shape_AE, latent_vectors_per_trajectory_per_shape_AE_NODE, which_prediction, shape_index = 2, ylabel='latent_vessel', figsize=(15, 5), fontsize=16)
+        self.plot_latent_space_per_shape(trajectory_to_be_plotted, Time, latent_vectors_per_trajectory_per_shape_AE, latent_vectors_per_trajectory_per_shape_AE_NODE, which_prediction, shape_index = 2, ylabel='latent vessel', figsize=(15, 5), fontsize=16)
         #save fig of latent space of lower plenum 
-        self.plot_latent_space_per_shape(trajectory_to_be_plotted, Time, latent_vectors_per_trajectory_per_shape_AE, latent_vectors_per_trajectory_per_shape_AE_NODE, which_prediction, shape_index = 3, ylabel='latent_lower_plenum', figsize=(15, 5), fontsize=16)
+        self.plot_latent_space_per_shape(trajectory_to_be_plotted, Time, latent_vectors_per_trajectory_per_shape_AE, latent_vectors_per_trajectory_per_shape_AE_NODE, which_prediction, shape_index = 3, ylabel='latent lower plenum', figsize=(15, 5), fontsize=16)
         #save fig of latent space of faces 
-        self.plot_latent_space_per_shape(trajectory_to_be_plotted, Time, latent_vectors_per_trajectory_per_shape_AE,  latent_vectors_per_trajectory_per_shape_AE_NODE, which_prediction, shape_index = 4, ylabel='latent_faces', figsize=(15, 5), fontsize=16)
+        self.plot_latent_space_per_shape(trajectory_to_be_plotted, Time, latent_vectors_per_trajectory_per_shape_AE,  latent_vectors_per_trajectory_per_shape_AE_NODE, which_prediction, shape_index = 4, ylabel='latent faces', figsize=(15, 5), fontsize=16)
         
         if which_prediction == 'AE': #at inference boundaries are not predicted
             #save fig of latent boundary conditions
-            self.plot_latent_space_per_shape(trajectory_to_be_plotted, Time, latent_vectors_per_trajectory_per_shape_AE,  latent_vectors_per_trajectory_per_shape_AE_NODE, which_prediction, shape_index = 5, ylabel='latent_boundaries', figsize=(15, 5), fontsize=16)
+            self.plot_latent_space_per_shape(trajectory_to_be_plotted, Time, latent_vectors_per_trajectory_per_shape_AE,  latent_vectors_per_trajectory_per_shape_AE_NODE, which_prediction, shape_index = 5, ylabel='latent boundaries', figsize=(15, 5), fontsize=16)
             
         #save fig of definitive latent vector
-        self.plot_final_latent_space(trajectory_to_be_plotted, Time, definitive_latent_vector_per_trajectory_AE, definitive_latent_vector_per_trajectory_AE_NODE, which_prediction, ylabel='final_latent_space', figsize=(15, 5), fontsize=16)
+        self.plot_final_latent_space(trajectory_to_be_plotted, Time, definitive_latent_vector_per_trajectory_AE, definitive_latent_vector_per_trajectory_AE_NODE, which_prediction, ylabel='final latent space', figsize=(15, 5), fontsize=16)
     
     def generate_pictures_errors_field_reconstruction(self, trajectory:str, error_per_trajectory_AE:dict, time:tc.tensor, saving_directory: str, which_prediction: str): 
         dictionary_of_variables = build_dictionary_of_variables()
