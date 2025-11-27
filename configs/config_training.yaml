@@ -1,13 +1,13 @@
-physics_model : '../../../../scratch/ROM_datasets_ale/ASTEC/saved_logs/' # this is the Path to a directory for the training on a given dataset
-description : 't/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
-data_path : '../../../../scratch/ROM_datasets_ale/ASTEC/original_hdf5/' #path of training and validation data
-where_to_save_data : '../../../../scratch/ROM_datasets_ale/ASTEC/' #if dynamic_dataset_generation_during_training this is where data is saved, else it is where data for training is found
+physics_model : '../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/saved_logs/' # this is the Path to a directory for the training on a given dataset
+description : 'only_AE_1_71_256_bs/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
+data_path : '../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/original_hdf5/' #path of training and validation data
+where_to_save_data : '../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/' #if dynamic_dataset_generation_during_training this is where data is saved, else it is where data for training is found
 model: 'AE_NODE'
 indeces_training_boundaries : [1, 71] #
 indeces_validation_boundaries : [71, 91]
 reinitialize_model_at_each_dataset_reshape: false
 epochs: 10000 #maximum number of epochs
-learning_rate: 0.0015 #initial learning rate
+learning_rate: 0.002 #initial learning rate
 gamma_lr: 0.999 # gamma of  tc.optim.lr_scheduler.ExponentialLR()
 early_stopping: 500
 all_on_gpu: true
@@ -36,7 +36,7 @@ time_windows: [
 ]
 
 batch_sizes: [
-    4096, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    256, 128, 128, 128, 128, 128, 128, 128, 128, 128,
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
     128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
@@ -83,5 +83,5 @@ waiting_epochs_before_new_dataset_creation: [
 
 number_of_workers: 8
 checkpoint: false  # if true uses existing checkpoint
-device : 'cuda:2' #device where to train
+device : 'cuda' #device where to train
 which_normalization: 'mean_std' # min_max or mean_std

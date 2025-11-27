@@ -73,21 +73,6 @@ class Model_Test:
         self.TF_latent_prediction_figures = information['TF_latent_prediction_figures']
         self.compute_TF = information['compute_TF']
         
-        #get normalization
-        
-        with open(self.path_to_test_data + '/maxima_or_mean.pkl', 'rb') as file:
-            self.maxima_or_mean = pickle.load(file)
-        
-        with open(self.path_to_test_data + '/minima_or_std.pkl', 'rb') as file:
-            self.minima_or_std = pickle.load(file)
-        
-        for key in self.maxima_or_mean:
-            self.maxima_or_mean[key] = self.maxima_or_mean[key].to(self.device)
-            self.minima_or_std[key] = self.minima_or_std[key].to(self.device)
-            
-        print('Minima or std', self.minima_or_std)
-        print('Maxima or mean', self.maxima_or_mean)
-        
         self.models_information = load_config(self.path_to_model + 'scripts/configs/configs_models/config_AE_NODE.yaml')
         self.config_training = load_config(self.path_to_model + 'scripts/configs/config_training.yaml')
         self.which_normalization = self.config_training['which_normalization']

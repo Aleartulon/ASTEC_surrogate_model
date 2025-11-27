@@ -110,6 +110,62 @@ def fill_dictionary_of_variables(output_dict:dict, name:str, f:h5py._hl.files.Fi
     output_dict[name]['dictionary_of_input_variables_1']['FP_A_heat'] = f['vessel/general/FP_A_heat'][0:index_stop]  # Total fission product activity (Bq)
     output_dict[name]['dictionary_of_input_variables_1']['sat_core_mesh']=f['vessel/general/sat_core_mesh'][0:index_stop]  # Maximum saturation in core meshes
     
+    # Fission products
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Ac'] = f['connection/fission/Q_fp_Ac'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Ag'] = f['connection/fission/Q_fp_Ag'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_As'] = f['connection/fission/Q_fp_As'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Br'] = f['connection/fission/Q_fp_Br'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Cd'] = f['connection/fission/Q_fp_Cd'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Ce'] = f['connection/fission/Q_fp_Ce'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Cm'] = f['connection/fission/Q_fp_Cm'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Cs'] = f['connection/fission/Q_fp_Cs'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Cu'] = f['connection/fission/Q_fp_Cu'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Dy'] = f['connection/fission/Q_fp_Dy'][0:index_stop] 
+    
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Er'] = f['connection/fission/Q_fp_Er'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Eu'] = f['connection/fission/Q_fp_Eu'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Ga'] = f['connection/fission/Q_fp_Ga'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Gd'] = f['connection/fission/Q_fp_Gd'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Ge'] = f['connection/fission/Q_fp_Ge'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Ho'] = f['connection/fission/Q_fp_Ho'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_I'] = f['connection/fission/Q_fp_I'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_In'] = f['connection/fission/Q_fp_In'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Kr'] = f['connection/fission/Q_fp_Kr'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_La'] = f['connection/fission/Q_fp_La'][0:index_stop] 
+    
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Mo'] = f['connection/fission/Q_fp_Mo'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Nb'] = f['connection/fission/Q_fp_Nb'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Nd'] = f['connection/fission/Q_fp_Nd'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Np'] = f['connection/fission/Q_fp_Np'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Pa'] = f['connection/fission/Q_fp_Pa'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Pd'] = f['connection/fission/Q_fp_Pd'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Pr'] = f['connection/fission/Q_fp_Pr'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Pu'] = f['connection/fission/Q_fp_Pu'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Ra'] = f['connection/fission/Q_fp_Ra'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Rb'] = f['connection/fission/Q_fp_Rb'][0:index_stop] 
+    
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Re'] = f['connection/fission/Q_fp_Re'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Rh'] = f['connection/fission/Q_fp_Rh'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Ru'] = f['connection/fission/Q_fp_Ru'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Sb'] = f['connection/fission/Q_fp_Sb'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Se'] = f['connection/fission/Q_fp_Se'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Sm'] = f['connection/fission/Q_fp_Sm'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Sn'] = f['connection/fission/Q_fp_Sn'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Sr'] = f['connection/fission/Q_fp_Sr'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Tb'] = f['connection/fission/Q_fp_Tb'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Tc'] = f['connection/fission/Q_fp_Tc'][0:index_stop] 
+    
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Te'] = f['connection/fission/Q_fp_Te'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Th'] = f['connection/fission/Q_fp_Th'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Tl'] = f['connection/fission/Q_fp_Tl'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Tm'] = f['connection/fission/Q_fp_Tm'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_U'] = f['connection/fission/Q_fp_U'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Xe'] = f['connection/fission/Q_fp_Xe'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Y'] = f['connection/fission/Q_fp_Y'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Yb'] = f['connection/fission/Q_fp_Yb'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Zn'] = f['connection/fission/Q_fp_Zn'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Zr'] = f['connection/fission/Q_fp_Zr'][0:index_stop] 
+    
     # Component temperatures and states (shape: 49095 x 36)
     output_dict[name]['dictionary_of_input_variables_36']['T_comp_fuel']=f['vessel/general/T_comp_fuel'][0:index_stop]
     output_dict[name]['dictionary_of_input_variables_36']['T_comp_clad']=f['vessel/general/T_comp_clad'][0:index_stop]
@@ -277,7 +333,21 @@ def get_normalization_statistics(dictionary_unified:dict, type_of_normalization:
     else:
         raise TypeError("Type of normalization not known. It can either be min_max or mean_std")  
     
-                   
+    #check for constant values
+    
+    for shape in maxima_or_mean:
+        for count, index in enumerate(maxima_or_mean[shape]):
+            if type_of_normalization == 'mean_std':
+                if minima_or_std[shape][count] == 0.0:
+                    minima_or_std[shape][count] = maxima_or_mean[shape][count] if maxima_or_mean[shape][count] !=0.0 else 1.0
+                    maxima_or_mean[shape][count] = 0.0
+                    
+            elif type_of_normalization == 'min_max':
+                if maxima_or_mean[shape][count]-minima_or_std[shape][count] == 0.0:
+                    if maxima_or_mean[shape][count] == 0.0:
+                        maxima_or_mean[shape][count] = 1.0 
+                    minima_or_std[shape][count] = 0.0
+                    
     return maxima_or_mean, minima_or_std
 
 def normalize_fields(field: np.array, maximum_or_mean: dict, minimum_or_std: dict, normalization: str, device):
@@ -291,7 +361,7 @@ def normalize_fields(field: np.array, maximum_or_mean: dict, minimum_or_std: dic
         maximum_or_mean = maximum_or_mean[None,:]
         minimum_or_std = minimum_or_std[None,:]
         
-    elif size[-1] == 4:
+    elif size[-1] == 54:
         maximum_or_mean = maximum_or_mean['dictionary_of_input_variables_1'].to(device)
         minimum_or_std = minimum_or_std['dictionary_of_input_variables_1'].to(device)
         maximum_or_mean = maximum_or_mean[None,:]

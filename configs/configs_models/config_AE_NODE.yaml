@@ -11,7 +11,7 @@ loss_coefficients: # coefficients that are multiplied to the loss function terms
   AR: 1
   Random_DT: 1
   AR_strength: 0.0001
-  lambda_regularization: 0.0 #coefficients in front of the regularization term for the latent vector
+  lambda_regularization: 0.001 #coefficients in front of the regularization term for the latent vector
 
 loss_coefficients_not_coupled: # coefficients that are multiplied to the loss function terms when the trainin of AE and NODE is decoupled, signaling the relative importance of each [AE, TF, AUTOREGRESSIVE, TIME_GENERALIZATION]
 
@@ -20,7 +20,7 @@ loss_coefficients_not_coupled: # coefficients that are multiplied to the loss fu
   AR: 0
   Random_DT: 0
   AR_strength: 0.0
-  lambda_regularization: 0.0 #coefficients in front of the regularization term for the latent vector
+  lambda_regularization: 0.001 #coefficients in front of the regularization term for the latent vector
 
 k: 4 # stage of the Runge-Kutta solver for the latent dynamics
 time_of_AE: 50 # number of initial epochs where only the AutoEncoder is trained, i.e., loss_coeff_TF_AR_together = [1, 0, 0, 0]. 
@@ -107,7 +107,7 @@ auto_encoding:
 
   # Final_reduction
   final_reduction_and_initial_increase:
-    output_dimension_encoder: 6 # THIS IS THE ACTUAL FINAL REDUCED DIMENSION
+    output_dimension_encoder: 10 # THIS IS THE ACTUAL FINAL REDUCED DIMENSION
 
     list_of_neurons_encoder: [50,50,50]
     last_activation_encoder: false
