@@ -127,7 +127,7 @@ scaling_output_factor: 0.1
 weight_decay:
 
   encoder: 0.0
-  dfnn: 0.000001
+  dfnn: 0.0
   decoder: 0.0
 
 # for latent progression

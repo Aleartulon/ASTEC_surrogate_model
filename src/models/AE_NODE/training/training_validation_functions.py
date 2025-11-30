@@ -228,18 +228,16 @@ class Training():
                         how_many_datasets_creations+=1
                         os.remove(f"{self.data_training_path_dynamic}{str(self.time_windows[how_many_datasets_creations-2])}_{self.indeces_training_boundaries[0]}_{self.indeces_training_boundaries[1]}.h5")
                         os.remove(f"{self.data_validation_path_dynamic}{str(self.time_windows[how_many_datasets_creations-2])}_{self.indeces_validation_boundaries[0]}_{self.indeces_validation_boundaries[1]}.h5")
-                        loss_value = 100
+                        checkpoint = tc.load(self.PATH_logs+'/checkpoint/check.pt', map_location=self.device, weights_only=False)
+                        loss_value = checkpoint['loss']
                         
                         #fetch the best model of previous iteration
                         if self.reinitialize_model_at_each_dataset_reshape:
-                            self.encoder, self.f, self.decoder = initialize_model_to_last_checkpoint(self.config_training, self.model_information, self.device, self.PATH_logs+'/checkpoint/check.pt')
-                            #set new references to optim
-                            params_to_optimize = initialize_parameters(self.model_information, self.encoder, self.decoder, self.f, self.device)
-                            self.optim = tc.optim.Adam(params_to_optimize, lr=self.config_training['learning_rate'])
-                            checkpoint = tc.load(self.PATH_logs+'/checkpoint/check.pt', map_location=self.device, weights_only=False)
-                            self.optim.load_state_dict(checkpoint['optim'])
-                            self.scheduler = tc.optim.lr_scheduler.ExponentialLR(self.optim, self.config_training['gamma_lr'])
-                            self.scheduler.load_state_dict(checkpoint['scheduler'])
+                            param_before = list(self.encoder.parameters())[0][0, 0].item()
+                            initialize_model_to_last_checkpoint(self.encoder, self.f, self.decoder, self.device, self.PATH_logs+'/checkpoint/check.pt')
+                            # Print same parameter after reload
+                            param_after_load = list(self.encoder.parameters())[0][0, 0].item()
+                            #print(f"Param before: {param_before}, after load: {param_after_load}")
                         
                     before_next_window_change-=1
                 

@@ -268,27 +268,12 @@ def dynamics_MSE(input: tc.tensor, target: tc.tensor, length_of_padding: tc.tens
     
 
     
-def initialize_model_to_last_checkpoint(config_training:dict, models_information:dict, device : tc.device, path_to_checkpoint:str ):
-    
-    encoder = Encoder(config_training, models_information)
-    f = F_Latent(config_training, models_information)
-    decoder = Decoder(config_training, models_information)
-    encoder, f, decoder = load_checkpoint_on_models(encoder, f, decoder, device, path_to_checkpoint )
-    
-    return encoder, f, decoder
-    
-def load_checkpoint_on_models(encoder, f, decoder, device:tc.device, path_to_checkpoint:str):
-        
+def initialize_model_to_last_checkpoint(encoder, f, decoder, device : tc.device, path_to_checkpoint:str ):
+
     checkpoint = tc.load(path_to_checkpoint, map_location=device, weights_only=False)
-    
     encoder.load_state_dict(checkpoint['enco'])
     f.load_state_dict(checkpoint['f'])
     decoder.load_state_dict(checkpoint['dec'])
-    
-    encoder.to(device)
-    f.to(device)
-    decoder.to(device)
-    return encoder, f, decoder
 
 def initialize_parameters(model_information, encoder, decoder, f, device):
     if not model_information['is_coupled'][0] and model_information['is_coupled'][1] == 'NODE':
