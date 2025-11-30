@@ -289,3 +289,36 @@ def load_checkpoint_on_models(encoder, f, decoder, device:tc.device, path_to_che
     f.to(device)
     decoder.to(device)
     return encoder, f, decoder
+
+def initialize_parameters(model_information, encoder, decoder, f, device):
+    if not model_information['is_coupled'][0] and model_information['is_coupled'][1] == 'NODE':
+        checkpoint = tc.load(model_information['path_trained_AE']+'/checkpoint/check.pt', map_location=device, weights_only=False)
+
+        encoder.load_state_dict(checkpoint['enco'])
+        decoder.load_state_dict(checkpoint['dec'])
+
+        for param in encoder.parameters():
+            param.requires_grad = False
+        for param in decoder.parameters():
+            param.requires_grad = False
+
+        params_to_optimize = [
+        {'params': f.parameters(), 'weight_decay': model_information['weight_decay']['dfnn']}
+    ]
+        
+    elif not model_information['is_coupled'][0] and model_information['is_coupled'][1] == 'AE':
+        for param in f.parameters():
+            param.requires_grad = False
+            
+        params_to_optimize = [
+        {'params': encoder.parameters(), 'weight_decay': model_information['weight_decay']['encoder']},
+        {'params': decoder.parameters(), 'weight_decay': model_information['weight_decay']['decoder']}
+    ]
+
+    elif model_information['is_coupled'][0]:
+        params_to_optimize = [
+        {'params': encoder.parameters(), 'weight_decay': model_information['weight_decay']['encoder']},
+        {'params': f.parameters(), 'weight_decay': model_information['weight_decay']['dfnn']},
+        {'params': decoder.parameters(), 'weight_decay': model_information['weight_decay']['decoder']}
+    ]
+    return params_to_optimize

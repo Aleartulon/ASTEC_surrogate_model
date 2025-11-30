@@ -8,7 +8,7 @@ This script:
 3. Downloads each dataset
 4. Reports results
 """
-
+#python dataset_download.py --output-dir ../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/original_hdf5/ --limit 1000
 import json
 import requests
 import sys

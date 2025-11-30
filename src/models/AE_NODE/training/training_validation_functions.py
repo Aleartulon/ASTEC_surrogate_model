@@ -232,10 +232,14 @@ class Training():
                         
                         #fetch the best model of previous iteration
                         if self.reinitialize_model_at_each_dataset_reshape:
-                            del self.encoder
-                            del self.f
-                            del self.decoder
                             self.encoder, self.f, self.decoder = initialize_model_to_last_checkpoint(self.config_training, self.model_information, self.device, self.PATH_logs+'/checkpoint/check.pt')
+                            #set new references to optim
+                            params_to_optimize = initialize_parameters(self.model_information, self.encoder, self.decoder, self.f, self.device)
+                            self.optim = tc.optim.Adam(params_to_optimize, lr=self.config_training['learning_rate'])
+                            checkpoint = tc.load(self.PATH_logs+'/checkpoint/check.pt', map_location=self.device, weights_only=False)
+                            self.optim.load_state_dict(checkpoint['optim'])
+                            self.scheduler = tc.optim.lr_scheduler.ExponentialLR(self.optim, self.config_training['gamma_lr'])
+                            self.scheduler.load_state_dict(checkpoint['scheduler'])
                         
                     before_next_window_change-=1
                 

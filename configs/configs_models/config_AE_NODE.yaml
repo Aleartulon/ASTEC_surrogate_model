@@ -39,11 +39,11 @@ auto_encoding:
   #Auto-Encoder scalar variables
   auto_encoder_scalar:
     input_dimension_encoder: 54
-    output_dimension_encoder: 10 #dimension of the latent space
-    list_of_neurons_encoder: [50,50,50]
+    output_dimension_encoder: 20 #dimension of the latent space
+    list_of_neurons_encoder: [60,50,50]
     last_activation_encoder: false
 
-    list_of_neurons_decoder: [50,50,50]
+    list_of_neurons_decoder: [50,50,60]
     last_activation_decoder: false
 
   #Auto-Encoder plenum
@@ -109,10 +109,10 @@ auto_encoding:
   final_reduction_and_initial_increase:
     output_dimension_encoder: 6 # THIS IS THE ACTUAL FINAL REDUCED DIMENSION
 
-    list_of_neurons_encoder: [50,50,50]
+    list_of_neurons_encoder: [50,30,10]
     last_activation_encoder: false
 
-    list_of_neurons_decoder: [50,50,50]
+    list_of_neurons_decoder: [10,30,50]
     last_activation_decoder: false
 
 #NODE
@@ -127,7 +127,7 @@ scaling_output_factor: 0.1
 weight_decay:
 
   encoder: 0.0
-  dfnn: 0.0
+  dfnn: 0.000001
   decoder: 0.0
 
 # for latent progression

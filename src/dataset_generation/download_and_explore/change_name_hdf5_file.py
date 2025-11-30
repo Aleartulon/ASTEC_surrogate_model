@@ -23,5 +23,5 @@ def rename_all_in_directory(directory):
                 print(f"Error renaming {filename}: {e}")
 
 # Usage
-directory = '../../../../../scratch/ROM_datasets_ale/ASTEC/original_hdf5/'  # Current directory, or specify your path like '/path/to/your/files'
+directory = '../../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/original_hdf5/'  # Current directory, or specify your path like '/path/to/your/files'
 rename_all_in_directory(directory)
