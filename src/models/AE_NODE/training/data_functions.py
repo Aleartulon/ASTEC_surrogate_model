@@ -6,6 +6,7 @@ from torch.utils.data import Dataset
 from torch import nn
 from torch.utils.data import DataLoader
 from src.models.AE_NODE.training.architecture import *
+from torch.utils.data import Dataset, DataLoader, get_worker_info
 import subprocess
 
 def build_dataset(batch_size:int, time_window: int, data_training_path: str, data_validation_path:str, 
@@ -74,10 +75,6 @@ def load_checkpoint(enco, f , dec, optim, scheduler, filepath, device):
         
     return enco, f , dec, optim, scheduler , epoch, loss, loss_coeff_2, start_backprop, full_training_count
 
-import numpy as np
-import torch as tc
-import h5py
-from torch.utils.data import Dataset, DataLoader, get_worker_info
 
 class ASTEC_Dataset(Dataset):
     def __init__(self, path:str, all_on_gpu:bool, device:tc.device):
@@ -146,7 +143,7 @@ def standard_and_inverse_normalization_field(x: list, maxima_or_mean: dict, mini
     
     for _, i in enumerate(x):
         
-        if i.size(-1) == 4 and len(i.size()) == 3:
+        if i.size(-1) == 57 and len(i.size()) == 3:
             maximum_or_mean = maxima_or_mean['dictionary_of_input_variables_1'][None,None,:]
             minimum_or_std = minima_or_std['dictionary_of_input_variables_1'][None,None,:]
 
@@ -195,7 +192,7 @@ def standard_and_inverse_normalization_field(x: list, maxima_or_mean: dict, mini
 
 def create_padding_mask(size_of_tensor: list, length_of_padding: tc.tensor, device: tc.device):
         mask = tc.ones(size_of_tensor, device = device)
-        columns = tc.arange(size_of_tensor[1])
+        columns = tc.arange(size_of_tensor[1], device = device)
         where_to_fill = columns>=(size_of_tensor[1]-length_of_padding)
         where_to_fill = where_to_fill[(...,) + (None,) * (len(size_of_tensor)-2)].expand(size_of_tensor).to(device)
         mask = mask.masked_fill(where_to_fill, 0.0)
@@ -271,24 +268,42 @@ def dynamics_MSE(input: tc.tensor, target: tc.tensor, length_of_padding: tc.tens
     
 
     
-def initialize_model_to_last_checkpoint(config_training:dict, models_information:dict, device : tc.device, path_to_checkpoint:str ):
-    
-    encoder = Encoder(config_training, models_information)
-    f = F_Latent(config_training, models_information)
-    decoder = Decoder(config_training, models_information)
-    encoder, f, decoder = load_checkpoint_on_models(encoder, f, decoder, device, path_to_checkpoint )
-    
-    return encoder, f, decoder
-    
-def load_checkpoint_on_models(encoder, f, decoder, device:tc.device, path_to_checkpoint:str):
-        
+def initialize_model_to_last_checkpoint(encoder, f, decoder, device : tc.device, path_to_checkpoint:str ):
+
     checkpoint = tc.load(path_to_checkpoint, map_location=device, weights_only=False)
-    
     encoder.load_state_dict(checkpoint['enco'])
     f.load_state_dict(checkpoint['f'])
     decoder.load_state_dict(checkpoint['dec'])
-    
-    encoder.to(device)
-    f.to(device)
-    decoder.to(device)
-    return encoder, f, decoder
+
+def initialize_parameters(model_information, encoder, decoder, f, device):
+    if not model_information['is_coupled'][0] and model_information['is_coupled'][1] == 'NODE':
+        checkpoint = tc.load(model_information['path_trained_AE']+'/checkpoint/check.pt', map_location=device, weights_only=False)
+
+        encoder.load_state_dict(checkpoint['enco'])
+        decoder.load_state_dict(checkpoint['dec'])
+
+        for param in encoder.parameters():
+            param.requires_grad = False
+        for param in decoder.parameters():
+            param.requires_grad = False
+
+        params_to_optimize = [
+        {'params': f.parameters(), 'weight_decay': model_information['weight_decay']['dfnn']}
+    ]
+        
+    elif not model_information['is_coupled'][0] and model_information['is_coupled'][1] == 'AE':
+        for param in f.parameters():
+            param.requires_grad = False
+            
+        params_to_optimize = [
+        {'params': encoder.parameters(), 'weight_decay': model_information['weight_decay']['encoder']},
+        {'params': decoder.parameters(), 'weight_decay': model_information['weight_decay']['decoder']}
+    ]
+
+    elif model_information['is_coupled'][0]:
+        params_to_optimize = [
+        {'params': encoder.parameters(), 'weight_decay': model_information['weight_decay']['encoder']},
+        {'params': f.parameters(), 'weight_decay': model_information['weight_decay']['dfnn']},
+        {'params': decoder.parameters(), 'weight_decay': model_information['weight_decay']['decoder']}
+    ]
+    return params_to_optimize
