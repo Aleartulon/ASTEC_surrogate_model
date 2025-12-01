@@ -16,7 +16,7 @@ def main():
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description='Build sliced dataset')
     parser.add_argument('--t_W', type=int, default=None,help='Override temporal window for time subsets')
-    parser.add_argument('--path_to_hdf5', type=str, default=None)
+    parser.add_argument('--path_to_dataset', type=str, default=None)
     parser.add_argument('--where_to_save_data', type=str, default=None)
     parser.add_argument('--device', type=str, default=None)
     parser.add_argument('--indeces_training_boundaries', type=parse_int_list, default=None)
@@ -30,8 +30,8 @@ def main():
     # Override t_W if provided via command line
     if args.t_W is not None:
         config_dataset['t_W'] = args.t_W
-    if args.path_to_hdf5 is not None:
-        config_dataset['path_to_hdf5'] = args.path_to_hdf5
+    if args.path_to_dataset is not None:
+        config_dataset['path_to_dataset'] = args.path_to_dataset
     if args.where_to_save_data is not None:
         config_dataset['where_to_save_data'] = args.where_to_save_data
     if args.device is not None:

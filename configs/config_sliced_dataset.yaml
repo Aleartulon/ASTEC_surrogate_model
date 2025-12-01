@@ -1,4 +1,4 @@
-path_to_hdf5 : '../../../../../scratch/ROM_datasets_ale/ASTEC/original_hdf5/'
+path_to_dataset : '../../../../../scratch/ROM_datasets_ale/ASTEC/'
 where_to_save_data: '../../../../../scratch/ROM_datasets_ale/ASTEC/'
 device : 'cuda:1'
 indeces_training_boundaries : [1, 71] # need to know from which dataset to extract the data
