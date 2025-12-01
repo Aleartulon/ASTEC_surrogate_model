@@ -229,7 +229,7 @@ class Training():
                         os.remove(f"{self.data_training_path_dynamic}{str(self.time_windows[how_many_datasets_creations-2])}_{self.indeces_training_boundaries[0]}_{self.indeces_training_boundaries[1]}.h5")
                         os.remove(f"{self.data_validation_path_dynamic}{str(self.time_windows[how_many_datasets_creations-2])}_{self.indeces_validation_boundaries[0]}_{self.indeces_validation_boundaries[1]}.h5")
                         checkpoint = tc.load(self.PATH_logs+'/checkpoint/check.pt', map_location=self.device, weights_only=False)
-                        loss_value = checkpoint['loss']
+                        loss_value = checkpoint['loss'] * 10
                         
                         #fetch the best model of previous iteration
                         if self.reinitialize_model_at_each_dataset_reshape:
