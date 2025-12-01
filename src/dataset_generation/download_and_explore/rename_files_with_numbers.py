@@ -8,7 +8,7 @@ import os
 import sys
 from pathlib import Path
 from datetime import datetime
-
+# ../../../../../../../tudelft.net/staff-umbrella/eldar/ASTEC/original_hdf5/
 
 def rename_files_in_directory(directory_path, file_extension='.h5'):
     """
