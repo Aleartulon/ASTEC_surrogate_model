@@ -103,36 +103,7 @@ class AE_NODE:
         self.f = F_Latent(config_training, model_information)
 
         #depending on whether the system is coupled, define f and load encoder and decoder
-        if not model_information['is_coupled'][0] and model_information['is_coupled'][1] == 'NODE':
-            checkpoint = tc.load(model_information['path_trained_AE']+'/checkpoint/check.pt', map_location=self.device, weights_only=False)
-
-            self.encoder.load_state_dict(checkpoint['enco'])
-            self.decoder.load_state_dict(checkpoint['dec'])
-
-            for param in self.encoder.parameters():
-                param.requires_grad = False
-            for param in self.decoder.parameters():
-                param.requires_grad = False
-
-            params_to_optimize = [
-            {'params': self.f.parameters(), 'weight_decay': model_information['weight_decay']['dfnn']}
-        ]
-            
-        elif not model_information['is_coupled'][0] and model_information['is_coupled'][1] == 'AE':
-            for param in self.f.parameters():
-                param.requires_grad = False
-                
-            params_to_optimize = [
-            {'params': self.encoder.parameters(), 'weight_decay': model_information['weight_decay']['encoder']},
-            {'params': self.decoder.parameters(), 'weight_decay': model_information['weight_decay']['decoder']}
-        ]
-
-        elif model_information['is_coupled'][0]:
-            params_to_optimize = [
-            {'params': self.encoder.parameters(), 'weight_decay': model_information['weight_decay']['encoder']},
-            {'params': self.f.parameters(), 'weight_decay': model_information['weight_decay']['dfnn']},
-            {'params': self.decoder.parameters(), 'weight_decay': model_information['weight_decay']['decoder']}
-        ]
+        params_to_optimize = initialize_parameters(model_information, self.encoder, self.decoder, self.f, self.device)
             
         #move the models to the device
         self.encoder.to(self.device)
