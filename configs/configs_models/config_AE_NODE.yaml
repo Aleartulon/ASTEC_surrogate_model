@@ -38,7 +38,7 @@ autoregressive_step:
 auto_encoding:
   #Auto-Encoder scalar variables
   auto_encoder_scalar:
-    input_dimension_encoder: 54
+    input_dimension_encoder: 57
     output_dimension_encoder: 20 #dimension of the latent space
     list_of_neurons_encoder: [60,50,50]
     last_activation_encoder: false

@@ -113,7 +113,9 @@ def fill_dictionary_of_variables(output_dict:dict, name:str, f:h5py._hl.files.Fi
     # Fission products
     output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Ac'] = f['connection/fission/Q_fp_Ac'][0:index_stop] 
     output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Ag'] = f['connection/fission/Q_fp_Ag'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Am'] = f['connection/fission/Q_fp_Am'][0:index_stop] 
     output_dict[name]['dictionary_of_input_variables_1']['Q_fp_As'] = f['connection/fission/Q_fp_As'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Ba'] = f['connection/fission/Q_fp_Ba'][0:index_stop] 
     output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Br'] = f['connection/fission/Q_fp_Br'][0:index_stop] 
     output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Cd'] = f['connection/fission/Q_fp_Cd'][0:index_stop] 
     output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Ce'] = f['connection/fission/Q_fp_Ce'][0:index_stop] 
@@ -139,6 +141,7 @@ def fill_dictionary_of_variables(output_dict:dict, name:str, f:h5py._hl.files.Fi
     output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Np'] = f['connection/fission/Q_fp_Np'][0:index_stop] 
     output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Pa'] = f['connection/fission/Q_fp_Pa'][0:index_stop] 
     output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Pd'] = f['connection/fission/Q_fp_Pd'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Pm'] = f['connection/fission/Q_fp_Pm'][0:index_stop] 
     output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Pr'] = f['connection/fission/Q_fp_Pr'][0:index_stop] 
     output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Pu'] = f['connection/fission/Q_fp_Pu'][0:index_stop] 
     output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Ra'] = f['connection/fission/Q_fp_Ra'][0:index_stop] 
@@ -361,7 +364,7 @@ def normalize_fields(field: np.array, maximum_or_mean: dict, minimum_or_std: dic
         maximum_or_mean = maximum_or_mean[None,:]
         minimum_or_std = minimum_or_std[None,:]
         
-    elif size[-1] == 54:
+    elif size[-1] == 57:
         maximum_or_mean = maximum_or_mean['dictionary_of_input_variables_1'].to(device)
         minimum_or_std = minimum_or_std['dictionary_of_input_variables_1'].to(device)
         maximum_or_mean = maximum_or_mean[None,:]
