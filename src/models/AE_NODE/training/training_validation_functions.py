@@ -222,12 +222,12 @@ class Training():
                                                                                      self.data_training_path_dynamic, self.data_validation_path_dynamic, 
                                                                                      self.number_of_workers, self.data_path, self.where_to_save_data, 
                                                                                      self.which_normalization, self.device, 
-                                                                                     self.indeces_training_boundaries, self.indeces_validation_boundaries,
-                                                                                     self.all_on_gpu, self.pin_memory)
+                                                                                     self.config_training['indeces_training_boundaries'], self.config_validation['indeces_training_boundaries'],
+                                                                                     self.all_on_gpu, self.pin_memory, self.indeces_training_boundaries, self.indeces_validation_boundaries)
                         before_next_window_change = self.waiting_epochs_before_new_dataset_creation[how_many_datasets_creations]
                         how_many_datasets_creations+=1
-                        os.remove(f"{self.data_training_path_dynamic}{str(self.time_windows[how_many_datasets_creations-2])}_{self.indeces_training_boundaries[0]}_{self.indeces_training_boundaries[1]}.h5")
-                        os.remove(f"{self.data_validation_path_dynamic}{str(self.time_windows[how_many_datasets_creations-2])}_{self.indeces_validation_boundaries[0]}_{self.indeces_validation_boundaries[1]}.h5")
+                        os.remove(f"{self.data_training_path_dynamic}{str(self.time_windows[how_many_datasets_creations-2])}{self.indeces_training_boundaries}.h5")
+                        os.remove(f"{self.data_validation_path_dynamic}{str(self.time_windows[how_many_datasets_creations-2])}{self.indeces_validation_boundaries}.h5")
                         checkpoint = tc.load(self.PATH_logs+'/checkpoint/check.pt', map_location=self.device, weights_only=False)
                         loss_value = checkpoint['loss'] * 10
                         

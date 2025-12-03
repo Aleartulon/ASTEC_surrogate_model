@@ -12,10 +12,10 @@ import subprocess
 def build_dataset(batch_size:int, time_window: int, data_training_path: str, data_validation_path:str, 
                   number_of_workers:int, path_to_data: str, where_to_save:str , 
                   which_normalization:str, device :tc.device, training_boundaries:list, 
-                  validation_boundaries:list, all_on_gpu:bool, pin_memory: bool):
+                  validation_boundaries:list, all_on_gpu:bool, pin_memory: bool, indeces_training_boundaries:str, indeces_validation_boundaries:str):
     
-    training_path = f"{data_training_path}{str(time_window)}_{training_boundaries[0]}_{training_boundaries[1]}.h5"
-    validation_path = f"{data_validation_path}{str(time_window)}_{validation_boundaries[0]}_{validation_boundaries[1]}.h5"
+    training_path = f"{data_training_path}{str(time_window)}{indeces_training_boundaries}.h5"
+    validation_path = f"{data_validation_path}{str(time_window)}{indeces_validation_boundaries}.h5"
     
     #build dataset made out of 'time_window' chunks
     subprocess.run(['python', '-m', 'src.dataset_generation.sliced_dataset.main', 
