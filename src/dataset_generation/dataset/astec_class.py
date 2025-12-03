@@ -16,10 +16,22 @@ class Astec_Dataset():
         self.device = tc.device(config_dataset['device'] if tc.cuda.is_available() else 'cpu')
         print('Device: ', self.device)
         self.testing = config_dataset['testing']
-        self.indeces_training_boundaries = config_dataset['indeces_training_boundaries']
-        self.indeces_validation_boundaries = config_dataset['indeces_validation_boundaries']
-        self.indeces_testing_boundaries = config_dataset['indeces_testing_boundaries']
+        self.indeces_training_boundaries = '_'
+        self.indeces_validation_boundaries = '_'
+        self.indeces_testing_boundaries = '_'
         
+        for i in config_dataset['indeces_training_boundaries']:
+            self.indeces_training_boundaries += str(i) + '_'
+        self.indeces_training_boundaries = self.indeces_training_boundaries[:-1]
+        
+        for i in config_dataset['indeces_validation_boundaries']:
+            self.indeces_validation_boundaries += str(i) + '_'
+        self.indeces_validation_boundaries = self.indeces_validation_boundaries[:-1]
+        
+        for i in config_dataset['indeces_testing_boundaries']:
+            self.indeces_testing_boundaries += str(i) + '_'
+        self.indeces_testing_boundaries = self.indeces_testing_boundaries[:-1]
+
     def build_training_dataset(self, indeces, purpose_of_data):
         self.purpose_of_data = purpose_of_data
         t1 = time.time()
@@ -67,18 +79,18 @@ class Astec_Dataset():
             self.minima_or_std = {k: tc.tensor(v, dtype=tc.float32) for k, v in self.minima_or_std.items()}
             
             #save normalization statistics for training and testing
-            with open(f"{self.where_to_save_data}/maxima_or_mean_{self.indeces_training_boundaries[0]}_{self.indeces_training_boundaries[1]}.pkl", 'wb') as f:
+            with open(f"{self.where_to_save_data}/maxima_or_mean{self.indeces_training_boundaries}.pkl", 'wb') as f:
                 pickle.dump(self.maxima_or_mean, f)
 
-            with open(f"{self.where_to_save_data}/minima_or_std_{self.indeces_training_boundaries[0]}_{self.indeces_training_boundaries[1]}.pkl", 'wb') as f:
+            with open(f"{self.where_to_save_data}/minima_or_std{self.indeces_training_boundaries}.pkl", 'wb') as f:
                 pickle.dump(self.minima_or_std, f)
                 
         elif purpose_of_data == 'validation':
             
-            with open(f"{self.where_to_save_data}/maxima_or_mean_{self.indeces_training_boundaries[0]}_{self.indeces_training_boundaries[1]}.pkl", 'rb') as file:
+            with open(f"{self.where_to_save_data}/maxima_or_mean{self.indeces_training_boundaries}.pkl", 'rb') as file:
                 self.maxima_or_mean = pickle.load(file)
             
-            with open(f"{self.where_to_save_data}/minima_or_std_{self.indeces_training_boundaries[0]}_{self.indeces_training_boundaries[1]}.pkl", 'rb') as file:
+            with open(f"{self.where_to_save_data}/minima_or_std{self.indeces_training_boundaries}.pkl", 'rb') as file:
                 self.minima_or_std = pickle.load(file)
                 
         #normalize dictionary_per_simulation 
@@ -109,10 +121,10 @@ class Astec_Dataset():
                 print(f"Simulation: {simulation}, shape {shape}, size: {self.dictionary_per_simulation[simulation][shape].size()}")
         #save normalized dictionary 
         if self.purpose_of_data == 'training':
-            with h5py.File(f'{self.where_to_save_data}/data_training_{self.indeces_training_boundaries[0]}_{self.indeces_training_boundaries[1]}.h5', 'w') as f:
+            with h5py.File(f'{self.where_to_save_data}/data_training{self.indeces_training_boundaries}.h5', 'w') as f:
                 dict_to_hdf5(self.dictionary_per_simulation, f)
         elif self.purpose_of_data == 'validation':
-            with h5py.File(f'{self.where_to_save_data}/data_validation_{self.indeces_validation_boundaries[0]}_{self.indeces_validation_boundaries[1]}.h5', 'w') as f:
+            with h5py.File(f'{self.where_to_save_data}/data_validation{self.indeces_validation_boundaries}.h5', 'w') as f:
                 dict_to_hdf5(self.dictionary_per_simulation, f)
         # Clear GPU memory immediately after saving
         del self.dictionary_per_simulation
@@ -125,10 +137,10 @@ class Astec_Dataset():
     
     def build_testing_dataset(self, indeces):
         
-        with open(f"{self.where_to_save_data}/maxima_or_mean_{self.indeces_training_boundaries[0]}_{self.indeces_training_boundaries[1]}.pkl", 'rb') as file:
+        with open(f"{self.where_to_save_data}/maxima_or_mean{self.indeces_training_boundaries}.pkl", 'rb') as file:
             maxima_or_mean = pickle.load(file)
             
-        with open(f"{self.where_to_save_data}/minima_or_std_{self.indeces_training_boundaries[0]}_{self.indeces_training_boundaries[1]}.pkl", 'rb') as file:
+        with open(f"{self.where_to_save_data}/minima_or_std{self.indeces_training_boundaries}.pkl", 'rb') as file:
             minima_or_std = pickle.load(file)
         
         dictionary_per_trajectory, self.time_of_simulations = extract_input_output_bc_variables(self.path_to_hdf5, indeces) #build dictionary of data divided by numbers of simulations
@@ -166,7 +178,7 @@ class Astec_Dataset():
                 print(f"trajectory {number_of_simulation}, shape {shape}: {size} ")
             
         #save dictionary_per_simulation to hdf5s if self.save_dictionary_per_time_lengths is true
-        with h5py.File(f"{self.where_to_save_data}/data_testing_{self.indeces_testing_boundaries[0]}_{self.indeces_testing_boundaries[1]}.h5", 'w') as f:
+        with h5py.File(f"{self.where_to_save_data}/data_testing{self.indeces_testing_boundaries}.h5", 'w') as f:
             dict_to_hdf5(dictionary_per_trajectory, f) 
             
     def make_channels_for_dictionary_per_simulation(self, dict: dict):

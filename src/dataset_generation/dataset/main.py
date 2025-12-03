@@ -42,11 +42,19 @@ def main():
     
     testing = config_dataset['testing']
     print(f'Testing is {testing}!')
+    x = config_dataset['indeces_training_boundaries']
+    indeces_training = [np.arange(x[2*i],x[2*i+1]+1,1) for i in range(int(len(x)/2))]
+    indeces_training = np.concatenate(indeces_training)
     
-    indeces_training = np.arange(config_dataset['indeces_training_boundaries'][0], config_dataset['indeces_training_boundaries'][1],1)
-    indeces_validation = np.arange(config_dataset['indeces_validation_boundaries'][0], config_dataset['indeces_validation_boundaries'][1],1)
-    indeces_testing = np.arange(config_dataset['indeces_testing_boundaries'][0], config_dataset['indeces_testing_boundaries'][1],1)
+    x = config_dataset['indeces_validation_boundaries']
+    indeces_validation = [np.arange(x[2*i],x[2*i+1]+1,1) for i in range(int(len(x)/2))]
+    indeces_validation = np.concatenate(indeces_validation)
     
+    x = config_dataset['indeces_testing_boundaries']
+    indeces_testing = [np.arange(x[2*i],x[2*i+1]+1,1) for i in range(int(len(x)/2))]
+    indeces_testing = np.concatenate(indeces_testing)
+    
+
     with tc.no_grad():
         if testing:
             # Build test data

@@ -3,8 +3,8 @@ description : 'dataset_774_775_6_latent/' #for a given dataset, one can train wi
 data_path : '../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/original_hdf5/' #path of training and validation data
 where_to_save_data : '../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/' #if dynamic_dataset_generation_during_training this is where data is saved, else it is where data for training is found
 model: 'AE_NODE'
-indeces_training_boundaries : [774, 775] #
-indeces_validation_boundaries :  [774, 775]
+indeces_training_boundaries : [1,2,3,4]
+indeces_validation_boundaries : [5,6]
 reinitialize_model_at_each_dataset_reshape: true
 epochs: 10000 #maximum number of epochs
 learning_rate: 0.002 #initial learning rate
