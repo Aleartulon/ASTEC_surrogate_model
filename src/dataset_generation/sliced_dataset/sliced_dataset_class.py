@@ -14,16 +14,24 @@ class Sliced_Dataset():
         self.where_to_save_data = config_dataset['where_to_save_data']
         self.t_W = config_dataset['t_W']
         self.device = config_dataset['device']
-        self.indeces_training_boundaries = config_dataset['indeces_training_boundaries']
-        self.indeces_validation_boundaries = config_dataset['indeces_validation_boundaries']
+        self.indeces_training_boundaries = '_'
+        self.indeces_validation_boundaries = '_'
+        
+        for i in config_dataset['indeces_training_boundaries']:
+            self.indeces_training_boundaries += str(i) + '_'
+        self.indeces_training_boundaries = self.indeces_training_boundaries[:-1]
+        
+        for i in config_dataset['indeces_validation_boundaries']:
+            self.indeces_validation_boundaries += str(i) + '_'
+        self.indeces_validation_boundaries = self.indeces_validation_boundaries[:-1]
         
     def build_sliced_training_dataset(self, purpose_of_data):
         self.purpose_of_data = purpose_of_data
         
         if self.purpose_of_data  == 'training':
-            name_file = f'data_training_{self.indeces_training_boundaries[0]}_{self.indeces_training_boundaries[1]}.h5'
+            name_file = f'data_training{self.indeces_training_boundaries}.h5'
         elif self.purpose_of_data == 'validation':
-            name_file = f'data_validation_{self.indeces_validation_boundaries[0]}_{self.indeces_validation_boundaries[1]}.h5'
+            name_file = f'data_validation{self.indeces_validation_boundaries}.h5'
             
         # open dataset
         with h5py.File(self.path_to_dataset + name_file, 'r') as f:
@@ -41,10 +49,10 @@ class Sliced_Dataset():
                 
             #save dictionary with sliced windows
             if self.purpose_of_data == 'training':
-                with h5py.File(f'{self.where_to_save_data}/data_training_normalized_t_W_{self.t_W}_{self.indeces_training_boundaries[0]}_{self.indeces_training_boundaries[1]}.h5', 'w') as f:
+                with h5py.File(f'{self.where_to_save_data}/data_training_normalized_t_W_{self.t_W}{self.indeces_training_boundaries}.h5', 'w') as f:
                     dict_to_hdf5(self.dictionary_of_sliced_windows, f)
             elif self.purpose_of_data == 'validation':
-                with h5py.File(f'{self.where_to_save_data}/data_validation_normalized_t_W_{self.t_W}_{self.indeces_validation_boundaries[0]}_{self.indeces_validation_boundaries[1]}.h5', 'w') as f:
+                with h5py.File(f'{self.where_to_save_data}/data_validation_normalized_t_W_{self.t_W}{self.indeces_validation_boundaries}.h5', 'w') as f:
                     dict_to_hdf5(self.dictionary_of_sliced_windows, f)
             
             # Clear GPU memory immediately after saving

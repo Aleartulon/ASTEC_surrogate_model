@@ -54,8 +54,16 @@ class AE_NODE:
         self.dynamic_dataset_generation_during_training = config_training['dynamic_dataset_generation_during_training']
         self.time_windows = config_training['time_windows']
         
-        self.indeces_training_boundaries = config_training['indeces_training_boundaries']
-        self.indeces_validation_boundaries = config_training['indeces_validation_boundaries']
+        self.indeces_training_boundaries = '_'
+        self.indeces_validation_boundaries = '_'
+        
+        for i in config_training['indeces_training_boundaries']:
+            self.indeces_training_boundaries += str(i) + '_'
+        self.indeces_training_boundaries = self.indeces_training_boundaries[:-1]
+        
+        for i in config_training['indeces_validation_boundaries']:
+            self.indeces_validation_boundaries += str(i) + '_'
+        self.indeces_validation_boundaries = self.indeces_validation_boundaries[:-1]
         
         self.reinitialize_model_at_each_dataset_reshape = config_training['reinitialize_model_at_each_dataset_reshape']
         
@@ -76,8 +84,8 @@ class AE_NODE:
             
             self.training_loader, self.validation_loader = build_dataset(self.batch_sizes[0], self.time_windows[0], self.data_training_path_dynamic, self.data_validation_path_dynamic, 
                                                                          self.number_of_workers, self.data_path, self.where_to_save_data, self.which_normalization, 
-                                                                         self.device, self.indeces_training_boundaries, self.indeces_validation_boundaries, 
-                                                                         self.all_on_gpu, self.pin_memory)
+                                                                         self.device, config_training['indeces_training_boundaries'], config_training['indeces_validation_boundaries'], 
+                                                                         self.all_on_gpu, self.pin_memory, self.indeces_training_boundaries, self.indeces_validation_boundaries)
         else:
             dataset_training = ASTEC_Dataset(self.data_training_path, self.all_on_gpu, self.device)
             self.training_loader = DataLoader(dataset_training, batch_size = self.batch_sizes[0], num_workers = self.number_of_workers, shuffle=True,drop_last=False,pin_memory=self.pin_memory)
@@ -86,10 +94,10 @@ class AE_NODE:
             self.validation_loader = DataLoader(dataset_validation, batch_size = self.batch_sizes[0], num_workers = self.number_of_workers, shuffle=True,drop_last=False,pin_memory=self.pin_memory)
         #get normalization information
         
-        with open(f"{config_training['data_path']}/maxima_or_mean_{self.indeces_training_boundaries[0]}_{self.indeces_training_boundaries[1]}.pkl", 'rb') as f:
+        with open(f"{config_training['where_to_save_data']}/maxima_or_mean{self.indeces_training_boundaries}.pkl", 'rb') as f:
             self.maxima_or_mean = pickle.load(f)
 
-        with open(f"{config_training['data_path']}/minima_or_std_{self.indeces_training_boundaries[0]}_{self.indeces_training_boundaries[1]}.pkl", 'rb') as f:
+        with open(f"{config_training['where_to_save_data']}/minima_or_std{self.indeces_training_boundaries}.pkl", 'rb') as f:
             self.minima_or_std = pickle.load(f)
             
         for key in self.maxima_or_mean:

@@ -1,6 +1,6 @@
 path_to_dataset : '../../../../../scratch/ROM_datasets_ale/ASTEC/'
 where_to_save_data: '../../../../../scratch/ROM_datasets_ale/ASTEC/'
 device : 'cuda:1'
-indeces_training_boundaries : [1, 71] # need to know from which dataset to extract the data
-indeces_validation_boundaries : [71, 91] # need to know from which dataset to extract the data
+indeces_training_boundaries : [1, 2, 3, 4]
+indeces_validation_boundaries : [5, 6]
 t_W : 1 #temporal window for time subsets of time series

@@ -8,7 +8,9 @@ import os
 import sys
 from pathlib import Path
 from datetime import datetime
-# ../../../../../../../tudelft.net/staff-umbrella/eldar/ASTEC/original_hdf5/
+
+# python rename_files_with_numbers.py '../../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/original_hdf5/'
+
 
 def rename_files_in_directory(directory_path, file_extension='.h5'):
     """
