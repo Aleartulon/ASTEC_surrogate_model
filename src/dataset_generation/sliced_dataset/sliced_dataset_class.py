@@ -10,7 +10,7 @@ import gc
 class Sliced_Dataset():
     def __init__(self , config_dataset: dict):
         
-        self.path_to_hdf5 = config_dataset['path_to_hdf5']
+        self.path_to_dataset = config_dataset['path_to_dataset']
         self.where_to_save_data = config_dataset['where_to_save_data']
         self.t_W = config_dataset['t_W']
         self.device = config_dataset['device']
@@ -34,7 +34,7 @@ class Sliced_Dataset():
             name_file = f'data_validation{self.indeces_validation_boundaries}.h5'
             
         # open dataset
-        with h5py.File(self.where_to_save_data + name_file, 'r') as f:
+        with h5py.File(self.path_to_dataset + name_file, 'r') as f:
             #divide datasets in time windows of length t_W, pad and mix the trajectories
             t5 = time.time()
             self.dictionary_of_sliced_windows = self.make_dictionary_of_sliced_windows(f)

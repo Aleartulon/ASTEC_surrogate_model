@@ -20,7 +20,7 @@ def build_dataset(batch_size:int, time_window: int, data_training_path: str, dat
     #build dataset made out of 'time_window' chunks
     subprocess.run(['python', '-m', 'src.dataset_generation.sliced_dataset.main', 
                 '--t_W', str(time_window), 
-                '--path_to_hdf5', path_to_data, 
+                '--path_to_dataset', path_to_data, 
                 '--where_to_save_data', where_to_save, 
                 '--device', device, 
                 '--indeces_training_boundaries', ' ,'.join(map(str, training_boundaries)),
