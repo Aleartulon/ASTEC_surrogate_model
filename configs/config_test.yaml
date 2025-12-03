@@ -1,4 +1,4 @@
-path_to_test_data : '../../../../../../../scratch/ROM_datasets_ale/ASTEC/'
+path_to_test_data : '../../../../../../../scratch/ROM_datasets_ale/ASTEC/made_datasets/'
 name_test_file: 'data_testing_774_775.h5'
 path_to_model: '../../../../../../../scratch/ROM_datasets_ale/ASTEC/saved_logs/AE_NODE/Models/dataset_774_775_6_latent/'
 device: 'cuda'
