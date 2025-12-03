@@ -1,6 +1,5 @@
-
 path_to_hdf5 : '../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/original_hdf5/'
-where_to_save_data: '../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/'
+where_to_save_data: '../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/made_datasets'
 indeces_training_boundaries : [1, 2, 3, 4]
 indeces_validation_boundaries : [5, 6]
 indeces_testing_boundaries : [7, 8]
