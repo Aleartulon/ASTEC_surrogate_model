@@ -6,5 +6,5 @@ indeces_testing_boundaries : [774, 775]
 device : 'cuda'
 save_dictionary_per_time_lengths : false
 which_normalization : 'mean_std' #min_max or mean_std
-testing: false
+testing: true
 
