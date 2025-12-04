@@ -1,0 +1,37 @@
+nohup: ignoring input
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/aalelonghi/ASTEC_surrogate_model/src/dataset_generation/dataset/main.py", line 77, in <module>
+    main()
+  File "/home/aalelonghi/ASTEC_surrogate_model/src/dataset_generation/dataset/main.py", line 68, in main
+    astec_dataset.build_training_dataset(indeces_training, 'training')
+  File "/home/aalelonghi/ASTEC_surrogate_model/src/dataset_generation/dataset/astec_class.py", line 66, in build_training_dataset
+    self.maxima_or_mean, self.minima_or_std = get_normalization_statistics(self.dictionary_unified, self.which_normalization) 
+                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aalelonghi/ASTEC_surrogate_model/src/dataset_generation/dataset/support_functions.py", line 327, in get_normalization_statistics
+    mean = np.mean(dictionary_unified[shape].astype(np.float64), axis=(0,) + tuple(np.arange(2, len(size))))
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+numpy.core._exceptions._ArrayMemoryError: Unable to allocate 99.6 GiB for an array with shape (9772714, 18, 76) and data type float64
+Device:  cpu
+---------- config_dataset ----------
+path_to_hdf5  :  ../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/original_hdf5/
+where_to_save_data  :  ../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/made_datasets
+indeces_training_boundaries  :  [603, 703, 774, 906, 957, 957]
+indeces_validation_boundaries  :  [906, 956]
+indeces_testing_boundaries  :  [7, 8]
+device  :  cuda
+save_dictionary_per_time_lengths  :  False
+which_normalization  :  mean_std
+testing  :  False
+Testing is False!
+--------------------------------Build training dataset--------------------------------
+Build dictionary of data divided by number of simulation: 3051.447431564331 seconds
+build dictionary of data divided by simulations and make channels per spatial domain: 598.5724713802338 seconds
+substitute with zeros the NaN values: 117.97655510902405 seconds
+combine different simulations into unique dictionary with shapes as keys: 1056.957899093628 seconds
+Shape dictionary_of_input_variables_76: (9772714, 18, 76)
+Shape dictionary_of_input_variables_36: (9772714, 4, 36)
+Shape dictionary_of_input_variables_1: (9772714, 57)
+Shape dictionary_of_input_variables_140: (9772714, 3, 140)
+Shape boundary_conditions_and_time: (9772714, 32)
