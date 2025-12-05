@@ -44,15 +44,25 @@ def main():
     print(f'Testing is {testing}!')
     
     x = config_dataset['indeces_training_boundaries']
-    indeces_training = [np.arange(x[2*i],x[2*i+1]+1,1) for i in range(int(len(x)/2))]
-    indeces_training = np.concatenate(indeces_training)
+    if len(x) > 1:
+        indeces_training = [np.arange(x[2*i],x[2*i+1]+1,1) for i in range(int(len(x)/2))]
+        indeces_training = np.concatenate(indeces_training)
+    else:
+        indeces_training = config_dataset['indeces_training_boundaries']
+        
     x = config_dataset['indeces_validation_boundaries']
-    indeces_validation = [np.arange(x[2*i],x[2*i+1]+1,1) for i in range(int(len(x)/2))]
-    indeces_validation = np.concatenate(indeces_validation)
+    if len(x) > 1:
+        indeces_validation = [np.arange(x[2*i],x[2*i+1]+1,1) for i in range(int(len(x)/2))]
+        indeces_validation = np.concatenate(indeces_validation)
+    else:
+        indeces_validation = config_dataset['indeces_validation_boundaries']
     
     x = config_dataset['indeces_testing_boundaries']
-    indeces_testing = [np.arange(x[2*i],x[2*i+1]+1,1) for i in range(int(len(x)/2))]
-    indeces_testing = np.concatenate(indeces_testing)
+    if len(x) > 1:
+        indeces_testing = [np.arange(x[2*i],x[2*i+1]+1,1) for i in range(int(len(x)/2))]
+        indeces_testing = np.concatenate(indeces_testing)
+    else:
+        indeces_testing = config_dataset['indeces_testing_boundaries']
 
     with tc.no_grad():
         if testing:

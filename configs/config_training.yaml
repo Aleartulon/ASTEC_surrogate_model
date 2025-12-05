@@ -1,10 +1,10 @@
 physics_model : '../../../../scratch/ROM_datasets_ale/ASTEC/saved_logs/' # this is the Path to a directory for the training on a given dataset
-description : 'dataset_774_775_6_latent/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
+description : 'dataset_1_2_3_4_6_latent/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
 data_path : '../../../../scratch/ROM_datasets_ale/ASTEC/made_datasets/' #path of training and validation data
 where_to_save_data : '../../../../scratch/ROM_datasets_ale/ASTEC/' #if dynamic_dataset_generation_during_training this is where data is saved, else it is where data for training is found
 model: 'AE_NODE'
-indeces_training_boundaries : [1,2,3,4]
-indeces_validation_boundaries : [5,6]
+indeces_training_boundaries : [1,2]
+indeces_validation_boundaries : [1,2]
 reinitialize_model_at_each_dataset_reshape: true
 epochs: 10000 #maximum number of epochs
 learning_rate: 0.002 #initial learning rate
