@@ -7,4 +7,4 @@ indeces_testing_boundaries : [7, 8]
 device : 'cuda:2'
 save_dictionary_per_time_lengths : false
 which_normalization : 'mean_std' #min_max or mean_std
-testing: true
+testing: false
