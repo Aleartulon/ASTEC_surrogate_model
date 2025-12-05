@@ -38,6 +38,8 @@ class Astec_Dataset():
             self.path_to_constructed_data = f"{self.where_to_save_data}/data_training{self.indeces_training_boundaries}.h5"
         elif purpose_of_data == 'validation':
             self.path_to_constructed_data = f"{self.where_to_save_data}/data_validation{self.indeces_validation_boundaries}.h5"
+        elif purpose_of_data == 'testing':
+            self.path_to_constructed_data = f"{self.where_to_save_data}/data_testing{self.indeces_testing_boundaries}.h5"
             
         # create dictionary and hdf5 file
         self.dictionary_per_simulation = {}
@@ -93,7 +95,7 @@ class Astec_Dataset():
             with open(f"{self.where_to_save_data}/minima_or_std{self.indeces_training_boundaries}.pkl", 'wb') as f:
                 pickle.dump(self.minima_or_std, f)
                 
-        elif purpose_of_data == 'validation':
+        elif purpose_of_data == 'validation' or purpose_of_data == 'testing':
             
             with open(f"{self.where_to_save_data}/maxima_or_mean{self.indeces_training_boundaries}.pkl", 'rb') as file:
                 self.maxima_or_mean = pickle.load(file)
@@ -130,9 +132,13 @@ class Astec_Dataset():
                         del f[key][shape]
                     f[key].create_dataset(shape, data=reshaped_dict[shape].cpu().numpy(), dtype='float32')
                 if self.testing:
-                    reshaped_dict['Time'] = self.time_of_simulations[count]
+                    reshaped_dict['Time'] = extract_time_of_simulation(self.path_to_hdf5, key)
                     op_acts = self.get_operator_actions(key)
                     reshaped_dict['Operator_actions'] = op_acts
+                    f[key].create_dataset('Time', data=reshaped_dict['Time'], dtype='float32')
+                    actions_group = f[key].create_group('Operator_actions')
+                    for action_key, action_value in reshaped_dict['Operator_actions'].items():
+                        actions_group.create_dataset(action_key, data=action_value, dtype='float32')
                 t1 = time.time()
                 
                 print(f"Time to reshape simulation {key}: {t1-t0}")
@@ -148,63 +154,31 @@ class Astec_Dataset():
             simulations = list(f.keys())
             for simulation in simulations:
                 for shape in f[simulation]:
-                    if np.isnan(f[simulation][shape]).any() or (~np.isfinite(f[simulation][shape])).any():
-                        raise TypeError(f"There are still NaN values in final data, check please in {shape}")
+                    if shape != 'Operator_actions' and shape != 'Time':
+                        if np.isnan(f[simulation][shape]).any() or (~np.isfinite(f[simulation][shape])).any():
+                            raise TypeError(f"There are still NaN values in final data, check please in simulation {simulation}, shape {shape}")
+                    elif shape == 'Time':
+                        if np.isnan(f[simulation][shape]).any() or (~np.isfinite(f[simulation][shape])).any():
+                            raise TypeError(f"There are still NaN values in final data, check please in simulation {simulation}, shape {shape}")
         #check shapes
         print('')
         print('CHECK SHAPES PLEASE!')  
         print('')
         with h5py.File(self.path_to_constructed_data, 'r') as f:
             simulations = list(f.keys())
+            print()
             for simulation in simulations:
                 for shape in f[simulation]:
-                    print(f"Simulation: {f[simulation][shape]}, shape {shape}, size: {np.shape(f[simulation][shape])}")
-    
-    def build_testing_dataset(self, indeces):
+                    if shape != 'Time' and shape != 'Operator_actions':
+                        size = np.shape(f[simulation][shape])
+                    elif shape == 'Time':
+                        size = np.shape(f[simulation][shape])
+                    else:
+                        continue
+                    print(f"trajectory {simulation}, shape {shape}: {size} ")
+                        
         
-        with open(f"{self.where_to_save_data}/maxima_or_mean{self.indeces_training_boundaries}.pkl", 'rb') as file:
-            maxima_or_mean = pickle.load(file)
             
-        with open(f"{self.where_to_save_data}/minima_or_std{self.indeces_training_boundaries}.pkl", 'rb') as file:
-            minima_or_std = pickle.load(file)
-        print(indeces)
-        dictionary_per_trajectory, self.time_of_simulations = extract_input_output_bc_variables(self.path_to_hdf5, indeces) #build dictionary of data divided by numbers of simulations
-        
-        dictionary_per_trajectory = self.make_channels_for_dictionary_per_simulation(dictionary_per_trajectory) #build dictionary of data divided by numbers of simulation and make channels per spatial domain
-        dictionary_per_trajectory = self.substitute_NaN_with_zeros(dictionary_per_trajectory)
-        dictionary_per_trajectory = self.normalize_dictionary_per_simulation(dictionary_per_trajectory, maxima_or_mean, minima_or_std) #normalize testing dataset according to training statistics
-        dictionary_per_trajectory = self.squeeze_first_dimension(dictionary_per_trajectory) #normalize testing dataset according to training statistics
-        dictionary_per_trajectory = self.reshape_dataset(dictionary_per_trajectory) #reshape dictionary
-        
-        #check if there are nan values in the dictionary before saving
-        for number_of_simulation in dictionary_per_trajectory:
-            shapes = list(dictionary_per_trajectory[number_of_simulation].keys())
-            for shape in shapes:
-                if shape != 'Operator_actions' and shape != 'Time':
-                    if tc.isnan(dictionary_per_trajectory[number_of_simulation][shape]).any() or (~tc.isfinite(dictionary_per_trajectory[number_of_simulation][shape])).any():
-                        raise TypeError(f"There are still NaN values in final data, check please in simulation {number_of_simulation}, shape {shape}")
-                elif shape == 'Time':
-                    if np.isnan(dictionary_per_trajectory[number_of_simulation][shape]).any() or (~np.isfinite(dictionary_per_trajectory[number_of_simulation][shape])).any():
-                        raise TypeError(f"There are still NaN values in final data, check please in simulation {number_of_simulation}, shape {shape}")
-            
-        #check shapes
-        print('')
-        print('CHECK SHAPES PLEASE!')  
-        print('')
-        for number_of_simulation in dictionary_per_trajectory:
-            shapes = list(dictionary_per_trajectory[number_of_simulation].keys())
-            for shape in shapes:
-                if shape != 'Time' and shape != 'Operator_actions':
-                    size = dictionary_per_trajectory[number_of_simulation][shape].size()
-                elif shape == 'Time':
-                    size = dictionary_per_trajectory[number_of_simulation][shape].size
-                else:
-                    continue
-                print(f"trajectory {number_of_simulation}, shape {shape}: {size} ")
-            
-        #save dictionary_per_simulation to hdf5s if self.save_dictionary_per_time_lengths is true
-        with h5py.File(f"{self.where_to_save_data}/data_testing{self.indeces_testing_boundaries}.h5", 'w') as f:
-            dict_to_hdf5(dictionary_per_trajectory, f) 
             
     def make_channels_for_dictionary_per_simulation(self, dict: dict):
         for n_o_s in dict:  # n_o_s is number of simulation

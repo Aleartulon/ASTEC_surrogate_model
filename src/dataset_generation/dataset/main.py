@@ -58,7 +58,7 @@ def main():
         if testing:
             # Build test data
             print('--------------------------------Build testing dataset--------------------------------')
-            astec_dataset.build_testing_dataset(indeces_testing)
+            astec_dataset.build_training_dataset(indeces_testing, 'testing')
             del astec_dataset 
             tc.cuda.empty_cache()
         else:

@@ -291,6 +291,19 @@ def extract_input_output_bc_variables(path, index_simulation:str):
 
     return output_dict, time_of_simulations
 
+def extract_time_of_simulation(path, index_simulation:str):
+    name_simulation = str(index_simulation) + '.h5'
+    with h5py.File(path+'/'+str(name_simulation), 'r') as f:
+        vessel_rupture_time = f['other/global/vessel_rupture_time'][-1]
+        if not np.isnan(vessel_rupture_time):
+            index_stop = np.where(f['dimensions/time_points'][:] >= vessel_rupture_time)[0][0]
+            index_stop = len(f['dimensions/time_points'][0:index_stop])
+        else:
+            index_stop = len(f['dimensions/time_points'][:])
+        time_of_simulations = f['dimensions/time_points'][:][0:index_stop]
+
+    return time_of_simulations
+
 def add_dict_to_hdf5(h5_path, key, dictionary, path=''):
     """Add an entire dictionary to an existing HDF5 file under a specific key."""
     with h5py.File(h5_path, 'a') as h5file:
