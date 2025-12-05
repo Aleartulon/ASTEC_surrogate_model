@@ -42,36 +42,43 @@ def main():
     
     testing = config_dataset['testing']
     print(f'Testing is {testing}!')
-    x = config_dataset['indeces_training_boundaries']
-    indeces_training = [np.arange(x[2*i],x[2*i+1]+1,1) for i in range(int(len(x)/2))]
-    indeces_training = np.concatenate(indeces_training)
     
+    x = config_dataset['indeces_training_boundaries']
+    if len(x) > 1:
+        indeces_training = [np.arange(x[2*i],x[2*i+1]+1,1) for i in range(int(len(x)/2))]
+        indeces_training = np.concatenate(indeces_training)
+    else:
+        indeces_training = config_dataset['indeces_training_boundaries']
+        
     x = config_dataset['indeces_validation_boundaries']
-    indeces_validation = [np.arange(x[2*i],x[2*i+1]+1,1) for i in range(int(len(x)/2))]
-    indeces_validation = np.concatenate(indeces_validation)
+    if len(x) > 1:
+        indeces_validation = [np.arange(x[2*i],x[2*i+1]+1,1) for i in range(int(len(x)/2))]
+        indeces_validation = np.concatenate(indeces_validation)
+    else:
+        indeces_validation = config_dataset['indeces_validation_boundaries']
     
     x = config_dataset['indeces_testing_boundaries']
-    indeces_testing = [np.arange(x[2*i],x[2*i+1]+1,1) for i in range(int(len(x)/2))]
-    indeces_testing = np.concatenate(indeces_testing)
-    
+    if len(x) > 1:
+        indeces_testing = [np.arange(x[2*i],x[2*i+1]+1,1) for i in range(int(len(x)/2))]
+        indeces_testing = np.concatenate(indeces_testing)
+    else:
+        indeces_testing = config_dataset['indeces_testing_boundaries']
 
     with tc.no_grad():
         if testing:
             # Build test data
             print('--------------------------------Build testing dataset--------------------------------')
-            astec_dataset.build_testing_dataset(indeces_testing)
+            astec_dataset.build_training_dataset(indeces_testing, 'testing')
             del astec_dataset 
             tc.cuda.empty_cache()
         else:
             # Build training data
             print('--------------------------------Build training dataset--------------------------------')
             astec_dataset.build_training_dataset(indeces_training, 'training')
-            tc.cuda.empty_cache()
+            
             # Build validation data
             print('--------------------------------Build validation dataset--------------------------------')
             astec_dataset.build_training_dataset(indeces_validation, 'validation')
-            del astec_dataset 
-            tc.cuda.empty_cache()
 
 if __name__ == '__main__':
     main()
