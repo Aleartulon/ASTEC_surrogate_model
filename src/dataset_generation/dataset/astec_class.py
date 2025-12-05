@@ -33,40 +33,48 @@ class Astec_Dataset():
         self.indeces_testing_boundaries = self.indeces_testing_boundaries[:-1]
 
     def build_training_dataset(self, indeces, purpose_of_data):
-        self.purpose_of_data = purpose_of_data
-        t1 = time.time()
-        self.dictionary_per_simulation, _ = extract_input_output_bc_variables(self.path_to_hdf5, indeces) #build dictionary of data divided by number of simulation
-        t2 = time.time()
-        print(f'Build dictionary of data divided by number of simulation: {t2-t1} seconds')
-        self.dictionary_per_simulation = self.make_channels_for_dictionary_per_simulation(self.dictionary_per_simulation) #build dictionary of data divided by simulations and make channels per spatial domain
-        t3 = time.time()
-        print(f'build dictionary of data divided by simulations and make channels per spatial domain: {t3-t2} seconds')
-        self.dictionary_per_simulation = self.substitute_NaN_with_zeros(self.dictionary_per_simulation) #substitute with zeros the NaN values
-        t4 = time.time()
-        print(f'substitute with zeros the NaN values: {t4-t3} seconds')
         
-        #save dictionary_per_simulation to hdf5s if self.save_dictionary_per_time_lengths is true
-        if self.save_dictionary_per_time_lengths:
-            with h5py.File(self.where_to_save_data+'/data_'+self.purpose_of_data+'.h5', 'w') as f:
-                dict_to_hdf5(self.dictionary_per_simulation, f) 
-
+        if purpose_of_data == 'training':
+            self.path_to_constructed_data = f"{self.where_to_save_data}/data_training{self.indeces_training_boundaries}.h5"
+        elif purpose_of_data == 'validation':
+            self.path_to_constructed_data = f"{self.where_to_save_data}/data_validation{self.indeces_validation_boundaries}.h5"
+            
+        # create dictionary and hdf5 file
+        self.dictionary_per_simulation = {}
+        
+        with h5py.File(self.path_to_constructed_data, 'w') as f:
+            dict_to_hdf5(self.dictionary_per_simulation, f)
+        
+        for index_simulation in indeces:
+            index_simulation = str(index_simulation)
+            t1 = time.time()
+            single_simulation, _ = extract_input_output_bc_variables(self.path_to_hdf5, index_simulation) #build dictionary of data divided by number of simulation
+            t2 = time.time()
+            print(f'Simulation: {index_simulation}. Build dictionary of data divided by number of simulation: {t2-t1} seconds')
+            single_simulation = self.make_channels_for_dictionary_per_simulation(single_simulation) #build dictionary of data divided by simulations and make channels per spatial domain
+            t3 = time.time()
+            print(f'Simulation: {index_simulation}. Build dictionary of data divided by simulations and make channels per spatial domain: {t3-t2} seconds')
+            single_simulation = self.substitute_NaN_with_zeros(single_simulation) #substitute with zeros the NaN values
+            t4 = time.time()
+            single_simulation = squeeze_first_dimension(single_simulation)
+            print(f'Simulation: {index_simulation}. Substitute with zeros the NaN values: {t4-t3} seconds')
+            
+            add_dict_to_hdf5(self.path_to_constructed_data, index_simulation, single_simulation[index_simulation], path='')
+                
+        #check shape of each simulation 
+        with h5py.File(self.path_to_constructed_data, 'r') as f:
+            keys = list(f.keys())
+            for key in keys:
+                for shape in f[key].keys():
+                    print(f"Simulation {key}: shape {shape}, {np.shape(f[key][shape])}")
+                    
         #get normalization statistics
         if purpose_of_data == 'training': 
-            # get unified dataset to get the normalizations statistics
-            #combine different simulations into unique dictionary with shapes as keys
-            t5 = time.time()
-            self.dictionary_unified = self.make_dictionary_unified()
-            t6 = time.time()
-            
-            print(f'combine different simulations into unique dictionary with shapes as keys: {t6-t5} seconds')
-            for i in self.dictionary_unified:
-                print(f'Shape {i}: {np.shape(self.dictionary_unified[i])}')
-                
             t7 = time.time()
-            self.maxima_or_mean, self.minima_or_std = get_normalization_statistics(self.dictionary_unified, self.which_normalization) 
+            self.maxima_or_mean, self.minima_or_std = get_normalization_statistics_progressively(self.path_to_constructed_data, self.which_normalization) 
             t8 = time.time()
-            del self.dictionary_unified
-            print(f'get unified dataset to get the normalizations statistics: {t8-t7} seconds')
+            print(f'get normalizations statistics: {t8-t7} seconds')
+            
             for key in self.maxima_or_mean:
                 print(f'maxima_or_mean {key}, ',self.maxima_or_mean[key])
                 
@@ -95,45 +103,62 @@ class Astec_Dataset():
                 
         #normalize dictionary_per_simulation 
         t9 = time.time()
-        self.dictionary_per_simulation = self.normalize_dictionary_per_simulation(self.dictionary_per_simulation, self.maxima_or_mean, self.minima_or_std)
-        t10 = time.time()
-        print(f'normalize dictionary_per_simulation : {t10-t9} seconds')
+        with h5py.File(self.path_to_constructed_data, 'r+') as f:
+            keys = list(f.keys())
+            for key in keys:
+                t0 = time.time()
+                normalized_dict = self.normalize_dictionary_per_simulation(f[key], self.maxima_or_mean, self.minima_or_std)
+                for shape in normalized_dict:
+                    f[key][shape][()] = normalized_dict[shape].cpu().numpy()
+                t1 = time.time()
+                print(f"Time to normalize simulation {key}: {t1-t0}")
+                
+                for shape in f[key]:
+                    print(f"Simulation {key}. Shape {shape}: {np.shape(f[key][shape])})")
         
+        #reshape dictionary   
         t11 = time.time()
-        #squeeze first dimension
-        self.dictionary_per_simulation = self.squeeze_first_dimension(self.dictionary_per_simulation) 
-        #reshape dictionary_per_simulation 
-        self.dictionary_per_simulation = self.reshape_dataset(self.dictionary_per_simulation)
+        
+        with h5py.File(self.path_to_constructed_data, 'r+') as f:
+            keys = list(f.keys())
+            for count, key in enumerate(keys):
+                t0 = time.time()
+                reshaped_dict = self.reshape_dataset(f[key])
+                for shape in reshaped_dict:
+                    #delete because shape is different
+                    if shape in f[key]:
+                        del f[key][shape]
+                    f[key].create_dataset(shape, data=reshaped_dict[shape].cpu().numpy(), dtype='float32')
+                if self.testing:
+                    reshaped_dict['Time'] = self.time_of_simulations[count]
+                    op_acts = self.get_operator_actions(key)
+                    reshaped_dict['Operator_actions'] = op_acts
+                t1 = time.time()
+                
+                print(f"Time to reshape simulation {key}: {t1-t0}")
+                
+                for shape in f[key]:
+                    print(f"Simulation {key}. Shape {shape}: {np.shape(f[key][shape])})")
+                    
         t12 = time.time()
         print(f'reshape dictionary_per_simulation : {t12-t11} seconds')
         
         #check if there are nan values in the dictionary before saving
-        for simulation in self.dictionary_per_simulation:
-            for shape in self.dictionary_per_simulation[simulation]:
-                if tc.isnan(self.dictionary_per_simulation[simulation][shape]).any() or (~tc.isfinite(self.dictionary_per_simulation[simulation][shape])).any():
-                    raise TypeError(f"There are still NaN values in final data, check please in {shape}")
+        with h5py.File(self.path_to_constructed_data, 'r') as f:
+            simulations = list(f.keys())
+            for simulation in simulations:
+                for shape in f[simulation]:
+                    if np.isnan(f[simulation][shape]).any() or (~np.isfinite(f[simulation][shape])).any():
+                        raise TypeError(f"There are still NaN values in final data, check please in {shape}")
         #check shapes
         print('')
         print('CHECK SHAPES PLEASE!')  
         print('')
-        for simulation in self.dictionary_per_simulation:
-            for shape in self.dictionary_per_simulation[simulation]:
-                print(f"Simulation: {simulation}, shape {shape}, size: {self.dictionary_per_simulation[simulation][shape].size()}")
-        #save normalized dictionary 
-        if self.purpose_of_data == 'training':
-            with h5py.File(f'{self.where_to_save_data}/data_training{self.indeces_training_boundaries}.h5', 'w') as f:
-                dict_to_hdf5(self.dictionary_per_simulation, f)
-        elif self.purpose_of_data == 'validation':
-            with h5py.File(f'{self.where_to_save_data}/data_validation{self.indeces_validation_boundaries}.h5', 'w') as f:
-                dict_to_hdf5(self.dictionary_per_simulation, f)
-        # Clear GPU memory immediately after saving
-        del self.dictionary_per_simulation
-        gc.collect()
-        tc.cuda.empty_cache()
-    
-        print(f"GPU memory after build_{purpose_of_data}: {tc.cuda.memory_allocated()/1e9:.2f} GB")
-            
-        return 0
+        with h5py.File(self.path_to_constructed_data, 'r') as f:
+            simulations = list(f.keys())
+            for simulation in simulations:
+                for shape in f[simulation]:
+                    print(f"Simulation: {f[simulation][shape]}, shape {shape}, size: {np.shape(f[simulation][shape])}")
     
     def build_testing_dataset(self, indeces):
         
@@ -142,7 +167,7 @@ class Astec_Dataset():
             
         with open(f"{self.where_to_save_data}/minima_or_std{self.indeces_training_boundaries}.pkl", 'rb') as file:
             minima_or_std = pickle.load(file)
-        
+        print(indeces)
         dictionary_per_trajectory, self.time_of_simulations = extract_input_output_bc_variables(self.path_to_hdf5, indeces) #build dictionary of data divided by numbers of simulations
         
         dictionary_per_trajectory = self.make_channels_for_dictionary_per_simulation(dictionary_per_trajectory) #build dictionary of data divided by numbers of simulation and make channels per spatial domain
@@ -242,49 +267,33 @@ class Astec_Dataset():
                 arr = dictionary[trajectory][shape]
                 if np.isnan(arr).any():
                     arr[np.isnan(arr)] = 0.0
-        return dictionary
+        return dictionary    
     
-    def squeeze_first_dimension(self, dictionary_per_trajectory:dict):
-        for i in dictionary_per_trajectory:
-            for k in dictionary_per_trajectory[i]:
-                dictionary_per_trajectory[i][k] = dictionary_per_trajectory[i][k].squeeze(0)
-        return dictionary_per_trajectory      
-    
-    def normalize_dictionary_per_simulation(self, dictionary_per_trajectory:dict, maxima_or_mean : dict, minima_or_std: dict):
+    def normalize_dictionary_per_simulation(self, simulation:dict, maxima_or_mean : dict, minima_or_std: dict):
         normalized_dict = {}
-        for number_of_simulation in dictionary_per_trajectory:
-            for variable in dictionary_per_trajectory[number_of_simulation]:
-                t0 = time.time()
-                normalized_field = normalize_fields(dictionary_per_trajectory[number_of_simulation][variable], maxima_or_mean, minima_or_std, self.which_normalization, self.device)
-                t1 = time.time()
-                print(f"Time to normalize shape {variable} for simulation {number_of_simulation}: {t1-t0}")
-                normalized_dict.setdefault(number_of_simulation, {})[variable] = normalized_field
+        for variable in simulation:
+            normalized_field = normalize_fields(np.array(simulation[variable]), maxima_or_mean, minima_or_std, self.which_normalization, self.device)
+            normalized_dict[variable] = normalized_field
         return normalized_dict
         
-    def reshape_dataset(self, dictionary_per_trajectory):
+    def reshape_dataset(self, simulation):
         reshaped_dict = {}
-        trajectories = dictionary_per_trajectory.keys()
-        for count, trajectory in enumerate(trajectories):
-            variables = dictionary_per_trajectory[trajectory].keys()
-            for variable in variables:
-                original_data = dictionary_per_trajectory[trajectory][variable]
-                shape = original_data.size() 
-                if shape[-1] == 140:
-                    original_data = make_faces_array(original_data, self.device)
-                elif shape[-1] == 36:
-                    original_data = tc.reshape(original_data, (shape[0],shape[1],12,3)).cpu()
-                elif shape[-1] == 76:
-                    lower_plenum = original_data[:,:,0]
-                    mesh = original_data[:,:,1:].reshape(shape[0],shape[1],15,5)
-                    original_data = mesh
-                    reshaped_dict.setdefault(trajectory, {})['lower_plenum'] = lower_plenum
-                elif shape[-1] == 7 or shape[-1] == 13 and len(shape) !=1:
-                    original_data = tc.reshape(original_data, (shape[0],shape[1]))
-                reshaped_dict.setdefault(trajectory, {})[variable] = original_data.cpu()
-            if self.testing:
-                reshaped_dict.setdefault(trajectory, {})['Time'] = self.time_of_simulations[count]
-                op_acts = self.get_operator_actions(trajectory)
-                reshaped_dict.setdefault(trajectory, {})['Operator_actions'] = op_acts
+        variables = simulation.keys()
+        for variable in variables:
+            original_data = tc.tensor(np.array(simulation[variable]), device = self.device)
+            shape = original_data.size() 
+            if shape[-1] == 140:
+                original_data = make_faces_array(original_data, self.device)
+            elif shape[-1] == 36:
+                original_data = tc.reshape(original_data, (shape[0],shape[1],12,3)).cpu()
+            elif shape[-1] == 76:
+                lower_plenum = original_data[:,:,0]
+                mesh = original_data[:,:,1:].reshape(shape[0],shape[1],15,5)
+                original_data = mesh
+                reshaped_dict['lower_plenum'] = lower_plenum
+            elif shape[-1] == 7 or shape[-1] == 13 and len(shape) !=1:
+                original_data = tc.reshape(original_data, (shape[0],shape[1]))
+            reshaped_dict[variable] = original_data.cpu()
             
         return reshaped_dict
                 

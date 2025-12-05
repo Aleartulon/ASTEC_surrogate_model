@@ -274,23 +274,39 @@ def fill_dictionary_of_variables(output_dict:dict, name:str, f:h5py._hl.files.Fi
     output_dict[name]['vessel_to_primary']['dt']=DT #used by AE_NODE
     output_dict[name]['vessel_to_primary']['time']=f['dimensions/time_points'][0:index_stop] #used by ONLY_DECODER
 
-def extract_input_output_bc_variables(path, array_of_datasets:list):
+def extract_input_output_bc_variables(path, index_simulation:str):
     output_dict = {}
     time_of_simulations = []
-    for j in array_of_datasets:
-        name_simulation = str(j) + '.h5'
-        with h5py.File(path+'/'+str(name_simulation), 'r') as f:
-            vessel_rupture_time = f['other/global/vessel_rupture_time'][-1]
-            if not np.isnan(vessel_rupture_time):
-                index_stop = np.where(f['dimensions/time_points'][:] >= vessel_rupture_time)[0][0]
-                index_stop = len(f['dimensions/time_points'][0:index_stop])
-            else:
-                index_stop = len(f['dimensions/time_points'][:])
-            time_of_simulations.append(f['dimensions/time_points'][:][0:index_stop])   
-            output_dict[j] = build_dictionary_of_variables()
-            fill_dictionary_of_variables(output_dict, j, f, index_stop)
+    name_simulation = str(index_simulation) + '.h5'
+    with h5py.File(path+'/'+str(name_simulation), 'r') as f:
+        vessel_rupture_time = f['other/global/vessel_rupture_time'][-1]
+        if not np.isnan(vessel_rupture_time):
+            index_stop = np.where(f['dimensions/time_points'][:] >= vessel_rupture_time)[0][0]
+            index_stop = len(f['dimensions/time_points'][0:index_stop])
+        else:
+            index_stop = len(f['dimensions/time_points'][:])
+        time_of_simulations.append(f['dimensions/time_points'][:][0:index_stop])   
+        output_dict[index_simulation] = build_dictionary_of_variables()
+        fill_dictionary_of_variables(output_dict, index_simulation, f, index_stop)
 
     return output_dict, time_of_simulations
+
+def add_dict_to_hdf5(h5_path, key, dictionary, path=''):
+    """Add an entire dictionary to an existing HDF5 file under a specific key."""
+    with h5py.File(h5_path, 'a') as h5file:
+        key = str(key)
+        full_path = f"{path}/{key}" if path else key
+        
+        # Check if key already exists and remove it
+        if full_path in h5file:
+            del h5file[full_path]
+        
+        # Create a group for this key
+        if full_path not in h5file:
+            h5file.create_group(full_path)
+        
+        # Use your existing dict_to_hdf5 function to populate it
+        dict_to_hdf5(dictionary, h5file, full_path)
 
 def dict_to_hdf5(dictionary, h5file, path=''):
     for key, value in dictionary.items():
@@ -306,38 +322,35 @@ def dict_to_hdf5(dictionary, h5file, path=''):
             
             h5file[f"{path}/{key}"] = value
             
-def get_normalization_statistics(dictionary_unified:dict, type_of_normalization:str):
+def get_normalization_statistics_progressively(path_hdf5:str, type_of_normalization:str):
+    exist = False
+    total_time_steps = 0 
     maxima_or_mean = {}
     minima_or_std = {}
-    shapes = list(dictionary_unified.keys())
-    if type_of_normalization == 'min_max':
-        for shape in shapes:
-            size = np.shape(dictionary_unified[shape])
-            minimum = np.min(dictionary_unified[shape].astype(np.float64),axis = (0,) + tuple(np.arange(2,len(size))))
-            maximum = np.max(dictionary_unified[shape].astype(np.float64),axis = (0,) + tuple(np.arange(2,len(size))))
-            minima_or_std[shape] = minimum
-            maxima_or_mean[shape] = maximum
+    with h5py.File(path_hdf5, 'r') as f:
+        keys = list(f.keys())
+        for key in keys:
+            simulation_maxima_or_mean, simulation_minima_or_std, lenght_simulation = get_normalization_statistics(f[key],type_of_normalization)
+            total_time_steps += lenght_simulation
+            if not exist:
+                if type_of_normalization == 'min_max':
+                    maxima_or_mean = simulation_maxima_or_mean
+                    minima_or_std = simulation_minima_or_std
+                elif type_of_normalization == 'mean_std':
+                    for shape in simulation_maxima_or_mean:
+                        maxima_or_mean[shape] = simulation_maxima_or_mean[shape] * lenght_simulation
+                        minima_or_std[shape] = (simulation_minima_or_std[shape]**2 + simulation_maxima_or_mean[shape]**2) * lenght_simulation
+                exist = True
+            else:
+                update_normalization_statistics(maxima_or_mean, minima_or_std, simulation_maxima_or_mean, simulation_minima_or_std,type_of_normalization , lenght_simulation)
+    
+    if type_of_normalization == 'mean_std':
         
-        maxima_or_mean['boundary_conditions_and_time'][-2] = 1.0 #no normalization of dt
-        minima_or_std['boundary_conditions_and_time'][-2] = 0.0
-                    
-    elif type_of_normalization == 'mean_std':
-        for shape in shapes:
-            size = np.shape(dictionary_unified[shape])
-            mean = np.mean(dictionary_unified[shape].astype(np.float64), axis=(0,) + tuple(np.arange(2, len(size))))
-            std = np.std(dictionary_unified[shape].astype(np.float64), axis=(0,) + tuple(np.arange(2, len(size))))
-            minima_or_std[shape] = std
-            maxima_or_mean[shape] = mean
+        for shape in maxima_or_mean:
+            maxima_or_mean[shape] = maxima_or_mean[shape] / total_time_steps
+            minima_or_std[shape] = (minima_or_std[shape] / total_time_steps - maxima_or_mean[shape]**2)**0.5
             
-        maxima_or_mean['boundary_conditions_and_time'][-2] = 0.0 #no normalization of dt
-        minima_or_std['boundary_conditions_and_time'][-2] = 1.0
-    
-
-    else:
-        raise TypeError("Type of normalization not known. It can either be min_max or mean_std")  
-    
     #check for constant values
-    
     for shape in maxima_or_mean:
         for count, index in enumerate(maxima_or_mean[shape]):
             if type_of_normalization == 'mean_std':
@@ -351,7 +364,49 @@ def get_normalization_statistics(dictionary_unified:dict, type_of_normalization:
                         maxima_or_mean[shape][count] = 1.0 
                     minima_or_std[shape][count] = 0.0
                     
-    return maxima_or_mean, minima_or_std
+    return maxima_or_mean, minima_or_std      
+def update_normalization_statistics(maxima_or_mean:dict, minima_or_std:dict, simulation_maxima_or_mean:dict, simulation_minima_or_std:dict ,type_of_normalization:str, lenght_simulation:int ):
+    if type_of_normalization == 'min_max':
+        for shape in maxima_or_mean:
+            maxima_or_mean[shape] = np.maximum(maxima_or_mean[shape],simulation_maxima_or_mean[shape])
+            minima_or_std[shape] = np.maximum(minima_or_std[shape],simulation_minima_or_std[shape])
+            
+    elif type_of_normalization == 'mean_std':
+        for shape in maxima_or_mean:
+            maxima_or_mean[shape] += simulation_maxima_or_mean[shape] * lenght_simulation
+            minima_or_std[shape] += (simulation_minima_or_std[shape]**2 + simulation_maxima_or_mean[shape]**2) * lenght_simulation
+    
+def get_normalization_statistics(simulation:dict, type_of_normalization:str):
+    maxima_or_mean = {}
+    minima_or_std = {}
+    shapes = list(simulation.keys())
+    if type_of_normalization == 'min_max':
+        for shape in shapes:
+            size = np.shape(simulation[shape])
+            minimum = np.min(simulation[shape].astype(np.float64),axis = (0,) + tuple(np.arange(2,len(size))))
+            maximum = np.max(simulation[shape].astype(np.float64),axis = (0,) + tuple(np.arange(2,len(size))))
+            minima_or_std[shape] = minimum
+            maxima_or_mean[shape] = maximum
+        
+        maxima_or_mean['boundary_conditions_and_time'][-2] = 1.0 #no normalization of dt
+        minima_or_std['boundary_conditions_and_time'][-2] = 0.0
+                    
+    elif type_of_normalization == 'mean_std':
+        for shape in shapes:
+            size = np.shape(simulation[shape])
+            mean = np.mean(simulation[shape].astype(np.float64), axis=(0,) + tuple(np.arange(2, len(size))))
+            std = np.std(simulation[shape].astype(np.float64), axis=(0,) + tuple(np.arange(2, len(size))))
+            minima_or_std[shape] = std
+            maxima_or_mean[shape] = mean
+            
+        maxima_or_mean['boundary_conditions_and_time'][-2] = 0.0 #no normalization of dt
+        minima_or_std['boundary_conditions_and_time'][-2] = 1.0
+    
+
+    else:
+        raise TypeError("Type of normalization not known. It can either be min_max or mean_std")  
+                    
+    return maxima_or_mean, minima_or_std, np.shape(simulation[shapes[0]])[1]
 
 def normalize_fields(field: np.array, maximum_or_mean: dict, minimum_or_std: dict, normalization: str, device):
     field = tc.tensor(field)
@@ -407,5 +462,11 @@ def normalize_fields(field: np.array, maximum_or_mean: dict, minimum_or_std: dic
         raise ValueError(f"Missing value") 
         
     return field
+
+def squeeze_first_dimension(dictionary_per_trajectory:dict):
+    for i in dictionary_per_trajectory:
+        for k in dictionary_per_trajectory[i]:
+            dictionary_per_trajectory[i][k] = dictionary_per_trajectory[i][k].squeeze(0)
+    return dictionary_per_trajectory  
 
 
