@@ -1,7 +1,7 @@
 path_to_hdf5 : '../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/original_hdf5/'
 where_to_save_data: '../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/made_datasets'
-indeces_training_boundaries : [603, 703, 774, 906, 957, 957]
-indeces_validation_boundaries : [906, 956]
+indeces_training_boundaries : [603, 604, 607, 608]
+indeces_validation_boundaries : [906, 907]
 indeces_testing_boundaries : [7, 8]
 device : 'cuda'
 save_dictionary_per_time_lengths : false
