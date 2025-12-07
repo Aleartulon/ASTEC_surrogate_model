@@ -166,7 +166,6 @@ class Astec_Dataset():
         print('')
         with h5py.File(self.path_to_constructed_data, 'r') as f:
             simulations = list(f.keys())
-            print()
             for simulation in simulations:
                 for shape in f[simulation]:
                     if shape != 'Time' and shape != 'Operator_actions':
