@@ -1,16 +1,16 @@
 physics_model : '../../../../scratch/ROM_datasets_ale/ASTEC/saved_logs/' # this is the Path to a directory for the training on a given dataset
-description : 'dataset_1_2_3_4_6_latent/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
+description : 'dataset_755_957_603_680_6_latent/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
 data_path : '../../../../scratch/ROM_datasets_ale/ASTEC/made_datasets/' #path of training and validation data
 where_to_save_data : '../../../../scratch/ROM_datasets_ale/ASTEC/' #if dynamic_dataset_generation_during_training this is where data is saved, else it is where data for training is found
 model: 'AE_NODE'
-indeces_training_boundaries : [1,2]
-indeces_validation_boundaries : [1,2]
+indeces_training_boundaries : [755,957,603,680]
+indeces_validation_boundaries : [681,730]
 reinitialize_model_at_each_dataset_reshape: true
 epochs: 10000 #maximum number of epochs
 learning_rate: 0.002 #initial learning rate
 gamma_lr: 0.999 # gamma of  tc.optim.lr_scheduler.ExponentialLR()
 early_stopping: 500
-all_on_gpu: true
+all_on_gpu: false
 dynamic_dataset_generation_during_training : true
 time_windows: [
     10, 20, 30, 40, 50, 60, 70, 80, 90, 100,
@@ -36,26 +36,26 @@ time_windows: [
 ]
 
 batch_sizes: [
-    64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
-    64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
-    64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
-    64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
-    64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
-    64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
-    64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
-    64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
-    64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
-    64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
-    64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
-    64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
-    64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
-    64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
-    64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
-    64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
-    64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
-    64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
-    64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
-    64, 64, 64, 64, 64, 64, 64, 64, 64, 64
+    2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048,
+    2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048,
+    2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048,
+    2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048,
+    2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048,
+    2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048,
+    2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048,
+    2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048,
+    2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048,
+    2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048,
+    2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048,
+    2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048,
+    2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048,
+    2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048,
+    2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048,
+    2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048,
+    2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048,
+    2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048,
+    2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048,
+    2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048, 2048
 ]
 
 waiting_epochs_before_new_dataset_creation: [
@@ -82,5 +82,5 @@ waiting_epochs_before_new_dataset_creation: [
 ]
 number_of_workers: 8
 checkpoint: false  # if true uses existing checkpoint
-device : 'cuda:2' #device where to train
+device : 'cuda:1' #device where to train
 which_normalization: 'mean_std' # min_max or mean_std

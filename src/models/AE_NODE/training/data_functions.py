@@ -28,6 +28,7 @@ def build_dataset(batch_size:int, time_window: int, data_training_path: str, dat
     tc.cuda.empty_cache()
     # build dataset and dataloader
     dataset_training = ASTEC_Dataset(training_path, all_on_gpu, device)
+    dataset_validation = ASTEC_Dataset(validation_path, all_on_gpu, device)
     length_dataset = dataset_training.size
     if batch_size > length_dataset:
         batch_size = max(1, length_dataset // 10)
@@ -36,8 +37,6 @@ def build_dataset(batch_size:int, time_window: int, data_training_path: str, dat
     print('Batch size: ', batch_size)
     print('-------------------------------------------')
     training_loader = DataLoader(dataset_training, batch_size = batch_size, num_workers = number_of_workers, shuffle=True,drop_last=False,pin_memory=pin_memory)
-    
-    dataset_validation = ASTEC_Dataset(validation_path, all_on_gpu, device)
     validation_loader = DataLoader(dataset_validation, batch_size = batch_size, num_workers = number_of_workers, shuffle=True,drop_last=False,pin_memory=pin_memory)
     
     return training_loader, validation_loader
