@@ -11,6 +11,7 @@ class Training_Losses():
             for count, i in enumerate(fields):
                 fields[count] = i.to(self.device)
             boundary_conditions = boundary_conditions.to(self.device)
+            length_of_padding = length_of_padding.to(self.device)
             
             dt = dt.to(self.device)
         
