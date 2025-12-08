@@ -99,7 +99,7 @@ class Astec_Dataset():
         print('subsampling_indeces_validation',  self.subsampling_indeces_validation)
         print('subsampling_indeces_testing',  self.subsampling_indeces_testing)
         
-    def build_training_dataset(self, indeces:list, purpose_of_data:str, subsampling_indeces:list):
+    def build_dataset(self, indeces:list, purpose_of_data:str, subsampling_indeces:list):
         
         if purpose_of_data == 'training':
             self.path_to_constructed_data = f"{self.where_to_save_data}/data_training{self.indeces_training_boundaries}.h5"
@@ -199,7 +199,7 @@ class Astec_Dataset():
                         del f[key][shape]
                     f[key].create_dataset(shape, data=reshaped_dict[shape].cpu().numpy(), dtype='float32')
                 if self.testing:
-                    reshaped_dict['Time'] = extract_time_of_simulation(self.path_to_hdf5, key)
+                    reshaped_dict['Time'] = extract_time_of_simulation(self.path_to_hdf5, key,subsampling_indeces[count] )
                     op_acts = self.get_operator_actions(key)
                     reshaped_dict['Operator_actions'] = op_acts
                     f[key].create_dataset('Time', data=reshaped_dict['Time'], dtype='float32')

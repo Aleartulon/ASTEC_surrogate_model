@@ -55,17 +55,17 @@ def main():
         if testing:
             # Build test data
             print('--------------------------------Build testing dataset--------------------------------')
-            astec_dataset.build_training_dataset(astec_dataset.indeces_testing, 'testing', astec_dataset.subsampling_indeces_testing)
+            astec_dataset.build_dataset(astec_dataset.indeces_testing, 'testing', astec_dataset.subsampling_indeces_testing)
             del astec_dataset 
             tc.cuda.empty_cache()
         else:
             # Build training data
             print('--------------------------------Build training dataset--------------------------------')
-            astec_dataset.build_training_dataset(astec_dataset.indeces_training, 'training', astec_dataset.subsampling_indeces_training)
+            astec_dataset.build_dataset(astec_dataset.indeces_training, 'training', astec_dataset.subsampling_indeces_training)
             
             # Build validation data
             print('--------------------------------Build validation dataset--------------------------------')
-            astec_dataset.build_training_dataset(astec_dataset.indeces_validation, 'validation', astec_dataset.subsampling_indeces_validation)
+            astec_dataset.build_dataset(astec_dataset.indeces_validation, 'validation', astec_dataset.subsampling_indeces_validation)
 
 if __name__ == '__main__':
     main()
