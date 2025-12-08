@@ -1,9 +1,15 @@
 path_to_hdf5 : '../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/original_hdf5/'
-where_to_save_data: '../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/made_datasets'
-indeces_training_boundaries : [755, 957,603, 680]
-indeces_validation_boundaries : [681, 730]
-indeces_testing_boundaries : [733, 754]
+where_to_save_data: '../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/made_datasets/only_SBO/'
+indeces_training_boundaries : [774, 957,603, 680]
+indeces_validation_boundaries : [681, 724]
+indeces_testing_boundaries : [725, 754]
+percentages_sampling_training : [0.1, 0.2, 0.7] # percentage of training trajectories with a given subsampling
+percentages_sampling_validation : [0.1, 0.2, 0.7] # percentage of validation trajectories with a given subsampling
+percentages_sampling_testing : [0.1, 0.9] # percentage of testing trajectories with a given subsampling
+subsampling_training : [1 , 2, 3] # subsamplings of trajectories in training dataset
+subsampling_validation : [1 , 2, 3] # subsamplings of trajectories in validation dataset
+subsampling_testing : [1 , 10] # subsamplings of trajectories in testing dataset
 device : 'cuda'
 save_dictionary_per_time_lengths : false
 which_normalization : 'mean_std' #min_max or mean_std
-testing: true
+testing: false

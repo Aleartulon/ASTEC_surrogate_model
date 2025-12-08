@@ -4,6 +4,7 @@ import numpy as np
 import torch as tc
 import pickle
 import time
+import random
 import gc
 
 class Astec_Dataset():
@@ -20,6 +21,29 @@ class Astec_Dataset():
         self.indeces_validation_boundaries = '_'
         self.indeces_testing_boundaries = '_'
         
+        # construct indeces of trainin validation and test 
+        x = config_dataset['indeces_training_boundaries']
+        if len(x) > 1:
+            self.indeces_training = [np.arange(x[2*i],x[2*i+1]+1,1) for i in range(int(len(x)/2))]
+            self.indeces_training = np.concatenate(self.indeces_training)
+        else:
+            self.indeces_training = config_dataset['indeces_training_boundaries']
+            
+        x = config_dataset['indeces_validation_boundaries']
+        if len(x) > 1:
+            self.indeces_validation = [np.arange(x[2*i],x[2*i+1]+1,1) for i in range(int(len(x)/2))]
+            self.indeces_validation = np.concatenate(self.indeces_validation)
+        else:
+            self.indeces_validation = config_dataset['indeces_validation_boundaries']
+        
+        x = config_dataset['indeces_testing_boundaries']
+        
+        if len(x) > 1:
+            self.indeces_testing = [np.arange(x[2*i],x[2*i+1]+1,1) for i in range(int(len(x)/2))]
+            self.indeces_testing = np.concatenate(self.indeces_testing)
+        else:
+            self.indeces_testing = config_dataset['indeces_testing_boundaries']
+        
         for i in config_dataset['indeces_training_boundaries']:
             self.indeces_training_boundaries += str(i) + '_'
         self.indeces_training_boundaries = self.indeces_training_boundaries[:-1]
@@ -31,8 +55,51 @@ class Astec_Dataset():
         for i in config_dataset['indeces_testing_boundaries']:
             self.indeces_testing_boundaries += str(i) + '_'
         self.indeces_testing_boundaries = self.indeces_testing_boundaries[:-1]
-
-    def build_training_dataset(self, indeces, purpose_of_data):
+        
+        #get number of trajectories per dataset
+        self.len_training = len(self.indeces_training)
+        self.len_validation = len(self.indeces_validation)
+        self.len_testing = len(self.indeces_testing)
+        
+        self.percentages_sampling_training = config_dataset['percentages_sampling_training']
+        self.percentages_sampling_validation = config_dataset['percentages_sampling_validation']
+        self.percentages_sampling_testing = config_dataset['percentages_sampling_testing']
+        self.subsampling_training = config_dataset['subsampling_training']
+        self.subsampling_validation = config_dataset['subsampling_validation']
+        self.subsampling_testing = config_dataset['subsampling_testing']
+        
+        if len(self.percentages_sampling_training) != len(self.subsampling_training) or len(self.percentages_sampling_validation) != len(self.subsampling_validation) or len(self.percentages_sampling_testing) != len(self.subsampling_testing):
+            raise TypeError(f"Mismatch in sizes of percentages and subsampling arrays")
+        if np.sum(self.percentages_sampling_training) != 1.0 or np.sum(self.percentages_sampling_validation) != 1.0 or np.sum(self.percentages_sampling_testing) != 1.0:
+            raise TypeError(f"Sum of percentages is not 1.0")
+        
+        self.subsampling_indeces_training = build_total_sampling_percentages(self.percentages_sampling_training, self.subsampling_training, self.len_training)
+        self.subsampling_indeces_validation = build_total_sampling_percentages(self.percentages_sampling_validation, self.subsampling_validation, self.len_validation)
+        self.subsampling_indeces_testing = build_total_sampling_percentages(self.percentages_sampling_testing, self.subsampling_testing, self.len_testing)
+        
+        diff_length_training = self.len_training - len(self.subsampling_indeces_training)
+        diff_length_validation = self.len_validation - len(self.subsampling_indeces_validation) 
+        diff_length_testing = self.len_testing - len(self.subsampling_indeces_testing) 
+        
+        self.subsampling_indeces_training = fix_total_percentages(self.subsampling_indeces_training, diff_length_training)
+        self.subsampling_indeces_validation = fix_total_percentages(self.subsampling_indeces_validation, diff_length_validation)
+        self.subsampling_indeces_testing = fix_total_percentages(self.subsampling_indeces_testing, diff_length_testing)
+        
+        diff_length_training = self.len_training - len(self.subsampling_indeces_training) 
+        diff_length_validation = self.len_validation - len(self.subsampling_indeces_validation) 
+        diff_length_testing = self.len_testing - len(self.subsampling_indeces_testing) 
+        
+        self.subsampling_indeces_training = random.sample(self.subsampling_indeces_training, len(self.subsampling_indeces_training))
+        self.subsampling_indeces_validation = random.sample(self.subsampling_indeces_validation, len(self.subsampling_indeces_validation))
+        self.subsampling_indeces_testing = random.sample(self.subsampling_indeces_testing, len(self.subsampling_indeces_testing))
+        
+        if diff_length_training != 0.0 or diff_length_validation != 0.0 or diff_length_testing != 0.0:
+            raise TypeError(f"Mismatch in size between total number of simulations and number of indeces of percentages")
+        print('subsampling_indeces_training',  self.subsampling_indeces_training)
+        print('subsampling_indeces_validation',  self.subsampling_indeces_validation)
+        print('subsampling_indeces_testing',  self.subsampling_indeces_testing)
+        
+    def build_training_dataset(self, indeces:list, purpose_of_data:str, subsampling_indeces:list):
         
         if purpose_of_data == 'training':
             self.path_to_constructed_data = f"{self.where_to_save_data}/data_training{self.indeces_training_boundaries}.h5"
@@ -47,10 +114,10 @@ class Astec_Dataset():
         with h5py.File(self.path_to_constructed_data, 'w') as f:
             dict_to_hdf5(self.dictionary_per_simulation, f)
         
-        for index_simulation in indeces:
+        for count, index_simulation in enumerate(indeces):
             index_simulation = str(index_simulation)
             t1 = time.time()
-            single_simulation, _ = extract_input_output_bc_variables(self.path_to_hdf5, index_simulation) #build dictionary of data divided by number of simulation
+            single_simulation, _ = extract_input_output_bc_variables(self.path_to_hdf5, index_simulation, subsampling_indeces[count]) #build dictionary of data divided by number of simulation
             t2 = time.time()
             print(f'Simulation: {index_simulation}. Build dictionary of data divided by number of simulation: {t2-t1} seconds')
             single_simulation = self.make_channels_for_dictionary_per_simulation(single_simulation) #build dictionary of data divided by simulations and make channels per spatial domain
