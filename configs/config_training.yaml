@@ -55,8 +55,7 @@ batch_sizes: [
     256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
     256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
     256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
-    256, 256, 256, 256, 256, 256, 256, 256, 256, 256
-]
+    256, 256, 256, 256, 256, 256, 256, 256, 256, 256]
 
 waiting_epochs_before_new_dataset_creation: [
     50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
@@ -82,5 +81,5 @@ waiting_epochs_before_new_dataset_creation: [
 ]
 number_of_workers: 8
 checkpoint: false  # if true uses existing checkpoint
-device : 'cuda:1' #device where to train
+device : 'cuda' #device where to train
 which_normalization: 'mean_std' # min_max or mean_std

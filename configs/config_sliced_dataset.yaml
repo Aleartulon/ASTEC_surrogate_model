@@ -1,5 +1,5 @@
-path_to_dataset : '../../../../../scratch/ROM_datasets_ale/ASTEC/made_datasets/'
-where_to_save_data: '../../../../../scratch/ROM_datasets_ale/ASTEC/'
+path_to_dataset : '../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/made_datasets/'
+where_to_save_data: '../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/'
 device : 'cuda:1'
 indeces_training_boundaries : [10]
 indeces_validation_boundaries : [10]

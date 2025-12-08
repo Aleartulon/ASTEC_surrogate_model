@@ -3,6 +3,7 @@ import h5py
 import numpy as np
 import json
 import torch as tc
+import math
     
 def make_faces_array(x, device:tc.device):
     # Pre-compute index matrix (could even be done outside function as a constant)
@@ -97,119 +98,119 @@ def build_dictionary_of_variables():
                                                   }
     return dictionary_of_variables
 
-def fill_dictionary_of_variables(output_dict:dict, name:str, f:h5py._hl.files.File, index_stop:int):
+def fill_dictionary_of_variables(output_dict:dict, name:str, f:h5py._hl.files.File, index_stop:int, subsampling_index:int):
     # === VESSEL GENERAL DATA ===
     # Existing variables
-    output_dict[name]['dictionary_of_input_variables_1']['m_cum_H2'] = f['vessel/general/m_cum_H2'][0:index_stop]
-    output_dict[name]['dictionary_of_input_variables_1']['m_tot_cor'] = f['vessel/general/m_tot_cor'][0:index_stop]
-    #output_dict[name]['dictionary_of_input_variables_1']['m_tot_deb'].append(np.array(f['vessel/general/m_tot_deb'][:])[0:index_stop]) #it is always nan for some reason
-    #output_dict[index_stop]['dictionary_of_input_variables_1']['T_CAVCOR'].append(np.array(f['other/global/sensor_values'][:, 286])[0:index_stop]) #this changes only after vessel rupture
+    output_dict[name]['dictionary_of_input_variables_1']['m_cum_H2'] = f['vessel/general/m_cum_H2'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['m_tot_cor'] = f['vessel/general/m_tot_cor'][0:index_stop][::subsampling_index]
+    #output_dict[name]['dictionary_of_input_variables_1']['m_tot_deb'].append(np.array(f['vessel/general/m_tot_deb'][:])[0:index_stop][::subsampling_index]) #it is always nan for some reason
+    #output_dict[index_stop]['dictionary_of_input_variables_1']['T_CAVCOR'].append(np.array(f['other/global/sensor_values'][:, 286])[0:index_stop][::subsampling_index]) #this changes only after vessel rupture
     
     
     # Additional general vessel data
-    output_dict[name]['dictionary_of_input_variables_1']['FP_A_heat'] = f['vessel/general/FP_A_heat'][0:index_stop]  # Total fission product activity (Bq)
-    output_dict[name]['dictionary_of_input_variables_1']['sat_core_mesh']=f['vessel/general/sat_core_mesh'][0:index_stop]  # Maximum saturation in core meshes
+    output_dict[name]['dictionary_of_input_variables_1']['FP_A_heat'] = f['vessel/general/FP_A_heat'][0:index_stop][::subsampling_index] # Total fission product activity (Bq)
+    output_dict[name]['dictionary_of_input_variables_1']['sat_core_mesh']=f['vessel/general/sat_core_mesh'][0:index_stop][::subsampling_index] # Maximum saturation in core meshes
     
     # Fission products
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Ac'] = f['connection/fission/Q_fp_Ac'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Ag'] = f['connection/fission/Q_fp_Ag'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Am'] = f['connection/fission/Q_fp_Am'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_As'] = f['connection/fission/Q_fp_As'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Ba'] = f['connection/fission/Q_fp_Ba'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Br'] = f['connection/fission/Q_fp_Br'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Cd'] = f['connection/fission/Q_fp_Cd'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Ce'] = f['connection/fission/Q_fp_Ce'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Cm'] = f['connection/fission/Q_fp_Cm'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Cs'] = f['connection/fission/Q_fp_Cs'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Cu'] = f['connection/fission/Q_fp_Cu'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Dy'] = f['connection/fission/Q_fp_Dy'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Ac'] = f['connection/fission/Q_fp_Ac'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Ag'] = f['connection/fission/Q_fp_Ag'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Am'] = f['connection/fission/Q_fp_Am'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_As'] = f['connection/fission/Q_fp_As'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Ba'] = f['connection/fission/Q_fp_Ba'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Br'] = f['connection/fission/Q_fp_Br'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Cd'] = f['connection/fission/Q_fp_Cd'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Ce'] = f['connection/fission/Q_fp_Ce'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Cm'] = f['connection/fission/Q_fp_Cm'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Cs'] = f['connection/fission/Q_fp_Cs'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Cu'] = f['connection/fission/Q_fp_Cu'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Dy'] = f['connection/fission/Q_fp_Dy'][0:index_stop][::subsampling_index]
     
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Er'] = f['connection/fission/Q_fp_Er'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Eu'] = f['connection/fission/Q_fp_Eu'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Ga'] = f['connection/fission/Q_fp_Ga'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Gd'] = f['connection/fission/Q_fp_Gd'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Ge'] = f['connection/fission/Q_fp_Ge'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Ho'] = f['connection/fission/Q_fp_Ho'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_I'] = f['connection/fission/Q_fp_I'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_In'] = f['connection/fission/Q_fp_In'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Kr'] = f['connection/fission/Q_fp_Kr'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_La'] = f['connection/fission/Q_fp_La'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Er'] = f['connection/fission/Q_fp_Er'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Eu'] = f['connection/fission/Q_fp_Eu'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Ga'] = f['connection/fission/Q_fp_Ga'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Gd'] = f['connection/fission/Q_fp_Gd'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Ge'] = f['connection/fission/Q_fp_Ge'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Ho'] = f['connection/fission/Q_fp_Ho'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_I'] = f['connection/fission/Q_fp_I'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_In'] = f['connection/fission/Q_fp_In'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Kr'] = f['connection/fission/Q_fp_Kr'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_La'] = f['connection/fission/Q_fp_La'][0:index_stop][::subsampling_index]
     
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Mo'] = f['connection/fission/Q_fp_Mo'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Nb'] = f['connection/fission/Q_fp_Nb'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Nd'] = f['connection/fission/Q_fp_Nd'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Np'] = f['connection/fission/Q_fp_Np'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Pa'] = f['connection/fission/Q_fp_Pa'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Pd'] = f['connection/fission/Q_fp_Pd'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Pm'] = f['connection/fission/Q_fp_Pm'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Pr'] = f['connection/fission/Q_fp_Pr'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Pu'] = f['connection/fission/Q_fp_Pu'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Ra'] = f['connection/fission/Q_fp_Ra'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Rb'] = f['connection/fission/Q_fp_Rb'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Mo'] = f['connection/fission/Q_fp_Mo'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Nb'] = f['connection/fission/Q_fp_Nb'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Nd'] = f['connection/fission/Q_fp_Nd'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Np'] = f['connection/fission/Q_fp_Np'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Pa'] = f['connection/fission/Q_fp_Pa'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Pd'] = f['connection/fission/Q_fp_Pd'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Pm'] = f['connection/fission/Q_fp_Pm'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Pr'] = f['connection/fission/Q_fp_Pr'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Pu'] = f['connection/fission/Q_fp_Pu'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Ra'] = f['connection/fission/Q_fp_Ra'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Rb'] = f['connection/fission/Q_fp_Rb'][0:index_stop][::subsampling_index]
     
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Re'] = f['connection/fission/Q_fp_Re'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Rh'] = f['connection/fission/Q_fp_Rh'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Ru'] = f['connection/fission/Q_fp_Ru'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Sb'] = f['connection/fission/Q_fp_Sb'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Se'] = f['connection/fission/Q_fp_Se'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Sm'] = f['connection/fission/Q_fp_Sm'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Sn'] = f['connection/fission/Q_fp_Sn'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Sr'] = f['connection/fission/Q_fp_Sr'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Tb'] = f['connection/fission/Q_fp_Tb'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Tc'] = f['connection/fission/Q_fp_Tc'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Re'] = f['connection/fission/Q_fp_Re'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Rh'] = f['connection/fission/Q_fp_Rh'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Ru'] = f['connection/fission/Q_fp_Ru'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Sb'] = f['connection/fission/Q_fp_Sb'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Se'] = f['connection/fission/Q_fp_Se'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Sm'] = f['connection/fission/Q_fp_Sm'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Sn'] = f['connection/fission/Q_fp_Sn'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Sr'] = f['connection/fission/Q_fp_Sr'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Tb'] = f['connection/fission/Q_fp_Tb'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Tc'] = f['connection/fission/Q_fp_Tc'][0:index_stop][::subsampling_index]
     
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Te'] = f['connection/fission/Q_fp_Te'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Th'] = f['connection/fission/Q_fp_Th'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Tl'] = f['connection/fission/Q_fp_Tl'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Tm'] = f['connection/fission/Q_fp_Tm'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_U'] = f['connection/fission/Q_fp_U'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Xe'] = f['connection/fission/Q_fp_Xe'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Y'] = f['connection/fission/Q_fp_Y'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Yb'] = f['connection/fission/Q_fp_Yb'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Zn'] = f['connection/fission/Q_fp_Zn'][0:index_stop] 
-    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Zr'] = f['connection/fission/Q_fp_Zr'][0:index_stop] 
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Te'] = f['connection/fission/Q_fp_Te'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Th'] = f['connection/fission/Q_fp_Th'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Tl'] = f['connection/fission/Q_fp_Tl'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Tm'] = f['connection/fission/Q_fp_Tm'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_U'] = f['connection/fission/Q_fp_U'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Xe'] = f['connection/fission/Q_fp_Xe'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Y'] = f['connection/fission/Q_fp_Y'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Yb'] = f['connection/fission/Q_fp_Yb'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Zn'] = f['connection/fission/Q_fp_Zn'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Zr'] = f['connection/fission/Q_fp_Zr'][0:index_stop][::subsampling_index]
     
     # Component temperatures and states (shape: 49095 x 36)
-    output_dict[name]['dictionary_of_input_variables_36']['T_comp_fuel']=f['vessel/general/T_comp_fuel'][0:index_stop]
-    output_dict[name]['dictionary_of_input_variables_36']['T_comp_clad']=f['vessel/general/T_comp_clad'][0:index_stop]
-    output_dict[name]['dictionary_of_input_variables_36']['state_fuel']=f['vessel/general/state_fuel'][0:index_stop]
-    output_dict[name]['dictionary_of_input_variables_36']['state_clad']=f['vessel/general/state_clad'][0:index_stop]
+    output_dict[name]['dictionary_of_input_variables_36']['T_comp_fuel']=f['vessel/general/T_comp_fuel'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_36']['T_comp_clad']=f['vessel/general/T_comp_clad'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_36']['state_fuel']=f['vessel/general/state_fuel'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_36']['state_clad']=f['vessel/general/state_clad'][0:index_stop][::subsampling_index]
     # Debris/magma mass distribution (shape: 49095 x 76)
-    output_dict[name]['dictionary_of_input_variables_76']['m_magma_vessel']=f['vessel/general/m_magma_vessel'][0:index_stop]
-    output_dict[name]['dictionary_of_input_variables_76']['m_debris_0_vessel']=f['vessel/general/m_debris_0_vessel'][0:index_stop]
-    output_dict[name]['dictionary_of_input_variables_76']['m_debris_1_vessel']=f['vessel/general/m_debris_1_vessel'][0:index_stop,:]
+    output_dict[name]['dictionary_of_input_variables_76']['m_magma_vessel']=f['vessel/general/m_magma_vessel'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_76']['m_debris_0_vessel']=f['vessel/general/m_debris_0_vessel'][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_76']['m_debris_1_vessel']=f['vessel/general/m_debris_1_vessel'][:index_stop, :][::subsampling_index, :]
     
     # === VESSEL MESH DATA (shape: 49095 x 76) ===
     # Thermal properties
-    output_dict[name]['dictionary_of_input_variables_76']['P_vessel']=f['vessel/mesh/P_vessel'][0:index_stop,:]
-    output_dict[name]['dictionary_of_input_variables_76']['T_gas_vessel']=f['vessel/mesh/T_gas_vessel'][0:index_stop,:]
-    output_dict[name]['dictionary_of_input_variables_76']['T_liq_vessel']=f['vessel/mesh/T_liq_vessel'][0:index_stop,:]
-    output_dict[name]['dictionary_of_input_variables_76']['T_sat_vessel']=f['vessel/mesh/T_sat_vessel'][0:index_stop,:]
-    output_dict[name]['dictionary_of_input_variables_76']['x_alfa_vessel']=f['vessel/mesh/x_alfa_vessel'][0:index_stop,:]
+    output_dict[name]['dictionary_of_input_variables_76']['P_vessel']=f['vessel/mesh/P_vessel'][:index_stop, :][::subsampling_index, :]
+    output_dict[name]['dictionary_of_input_variables_76']['T_gas_vessel']=f['vessel/mesh/T_gas_vessel'][:index_stop, :][::subsampling_index, :]
+    output_dict[name]['dictionary_of_input_variables_76']['T_liq_vessel']=f['vessel/mesh/T_liq_vessel'][:index_stop, :][::subsampling_index, :]
+    output_dict[name]['dictionary_of_input_variables_76']['T_sat_vessel']=f['vessel/mesh/T_sat_vessel'][:index_stop, :][::subsampling_index, :]
+    output_dict[name]['dictionary_of_input_variables_76']['x_alfa_vessel']=f['vessel/mesh/x_alfa_vessel'][:index_stop, :][::subsampling_index, :]
     
     # Partial pressures
-    output_dict[name]['dictionary_of_input_variables_76']['P_H2_vessel']=f['vessel/mesh/P_H2_vessel'][0:index_stop,:]
-    output_dict[name]['dictionary_of_input_variables_76']['P_steam_vessel']=f['vessel/mesh/P_steam_vessel'][0:index_stop,:]
+    output_dict[name]['dictionary_of_input_variables_76']['P_H2_vessel']=f['vessel/mesh/P_H2_vessel'][:index_stop, :][::subsampling_index, :]
+    output_dict[name]['dictionary_of_input_variables_76']['P_steam_vessel']=f['vessel/mesh/P_steam_vessel'][:index_stop, :][::subsampling_index, :]
     
     # Mass inventories
-    output_dict[name]['dictionary_of_input_variables_76']['m_gas_vessel']=f['vessel/mesh/m_gas_vessel'][0:index_stop,:]
-    output_dict[name]['dictionary_of_input_variables_76']['m_liq_vessel_mesh']=f['vessel/mesh/m_liq_vessel_mesh'][0:index_stop,:]
+    output_dict[name]['dictionary_of_input_variables_76']['m_gas_vessel']=f['vessel/mesh/m_gas_vessel'][:index_stop, :][::subsampling_index, :]
+    output_dict[name]['dictionary_of_input_variables_76']['m_liq_vessel_mesh']=f['vessel/mesh/m_liq_vessel_mesh'][:index_stop, :][::subsampling_index, :]
     
     # Densities
-    output_dict[name]['dictionary_of_input_variables_76']['rho_gas_vessel']=f['vessel/mesh/rho_gas_vessel'][0:index_stop,:]
-    output_dict[name]['dictionary_of_input_variables_76']['rho_liq_vessel']=f['vessel/mesh/rho_liq_vessel'][0:index_stop,:]
+    output_dict[name]['dictionary_of_input_variables_76']['rho_gas_vessel']=f['vessel/mesh/rho_gas_vessel'][:index_stop, :][::subsampling_index, :]
+    output_dict[name]['dictionary_of_input_variables_76']['rho_liq_vessel']=f['vessel/mesh/rho_liq_vessel'][:index_stop, :][::subsampling_index, :]
     
     # Phase change and geometry
-    output_dict[name]['dictionary_of_input_variables_76']['Q_liq_vap_vessel']=f['vessel/mesh/Q_liq_vap_vessel'][0:index_stop,:]
-    output_dict[name]['dictionary_of_input_variables_76']['porosity_vessel']=f['vessel/mesh/porosity_vessel'][0:index_stop,:]
-    output_dict[name]['dictionary_of_input_variables_76']['V_deb_vessel']=f['vessel/mesh/V_deb_vessel'][0:index_stop,:]
-    output_dict[name]['dictionary_of_input_variables_76']['V_mag_vessel']=f['vessel/mesh/V_mag_vessel'][0:index_stop,:]
+    output_dict[name]['dictionary_of_input_variables_76']['Q_liq_vap_vessel']=f['vessel/mesh/Q_liq_vap_vessel'][:index_stop, :][::subsampling_index, :]
+    output_dict[name]['dictionary_of_input_variables_76']['porosity_vessel']=f['vessel/mesh/porosity_vessel'][:index_stop, :][::subsampling_index, :]
+    output_dict[name]['dictionary_of_input_variables_76']['V_deb_vessel']=f['vessel/mesh/V_deb_vessel'][:index_stop, :][::subsampling_index, :]
+    output_dict[name]['dictionary_of_input_variables_76']['V_mag_vessel']=f['vessel/mesh/V_mag_vessel'][:index_stop, :][::subsampling_index, :]
     
     # === VESSEL FACE DATA (shape: 49095 x 140) ===
     # Flow rates and velocities
-    output_dict[name]['dictionary_of_input_variables_140']['Q_m_liq_face']=f['vessel/face/Q_m_liq_face'][0:index_stop,:]
-    output_dict[name]['dictionary_of_input_variables_140']['V_gas_face']=f['vessel/face/V_gas_face'][0:index_stop,:]
-    output_dict[name]['dictionary_of_input_variables_140']['V_liq_face']=f['vessel/face/V_liq_face'][0:index_stop,:]
+    output_dict[name]['dictionary_of_input_variables_140']['Q_m_liq_face']=f['vessel/face/Q_m_liq_face'][:index_stop, :][::subsampling_index, :]
+    output_dict[name]['dictionary_of_input_variables_140']['V_gas_face']=f['vessel/face/V_gas_face'][:index_stop, :][::subsampling_index, :]
+    output_dict[name]['dictionary_of_input_variables_140']['V_liq_face']=f['vessel/face/V_liq_face'][:index_stop, :][::subsampling_index, :]
 
     
     # PRIMARY TO VESSEL (inlet conditions)
@@ -258,23 +259,23 @@ def fill_dictionary_of_variables(output_dict:dict, name:str, f:h5py._hl.files.Fi
     
     # === CREATE ORGANIZED BOUNDARY CONDITION DICTIONARY ===
     for i in ['Q_H20_connection','Q_steam_connection', 'm_H20_connection']:
-        output_dict[name]['primary_to_vessel'][i]=np.array(primary_inlet_bc[i])[0:index_stop]
-        output_dict[name]['vessel_to_primary'][i]=np.array(primary_outlet_bc[i])[0:index_stop]
+        output_dict[name]['primary_to_vessel'][i]=np.array(primary_inlet_bc[i])[0:index_stop][::subsampling_index]
+        output_dict[name]['vessel_to_primary'][i]=np.array(primary_outlet_bc[i])[0:index_stop][::subsampling_index]
         
     for i in ['T_gas_primary_volume','x_alfa_primary_volume', 'P_steam_primary_volume', 'P_saturation_primary_volume', 'P_H2_primary_volume','P_primary_volume', 'm_steam_primary_volume', 'rho_liq_primary_volume', 'm_liq_primary_volume', 'T_sat_primary_volume', 'x_steam_primary_volume', 'T_liq_primary_volume']:
-        output_dict[name]['VDO'][i]=np.array(VDO[i])[0:index_stop]
-        output_dict[name]['UPP_V001'][i]=np.array(UPP_V001[i])[0:index_stop]
+        output_dict[name]['VDO'][i]=np.array(VDO[i])[0:index_stop][::subsampling_index]
+        output_dict[name]['UPP_V001'][i]=np.array(UPP_V001[i])[0:index_stop][::subsampling_index]
         
     next_time_step = f['dimensions/time_points'][1:index_stop]
     previous_time_step = f['dimensions/time_points'][0:index_stop-1]
     
     DT = next_time_step - previous_time_step
-    DT = np.concatenate([next_time_step - previous_time_step, [DT[-1]]])
+    DT = np.concatenate([next_time_step - previous_time_step, [DT[-1]]])[::subsampling_index]
     
     output_dict[name]['vessel_to_primary']['dt']=DT #used by AE_NODE
-    output_dict[name]['vessel_to_primary']['time']=f['dimensions/time_points'][0:index_stop] #used by ONLY_DECODER
+    output_dict[name]['vessel_to_primary']['time']=f['dimensions/time_points'][0:index_stop][::subsampling_index]#used by ONLY_DECODER
 
-def extract_input_output_bc_variables(path, index_simulation:str):
+def extract_input_output_bc_variables(path, index_simulation:str, subsampling_index:int):
     output_dict = {}
     time_of_simulations = []
     name_simulation = str(index_simulation) + '.h5'
@@ -282,25 +283,25 @@ def extract_input_output_bc_variables(path, index_simulation:str):
         vessel_rupture_time = f['other/global/vessel_rupture_time'][-1]
         if not np.isnan(vessel_rupture_time):
             index_stop = np.where(f['dimensions/time_points'][:] >= vessel_rupture_time)[0][0]
-            index_stop = len(f['dimensions/time_points'][0:index_stop])
+            index_stop = len(f['dimensions/time_points'][0:index_stop][::subsampling_index])
         else:
             index_stop = len(f['dimensions/time_points'][:])
-        time_of_simulations.append(f['dimensions/time_points'][:][0:index_stop])   
+        time_of_simulations.append(f['dimensions/time_points'][:][0:index_stop][::subsampling_index])   
         output_dict[index_simulation] = build_dictionary_of_variables()
-        fill_dictionary_of_variables(output_dict, index_simulation, f, index_stop)
+        fill_dictionary_of_variables(output_dict, index_simulation, f, index_stop, subsampling_index)
 
     return output_dict, time_of_simulations
 
-def extract_time_of_simulation(path, index_simulation:str):
+def extract_time_of_simulation(path, index_simulation:str, subsampling_index:int):
     name_simulation = str(index_simulation) + '.h5'
     with h5py.File(path+'/'+str(name_simulation), 'r') as f:
         vessel_rupture_time = f['other/global/vessel_rupture_time'][-1]
         if not np.isnan(vessel_rupture_time):
             index_stop = np.where(f['dimensions/time_points'][:] >= vessel_rupture_time)[0][0]
-            index_stop = len(f['dimensions/time_points'][0:index_stop])
+            index_stop = len(f['dimensions/time_points'][0:index_stop][::subsampling_index])
         else:
             index_stop = len(f['dimensions/time_points'][:])
-        time_of_simulations = f['dimensions/time_points'][:][0:index_stop]
+        time_of_simulations = f['dimensions/time_points'][:][0:index_stop][::subsampling_index]
 
     return time_of_simulations
 
@@ -482,4 +483,22 @@ def squeeze_first_dimension(dictionary_per_trajectory:dict):
             dictionary_per_trajectory[i][k] = dictionary_per_trajectory[i][k].squeeze(0)
     return dictionary_per_trajectory  
 
+def build_total_sampling_percentages(percentages_sampling: list, subsampling: list, length: int ):
+    total_training_sampling_percentages = []
+    for count, i in enumerate(percentages_sampling):
+        i_training_sampling_indeces = [subsampling[count] for x in range(round(length * i))]
+        total_training_sampling_percentages += i_training_sampling_indeces
+    return total_training_sampling_percentages
 
+
+def fix_total_percentages(initial_percentages:list, difference:int):
+    if difference > 0:
+        for i in range(difference):
+            initial_percentages.append(initial_percentages[-1])
+        print(f"Added {difference} elements")
+    elif difference < 0:
+        initial_percentages = initial_percentages[:difference]
+        print(f"Removed {np.abs(difference)} elements")
+    elif difference == 0:
+        print(f"No modifications")
+    return initial_percentages
