@@ -39,7 +39,7 @@ auto_encoding:
   #Auto-Encoder scalar variables
   auto_encoder_scalar:
     input_dimension_encoder: 57
-    output_dimension_encoder: 20 #dimension of the latent space
+    output_dimension_encoder: 5 #dimension of the latent space
     list_of_neurons_encoder: [60,50,50]
     last_activation_encoder: false
 
@@ -67,13 +67,13 @@ auto_encoding:
   auto_encoder_core:
     input_dimension_encoder: [4, 12, 3]  # first dimension is # of channels (one if the predicted solution is a scalar field), second is spatial dimensions per channel.
     kernel_encoder: [3,3,3] #kernels sizes of the Encoder
-    filters_encoder: [8,16,32] #number of filters of the Encoder
+    filters_encoder: [16,32,64] #number of filters of the Encoder
     strides_encoder: [[1,1],[2,1],[2,1]] #strides of the Encoder
     output_dimension_encoder: 5 #dimension of the latent space
     last_activation_encoder: false
 
     kernel_decoder: [[3,3],[4,3],[4,3],[3,3],[3,3],[3,3]] #kernels sizes of the decoder
-    filters_decoder: [16,8,4,4] #number of middle of the decoder. First one is filters_encoder[-1] and last one is input_dimension_encoder[-2]
+    filters_decoder: [64,32,16,8] #number of middle of the decoder. First one is filters_encoder[-1] and last one is input_dimension_encoder[-2]
     strides_decoder: [[1,1],[2,1],[2,1],[1,1],[1,1],[1,1]] #strides of the decoder
     last_activation_decoder: false
 
@@ -81,13 +81,13 @@ auto_encoding:
   auto_encoder_vessel:
     input_dimension_encoder: [18, 15, 5]  # first dimension is # of channels (one if the predicted solution is a scalar field), second is spatial dimensions per channel.
     kernel_encoder: [3,3,3] #kernels sizes of the Encoder
-    filters_encoder: [8,16,32] #number of filters of the Encoder
+    filters_encoder: [16,32,64] #number of filters of the Encoder
     strides_encoder: [[1,1],[2,1],[2,1]] #strides of the Encoder
     output_dimension_encoder: 10 #dimension of the latent space
     last_activation_encoder: false
 
     kernel_decoder: [[3,3],[4,3],[3,3],[3,3],[3,3],[3,3]]  #kernels of the Decoder. For this, use one upsampling with kernel 4 and one with kernel 3 because of odd output
-    filters_decoder: [32,24, 20, 18] #number of filters of the Decoder
+    filters_decoder: [64,32, 20, 18] #number of filters of the Decoder
     strides_decoder: [[1,1],[2,1],[2,1],[1,1],[1,1],[1,1]] #strides of the Decoder
     last_activation_decoder: false
 
@@ -95,19 +95,19 @@ auto_encoding:
   auto_encoder_faces:
     input_dimension_encoder: [3, 16, 9]  # first dimension is # of channels (one if the predicted solution is a scalar field), second is spatial dimensions per channel.
     kernel_encoder: [3,3,3] #kernels sizes of the Encoder
-    filters_encoder: [8,16,32] #number of filters of the Encoder
+    filters_encoder: [16,32,64] #number of filters of the Encoder
     strides_encoder: [[1,1],[2,2],[2,1]] #strides of the Encoder
     output_dimension_encoder: 10 #dimension of the latent space
     last_activation_encoder: false
 
     kernel_decoder: [[3,3],[4,3],[4,3],[3,3],[3,3],[3,3]]  #kernels sizes of the Encoder
-    filters_decoder: [32,16,16,8] #number of filters of the Encoder
+    filters_decoder: [64,32,16,8] #number of filters of the Encoder
     strides_decoder: [[1,1],[2,2],[2,1],[1,1],[1,1],[1,1]] #strides of the Encoder
     last_activation_decoder: false
 
   # Final_reduction
   final_reduction_and_initial_increase:
-    output_dimension_encoder: 6 # THIS IS THE ACTUAL FINAL REDUCED DIMENSION
+    output_dimension_encoder: 10 # THIS IS THE ACTUAL FINAL REDUCED DIMENSION
 
     list_of_neurons_encoder: [50,30,10]
     last_activation_encoder: false

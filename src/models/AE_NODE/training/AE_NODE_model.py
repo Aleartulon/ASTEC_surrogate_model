@@ -80,18 +80,19 @@ class AE_NODE:
             raise TypeError("Inconsistent loss coefficients in loss_coefficients_not_coupled, or dynamic_dataset_generation_during_training is set to false")
         
         #create datasets and dataloader for training and validation 
-        if self.dynamic_dataset_generation_during_training:
+        if not self.checkpoint:
+            if self.dynamic_dataset_generation_during_training:
+                
+                self.training_loader, self.validation_loader = build_dataset(self.batch_sizes[0], self.time_windows[0], self.data_training_path_dynamic, self.data_validation_path_dynamic, 
+                                                                            self.number_of_workers, self.data_path, self.where_to_save_data, self.which_normalization, 
+                                                                            self.device, config_training['indeces_training_boundaries'], config_training['indeces_validation_boundaries'], 
+                                                                            self.all_on_gpu, self.pin_memory, self.indeces_training_boundaries, self.indeces_validation_boundaries)
+            else:
+                dataset_training = ASTEC_Dataset(self.data_training_path, self.all_on_gpu, self.device)
+                self.training_loader = DataLoader(dataset_training, batch_size = self.batch_sizes[0], num_workers = self.number_of_workers, shuffle=True,drop_last=False,pin_memory=self.pin_memory)
             
-            self.training_loader, self.validation_loader = build_dataset(self.batch_sizes[0], self.time_windows[0], self.data_training_path_dynamic, self.data_validation_path_dynamic, 
-                                                                         self.number_of_workers, self.data_path, self.where_to_save_data, self.which_normalization, 
-                                                                         self.device, config_training['indeces_training_boundaries'], config_training['indeces_validation_boundaries'], 
-                                                                         self.all_on_gpu, self.pin_memory, self.indeces_training_boundaries, self.indeces_validation_boundaries)
-        else:
-            dataset_training = ASTEC_Dataset(self.data_training_path, self.all_on_gpu, self.device)
-            self.training_loader = DataLoader(dataset_training, batch_size = self.batch_sizes[0], num_workers = self.number_of_workers, shuffle=True,drop_last=False,pin_memory=self.pin_memory)
-        
-            dataset_validation = ASTEC_Dataset(self.data_validation_path, self.all_on_gpu, self.device)
-            self.validation_loader = DataLoader(dataset_validation, batch_size = self.batch_sizes[0], num_workers = self.number_of_workers, shuffle=True,drop_last=False,pin_memory=self.pin_memory)
+                dataset_validation = ASTEC_Dataset(self.data_validation_path, self.all_on_gpu, self.device)
+                self.validation_loader = DataLoader(dataset_validation, batch_size = self.batch_sizes[0], num_workers = self.number_of_workers, shuffle=True,drop_last=False,pin_memory=self.pin_memory)
         #get normalization information
         
         with open(f"{config_training['data_path']}/maxima_or_mean{self.indeces_training_boundaries}.pkl", 'rb') as f:
@@ -123,10 +124,6 @@ class AE_NODE:
         lambda1 = lambda i : i / self.time_of_lr_war_up
         self.pre_scheduler = tc.optim.lr_scheduler.LambdaLR(self.optim,lambda1)
         self.scheduler = tc.optim.lr_scheduler.ExponentialLR(self.optim, config_training['gamma_lr'])
-        
-        for fields, _, _, _ in self.validation_loader:
-            self.number_of_different_domains = len(fields)
-            break
         
         self.RK = {k: tc.tensor([[self.safe_eval(val) for val in row] for row in v]) for k, v in model_information['RK'].items()}
         
