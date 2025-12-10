@@ -283,7 +283,7 @@ def extract_input_output_bc_variables(path, index_simulation:str, subsampling_in
         vessel_rupture_time = f['other/global/vessel_rupture_time'][-1]
         if not np.isnan(vessel_rupture_time):
             index_stop = np.where(f['dimensions/time_points'][:] >= vessel_rupture_time)[0][0]
-            index_stop = len(f['dimensions/time_points'][0:index_stop][::subsampling_index])
+            index_stop = len(f['dimensions/time_points'][0:index_stop])
         else:
             index_stop = len(f['dimensions/time_points'][:])
         time_of_simulations.append(f['dimensions/time_points'][:][0:index_stop][::subsampling_index])   
@@ -298,7 +298,7 @@ def extract_time_of_simulation(path, index_simulation:str, subsampling_index:int
         vessel_rupture_time = f['other/global/vessel_rupture_time'][-1]
         if not np.isnan(vessel_rupture_time):
             index_stop = np.where(f['dimensions/time_points'][:] >= vessel_rupture_time)[0][0]
-            index_stop = len(f['dimensions/time_points'][0:index_stop][::subsampling_index])
+            index_stop = len(f['dimensions/time_points'][0:index_stop])
         else:
             index_stop = len(f['dimensions/time_points'][:])
         time_of_simulations = f['dimensions/time_points'][:][0:index_stop][::subsampling_index]
