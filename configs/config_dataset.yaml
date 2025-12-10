@@ -1,7 +1,7 @@
 path_to_hdf5 : '../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/original_hdf5/'
-where_to_save_data: '../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/made_datasets/only_SBO/'
-indeces_training_boundaries : [774, 957,603, 680]
-indeces_validation_boundaries : [681, 724]
+where_to_save_data: '../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/made_datasets/only_loca/'
+indeces_training_boundaries : [404,554]
+indeces_validation_boundaries : [555,585]
 indeces_testing_boundaries : [733, 754]
 percentages_sampling_training : [0.1, 0.2, 0.7] # percentage of training trajectories with a given subsampling
 percentages_sampling_validation : [0.1, 0.2, 0.7] # percentage of validation trajectories with a given subsampling

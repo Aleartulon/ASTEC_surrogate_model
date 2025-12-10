@@ -16,7 +16,6 @@ def build_dataset(batch_size:int, time_window: int, data_training_path: str, dat
     
     training_path = f"{data_training_path}{str(time_window)}{indeces_training_boundaries}.h5"
     validation_path = f"{data_validation_path}{str(time_window)}{indeces_validation_boundaries}.h5"
-    
     #build dataset made out of 'time_window' chunks
     subprocess.run(['python', '-m', 'src.dataset_generation.sliced_dataset.main', 
                 '--t_W', str(time_window), 
@@ -36,7 +35,7 @@ def build_dataset(batch_size:int, time_window: int, data_training_path: str, dat
     print('Length dataset: ', length_dataset)
     print('Batch size: ', batch_size)
     print('-------------------------------------------')
-    training_loader = DataLoader(dataset_training, batch_size = batch_size, num_workers = number_of_workers, shuffle=True,drop_last=False,pin_memory=pin_memory)
+    training_loader = DataLoader(dataset_training, batch_size = batch_size, num_workers = number_of_workers, shuffle=True,drop_last=False,pin_memory=pin_memory, prefetch_factor=2 if number_of_workers > 0 else None)
     validation_loader = DataLoader(dataset_validation, batch_size = batch_size, num_workers = number_of_workers, shuffle=True,drop_last=False,pin_memory=pin_memory)
     
     return training_loader, validation_loader

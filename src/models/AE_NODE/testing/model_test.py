@@ -404,9 +404,9 @@ class Model_Test:
     def load_checkpoint_on_models(self):
         checkpoint = tc.load(self.path_to_model+'/checkpoint/check.pt', map_location=self.device, weights_only=False)
         
-        self.encoder.load_state_dict(checkpoint['enco'])
+        self.encoder.load_state_dict(checkpoint['encoder'])
         self.f.load_state_dict(checkpoint['f'])
-        self.decoder.load_state_dict(checkpoint['dec'])
+        self.decoder.load_state_dict(checkpoint['decoder'])
 
         total_params_enc = sum(p.numel() for p in self.encoder.parameters() if p.requires_grad)
         total_params_dec = sum(p.numel() for p in self.decoder.parameters() if p.requires_grad)
@@ -662,7 +662,7 @@ class Model_Test:
         self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 0, variable_index = 56 , field_name = 'Q_fp_Zr', ylabel = 'Q fp Zr', figsize=(5, 5), fontsize=16)
         
         # generate figure of core 
-        time_indeces = [0, int(len(Time)*0.4), int(len(Time)*0.8), -2]
+        time_indeces = [0, int(len(Time[trajectory_to_be_plotted])*0.4), int(len(Time[trajectory_to_be_plotted])*0.8), -2]
         self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='T comp fuel', shape_index = 1, variable_index=0, time_indices=time_indeces, figsize=(10, 8), fontsize=16)
         self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='T comp clad', shape_index = 1, variable_index=1, time_indices=time_indeces, figsize=(10, 8), fontsize=16)
         self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='state fuel', shape_index = 1, variable_index=2, time_indices=time_indeces, figsize=(10, 8), fontsize=16)

@@ -4,6 +4,7 @@ import time
 import torch as tc
 from src.models.AE_NODE.training.data_functions import *
 from src.models.AE_NODE.training.method_functions import Training_Losses
+from torch.cuda.amp import autocast
 
 class Training():
     def __init__(self, astec_instance):
@@ -52,40 +53,49 @@ class Training():
         self.encoder.train()
         self.f.train()
         self.decoder.train()
-            
         for fields, boundary_conditions, dt, length_of_padding in self.training_loader:
-            t0 =time.time()
-            
-            l1,l2_TF,l2_AR,l3, _,regularization_latent = self.training_losses.loss_sup_mixed(fields, boundary_conditions, dt, length_of_padding, loss_coefficients, True)
-            
-            l1_mean = l1[0]
-            l1_mean_per_shape = l1[1]
-            l1_latent = l1[2]
-            
-            #is_there_nan = self.check_if_NaN(l1_mean, l1_latent,l2_TF ,l2_AR, l3, regularization_latent)
-            #if is_there_nan:
-            #    continue
-            (l1_mean+l1_latent+l2_TF+l2_AR+l3+regularization_latent).backward()
-            if self.clipping[0]:
+            self.optim.zero_grad()
+            with autocast(enabled=(self.scaler is not None)):
                 
-                all_params = (list(self.encoder.parameters()) + list(self.f.parameters()) + list(self.decoder.parameters()))
-                tc.nn.utils.clip_grad_norm_(all_params, max_norm=self.clipping[1])
+                l1,l2_TF,l2_AR,l3, _,regularization_latent = self.training_losses.loss_sup_mixed(fields, boundary_conditions, dt, length_of_padding, loss_coefficients, True)
                 
-            self.optim.step()
-            self.optim.zero_grad() 
-    
-            loss += (l1_mean +l1_latent+ l2_TF+l2_AR+l3).detach().cpu().item()
-            l1_loss += (l1_mean).detach().cpu().numpy()
-            l1_loss_per_shape += (l1_mean_per_shape).detach().cpu().numpy()
-            l1_loss_latent += (l1_latent).detach().cpu().numpy()
-            l2_TF_loss += l2_TF.detach().cpu().item()
-            l2_AR_loss += l2_AR.detach().cpu().item()
-            l3_loss += l3.detach().cpu().item()
-            
-            regularization_loss += regularization_latent.detach().cpu().item()
-            count += 1
-            t1 =time.time()
-            #print('training: ', t1-t0)
+                l1_mean = l1[0]
+                l1_mean_per_shape = l1[1]
+                l1_latent = l1[2]
+                
+                #is_there_nan = self.check_if_NaN(l1_mean, l1_latent,l2_TF ,l2_AR, l3, regularization_latent)
+                #if is_there_nan:
+                #    continue
+                if self.scaler is not None:
+                    self.scaler.scale(l1_mean+l1_latent+l2_TF+l2_AR+l3+regularization_latent).backward()
+                    if self.clipping[0]:
+                        self.scaler.unscale_(self.optim)
+                        all_params = (list(self.encoder.parameters()) + list(self.f.parameters()) + list(self.decoder.parameters()))
+                        tc.nn.utils.clip_grad_norm_(all_params, max_norm=self.clipping[1])
+                    self.scaler.step(self.optim)
+                    self.scaler.update()
+                    
+                else:
+                    (l1_mean+l1_latent+l2_TF+l2_AR+l3+regularization_latent).backward()
+                    
+                    if self.clipping[0]:
+                        all_params = (list(self.encoder.parameters()) + list(self.f.parameters()) + list(self.decoder.parameters()))
+                        tc.nn.utils.clip_grad_norm_(all_params, max_norm=self.clipping[1])
+                    
+                    self.optim.step()
+                 
+        
+                loss += (l1_mean +l1_latent+ l2_TF+l2_AR+l3).detach().cpu().item()
+                l1_loss += (l1_mean).detach().cpu().numpy()
+                l1_loss_per_shape += (l1_mean_per_shape).detach().cpu().numpy()
+                l1_loss_latent += (l1_latent).detach().cpu().numpy()
+                l2_TF_loss += l2_TF.detach().cpu().item()
+                l2_AR_loss += l2_AR.detach().cpu().item()
+                l3_loss += l3.detach().cpu().item()
+                
+                regularization_loss += regularization_latent.detach().cpu().item()
+                count += 1
+
         return l1_loss/count, l1_loss_per_shape/count, l1_loss_latent/count ,l2_TF_loss/count, l2_AR_loss/count ,l3_loss/count, regularization_loss/count, loss/count
         
 

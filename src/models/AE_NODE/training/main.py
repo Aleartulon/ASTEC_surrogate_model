@@ -10,7 +10,9 @@ from src.common_functions import load_config
 tc.set_default_dtype(tc.float32)
 
 def main():
- 
+    if tc.cuda.is_available():
+        tc.backends.cuda.matmul.allow_tf32 = True
+        tc.backends.cudnn.allow_tf32 = True
     config_training = load_config('configs/config_training.yaml')
     model_information = load_config('configs/configs_models/' + 'config_'+config_training['model'] + '.yaml')
 

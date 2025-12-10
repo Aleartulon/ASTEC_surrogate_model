@@ -2,6 +2,7 @@ import numpy as np
 import torch as tc
 import pickle
 import shutil
+from torch.cuda.amp import GradScaler
 from src.models.AE_NODE.training.architecture import *
 from src.models.AE_NODE.training.data_functions import *
 from src.models.AE_NODE.training.training_validation_functions import Training
@@ -89,7 +90,7 @@ class AE_NODE:
                                                                             self.all_on_gpu, self.pin_memory, self.indeces_training_boundaries, self.indeces_validation_boundaries)
             else:
                 dataset_training = ASTEC_Dataset(self.data_training_path, self.all_on_gpu, self.device)
-                self.training_loader = DataLoader(dataset_training, batch_size = self.batch_sizes[0], num_workers = self.number_of_workers, shuffle=True,drop_last=False,pin_memory=self.pin_memory)
+                self.training_loader = DataLoader(dataset_training, batch_size = self.batch_sizes[0], num_workers = self.number_of_workers, shuffle=True,drop_last=False,pin_memory=self.pin_memory, prefetch_factor=2 if self.number_of_workers > 0 else None)
             
                 dataset_validation = ASTEC_Dataset(self.data_validation_path, self.all_on_gpu, self.device)
                 self.validation_loader = DataLoader(dataset_validation, batch_size = self.batch_sizes[0], num_workers = self.number_of_workers, shuffle=True,drop_last=False,pin_memory=self.pin_memory)
@@ -126,6 +127,13 @@ class AE_NODE:
         self.scheduler = tc.optim.lr_scheduler.ExponentialLR(self.optim, config_training['gamma_lr'])
         
         self.RK = {k: tc.tensor([[self.safe_eval(val) for val in row] for row in v]) for k, v in model_information['RK'].items()}
+        if tc.cuda.is_available():
+            self.scaler = GradScaler()
+            print("Scaler defined")
+        else:
+            self.scaler = None
+        
+        
         
         #training starts
         
