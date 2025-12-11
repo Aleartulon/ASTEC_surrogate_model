@@ -1,8 +1,8 @@
 #Data information
 data_training_file_dinamic: 'data_training_normalized_t_W_' #use when modifying dynamically during training the dataset
 data_validation_file_dinamic: 'data_validation_normalized_t_W_' #use when modifying dynamically during training the dataset
-data_training_file : 'data_training_normalized_t_W_10.h5' #use when using a fixed dataset during training
-data_validation_file : 'data_validation_normalized_t_W_10.h5' #use when using a fixed dataset during training
+data_training_file : 'data_training_normalized_t_W_10_404_554.h5' #use when using a fixed dataset during training 
+data_validation_file : 'data_validation_normalized_t_W_10_555_585.h5' #use when using a fixed dataset during training 
 #Training information
 
 loss_coefficients: # coefficients that are multiplied to the loss function terms, signaling the relative importance of each [AE, TF, AUTOREGRESSIVE, TIME_GENERALIZATION]
@@ -15,19 +15,19 @@ loss_coefficients: # coefficients that are multiplied to the loss function terms
 
 loss_coefficients_not_coupled: # coefficients that are multiplied to the loss function terms when the trainin of AE and NODE is decoupled, signaling the relative importance of each [AE, TF, AUTOREGRESSIVE, TIME_GENERALIZATION]
 
-  AE: [0,0] #first one is for the field reconstruction, second one for the latent reconstruction per shape
-  TF: 1
-  AR: 1
-  Random_DT: 1
-  AR_strength: 0.001
-  lambda_regularization: 0.0 #coefficients in front of the regularization term for the latent vector
+  AE: [1,1] #first one is for the field reconstruction, second one for the latent reconstruction per shape
+  TF: 0
+  AR: 0
+  Random_DT: 0
+  AR_strength: 0.0
+  lambda_regularization: 0.001 #coefficients in front of the regularization term for the latent vector
 
 k: 4 # stage of the Runge-Kutta solver for the latent dynamics
 time_of_AE: 50 # number of initial epochs where only the AutoEncoder is trained, i.e., loss_coeff_TF_AR_together = [1, 0, 0, 0]. 
 time_of_lr_war_up: 10 #number of epochs of the linear warm-up of the learning rate
 time_only_TF : 0 #number of initial epochs after warm up where only TF and not AR approach is used
 clipping: [0, 2.5] #[if 1 clipping is applied to f, maximum norm allowed to gradients]
-is_coupled : [true, 'NODE'] #if true the AutoEncoder (AE) is trained coupled with the NODE. if false, if 'AE' the AE is trained, if 'NODE' the NODE is trained.
+is_coupled : [false, 'AE'] #if true the AutoEncoder (AE) is trained coupled with the NODE. if false, if 'AE' the AE is trained, if 'NODE' the NODE is trained.
 path_trained_AE : '../../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/saved_logs/AE_NODE/Models/multiple_trajectories_only_AE/' #if is_coupled : [false, 'NODE'], provide the path to the models weights of the AE
 
 
@@ -39,7 +39,7 @@ auto_encoding:
   #Auto-Encoder scalar variables
   auto_encoder_scalar:
     input_dimension_encoder: 57
-    output_dimension_encoder: 20 #dimension of the latent space
+    output_dimension_encoder: 5 #dimension of the latent space
     list_of_neurons_encoder: [60,50,50]
     last_activation_encoder: false
 
@@ -67,13 +67,13 @@ auto_encoding:
   auto_encoder_core:
     input_dimension_encoder: [4, 12, 3]  # first dimension is # of channels (one if the predicted solution is a scalar field), second is spatial dimensions per channel.
     kernel_encoder: [3,3,3] #kernels sizes of the Encoder
-    filters_encoder: [8,16,32] #number of filters of the Encoder
+    filters_encoder: [16,32,64] #number of filters of the Encoder
     strides_encoder: [[1,1],[2,1],[2,1]] #strides of the Encoder
     output_dimension_encoder: 5 #dimension of the latent space
     last_activation_encoder: false
 
     kernel_decoder: [[3,3],[4,3],[4,3],[3,3],[3,3],[3,3]] #kernels sizes of the decoder
-    filters_decoder: [16,8,4,4] #number of middle of the decoder. First one is filters_encoder[-1] and last one is input_dimension_encoder[-2]
+    filters_decoder: [64,32,16,8] #number of middle of the decoder. First one is filters_encoder[-1] and last one is input_dimension_encoder[-2]
     strides_decoder: [[1,1],[2,1],[2,1],[1,1],[1,1],[1,1]] #strides of the decoder
     last_activation_decoder: false
 
@@ -81,13 +81,13 @@ auto_encoding:
   auto_encoder_vessel:
     input_dimension_encoder: [18, 15, 5]  # first dimension is # of channels (one if the predicted solution is a scalar field), second is spatial dimensions per channel.
     kernel_encoder: [3,3,3] #kernels sizes of the Encoder
-    filters_encoder: [8,16,32] #number of filters of the Encoder
+    filters_encoder: [16,32,64] #number of filters of the Encoder
     strides_encoder: [[1,1],[2,1],[2,1]] #strides of the Encoder
-    output_dimension_encoder: 10 #dimension of the latent space
+    output_dimension_encoder: 15 #dimension of the latent space
     last_activation_encoder: false
 
     kernel_decoder: [[3,3],[4,3],[3,3],[3,3],[3,3],[3,3]]  #kernels of the Decoder. For this, use one upsampling with kernel 4 and one with kernel 3 because of odd output
-    filters_decoder: [32,24, 20, 18] #number of filters of the Decoder
+    filters_decoder: [64,32, 20, 18] #number of filters of the Decoder
     strides_decoder: [[1,1],[2,1],[2,1],[1,1],[1,1],[1,1]] #strides of the Decoder
     last_activation_decoder: false
 
@@ -95,24 +95,24 @@ auto_encoding:
   auto_encoder_faces:
     input_dimension_encoder: [3, 16, 9]  # first dimension is # of channels (one if the predicted solution is a scalar field), second is spatial dimensions per channel.
     kernel_encoder: [3,3,3] #kernels sizes of the Encoder
-    filters_encoder: [8,16,32] #number of filters of the Encoder
+    filters_encoder: [16,32,64] #number of filters of the Encoder
     strides_encoder: [[1,1],[2,2],[2,1]] #strides of the Encoder
     output_dimension_encoder: 10 #dimension of the latent space
     last_activation_encoder: false
 
     kernel_decoder: [[3,3],[4,3],[4,3],[3,3],[3,3],[3,3]]  #kernels sizes of the Encoder
-    filters_decoder: [32,16,16,8] #number of filters of the Encoder
+    filters_decoder: [64,32,16,8] #number of filters of the Encoder
     strides_decoder: [[1,1],[2,2],[2,1],[1,1],[1,1],[1,1]] #strides of the Encoder
     last_activation_decoder: false
 
   # Final_reduction
   final_reduction_and_initial_increase:
-    output_dimension_encoder: 6 # THIS IS THE ACTUAL FINAL REDUCED DIMENSION
+    output_dimension_encoder: 20 # THIS IS THE ACTUAL FINAL REDUCED DIMENSION
 
-    list_of_neurons_encoder: [50,30,10]
+    list_of_neurons_encoder: [50,30,30]
     last_activation_encoder: false
 
-    list_of_neurons_decoder: [10,30,50]
+    list_of_neurons_decoder: [30,30,50]
     last_activation_decoder: false
 
 #NODE

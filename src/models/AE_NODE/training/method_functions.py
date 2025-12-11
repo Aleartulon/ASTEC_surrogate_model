@@ -107,6 +107,9 @@ class Training_Losses():
         which_technique = self.autoregressive_step['which_technique']
         number_of_time_steps = fields[0].size(1)
         initial_condition = [tensor[:, 0:1, ...] for tensor in fields]
+        B = true_latent.size(0)
+        T = number_of_time_steps - 1
+        latent_dim = true_latent.size(-1)
         
         if not (self.is_coupled[0]) and (self.is_coupled[1] == 'AE') and train:
             return tc.tensor(0.0), tc.tensor(0.0)
@@ -118,7 +121,6 @@ class Training_Losses():
             if (not train):
                 fields = standard_and_inverse_normalization_field(fields, self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)
                 fields = [tensor[:, 1:, ...] for tensor in fields]
-                reconstructed_fields_from_latent = [tc.zeros_like(field) for field in fields]
                 
             reconstructed_latent = tc.zeros_like(true_latent)[:,1:,:]
             
@@ -130,19 +132,16 @@ class Training_Losses():
                 next_latent = self.processor_First_Order(next_latent, dt[:,count,:], latent_boundaries[:,count,:])
                 reconstructed_latent[:,count,:] = next_latent
                 
-                if (not train):
-                    output_decoder, _ = self.decoder(next_latent)
-                    output_decoder = [tensor.unsqueeze(1) for tensor in output_decoder]
-        
-                    for index, field in enumerate(output_decoder):
-                        reconstructed_fields_from_latent[index][:,count:count+1,:] = field
-                    
-            l2_AR = dynamics_MSE(reconstructed_latent, true_latent[:,1:,:], F.relu((length_of_padding-1))) 
+            l2_AR = dynamics_MSE(reconstructed_latent, true_latent[:,1:,:], F.relu((length_of_padding-1)))
             
             if (not train):
-                reconstructed_fields_from_latent = standard_and_inverse_normalization_field(reconstructed_fields_from_latent, self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)
-                reconstructed_fields_from_latent = [tensor.squeeze(1) for tensor in reconstructed_fields_from_latent]
-                l_final, l_final_per_variable = auto_encoding_MSE(reconstructed_fields_from_latent, fields, F.relu((length_of_padding-1)), is_denormalized_validation = True) 
+                reconstructed_latent = reconstructed_latent.reshape(B * T, latent_dim)
+                output_decoder, _ = self.decoder(reconstructed_latent)
+ 
+                output_decoder = [tensor.reshape((B, T) + tensor.size()[1:]) for tensor in output_decoder]
+                output_decoder = standard_and_inverse_normalization_field(output_decoder, self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)
+
+                l_final, l_final_per_variable = auto_encoding_MSE(output_decoder, fields, F.relu((length_of_padding-1)), is_denormalized_validation = True) 
                 
                 return l2_AR * loss_coeff, (l_final, l_final_per_variable)
             

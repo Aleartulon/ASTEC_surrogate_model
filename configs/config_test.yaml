@@ -1,8 +1,8 @@
 path_to_test_data : '../../../../../../../scratch/ROM_datasets_ale/ASTEC/made_datasets/only_SBO/'
-name_test_file: 'data_testing_733_754.h5'
-path_to_model: '../../../../../../../scratch/ROM_datasets_ale/ASTEC/saved_logs/AE_NODE/Models/dataset_774_957_603_680_6_latent/'
-device: 'cuda'
-trajectories_to_be_plotted : [733]
+name_test_file: 'data_testing_774_780.h5'
+path_to_model: '../../../../../../../scratch/ROM_datasets_ale/ASTEC/saved_logs/AE_NODE/Models/dataset_774_957_603_680_20_latent_only_AE/'
+device: 'cuda:1'
+trajectories_to_be_plotted : [774, 775]
 autoencoding_figures : true
 autoencoding_latent_figures : true
 latent_prediction_figures : true
@@ -11,4 +11,4 @@ actual_latent_prediction_figures: true
 TF_fields_prediction_figures: true
 TF_latent_prediction_figures: true
 compute_TF : true
-operator_actions_indeces : [733]
+operator_actions_indeces : [774, 775]

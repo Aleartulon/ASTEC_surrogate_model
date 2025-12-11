@@ -12,13 +12,13 @@ class Encoder(nn.Module):
                 model_information['auto_encoding']['final_reduction_and_initial_increase']['input_dimension_encoder'] += model_information['auto_encoding'][i]['output_dimension_encoder']
                 
         self.device = config_training['device']
-        self.encoder_scalar_variables = Fully_Connected_Encoder(config_training, model_information['auto_encoding']['auto_encoder_scalar']).to(self.device)
-        self.encoder_plenum_variables = Fully_Connected_Encoder(config_training, model_information['auto_encoding']['auto_encoder_plenum']).to(self.device)
-        self.encoder_boundaries_variables = Fully_Connected_Encoder(config_training, model_information['auto_encoding']['auto_encoder_boundaries']).to(self.device)
-        self.encoder_core_variables = Convolutional_Encoder(config_training, model_information['auto_encoding']['auto_encoder_core']).to(self.device)
-        self.encoder_vessel_variables = Convolutional_Encoder(config_training, model_information['auto_encoding']['auto_encoder_vessel']).to(self.device)
-        self.encoder_faces_variables = Convolutional_Encoder(config_training, model_information['auto_encoding']['auto_encoder_faces']).to(self.device)
-        self.final_reduction = Fully_Connected_Encoder(config_training, model_information['auto_encoding']['final_reduction_and_initial_increase']).to(self.device)
+        self.encoder_scalar_variables = Fully_Connected_Encoder(config_training, model_information['auto_encoding']['auto_encoder_scalar'])
+        self.encoder_plenum_variables = Fully_Connected_Encoder(config_training, model_information['auto_encoding']['auto_encoder_plenum'])
+        self.encoder_boundaries_variables = Fully_Connected_Encoder(config_training, model_information['auto_encoding']['auto_encoder_boundaries'])
+        self.encoder_core_variables = Convolutional_Encoder(config_training, model_information['auto_encoding']['auto_encoder_core'])
+        self.encoder_vessel_variables = Convolutional_Encoder(config_training, model_information['auto_encoding']['auto_encoder_vessel'])
+        self.encoder_faces_variables = Convolutional_Encoder(config_training, model_information['auto_encoding']['auto_encoder_faces'])
+        self.final_reduction = Fully_Connected_Encoder(config_training, model_information['auto_encoding']['final_reduction_and_initial_increase'])
         self.lambda_regularization = model_information['loss_coefficients']['lambda_regularization'] if model_information['is_coupled'][0] else model_information['loss_coefficients_not_coupled']['lambda_regularization'] 
         
     def forward(self, fields:list, boundaries: tc.tensor = None):
@@ -152,12 +152,12 @@ class Decoder(nn.Module):
     def __init__(self, config_training:dict, model_information:dict):
         super().__init__()
         self.device = config_training['device']
-        self.initial_increase = Fully_Connected_Decoder(config_training, model_information['auto_encoding']['final_reduction_and_initial_increase']).to(self.device)
-        self.decoder_scalar_variables = Fully_Connected_Decoder(config_training, model_information['auto_encoding']['auto_encoder_scalar']).to(self.device)
-        self.decoder_plenum_variables = Fully_Connected_Decoder(config_training, model_information['auto_encoding']['auto_encoder_plenum']).to(self.device)
-        self.decoder_core_variables = Convolutional_Decoder(config_training, model_information['auto_encoding']['auto_encoder_core']).to(self.device)
-        self.decoder_vessel_variables = Convolutional_Decoder(config_training, model_information['auto_encoding']['auto_encoder_vessel']).to(self.device)
-        self.decoder_faces_variables = Convolutional_Decoder(config_training, model_information['auto_encoding']['auto_encoder_faces']).to(self.device)
+        self.initial_increase = Fully_Connected_Decoder(config_training, model_information['auto_encoding']['final_reduction_and_initial_increase'])
+        self.decoder_scalar_variables = Fully_Connected_Decoder(config_training, model_information['auto_encoding']['auto_encoder_scalar'])
+        self.decoder_plenum_variables = Fully_Connected_Decoder(config_training, model_information['auto_encoding']['auto_encoder_plenum'])
+        self.decoder_core_variables = Convolutional_Decoder(config_training, model_information['auto_encoding']['auto_encoder_core'])
+        self.decoder_vessel_variables = Convolutional_Decoder(config_training, model_information['auto_encoding']['auto_encoder_vessel'])
+        self.decoder_faces_variables = Convolutional_Decoder(config_training, model_information['auto_encoding']['auto_encoder_faces'])
         self.indeces = self.get_indeces_reconstruction_latent_vectors(model_information)
                 
     def get_indeces_reconstruction_latent_vectors(self, model_information:dict):

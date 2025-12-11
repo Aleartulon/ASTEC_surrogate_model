@@ -1,17 +1,17 @@
 physics_model : '../../../../scratch/ROM_datasets_ale/ASTEC/saved_logs/' # this is the Path to a directory for the training on a given dataset
-description : 'dataset_774_957_603_680_6_latent/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
-data_path : '../../../../scratch/ROM_datasets_ale/ASTEC/made_datasets/only_SBO/' #path of training and validation data
+description : 'dataset_7404_554_20_latent_only_AE_LOCA/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
+data_path : '../../../../scratch/ROM_datasets_ale/ASTEC/made_datasets/only_loca/' #path of training and validation data
 where_to_save_data : '../../../../scratch/ROM_datasets_ale/ASTEC/' #if dynamic_dataset_generation_during_training this is where data is saved, else it is where data for training is found
 model: 'AE_NODE'
-indeces_training_boundaries : [774,957,603,680]
-indeces_validation_boundaries : [681,724]
-reinitialize_model_at_each_dataset_reshape: true
+indeces_training_boundaries : [404,554]
+indeces_validation_boundaries : [555,585]
+reinitialize_model_at_each_dataset_reshape: false
 epochs: 10000 #maximum number of epochs
-learning_rate: 0.002 #initial learning rate
+learning_rate: 0.0015 #initial learning rate
 gamma_lr: 0.999 # gamma of  tc.optim.lr_scheduler.ExponentialLR()
 early_stopping: 500
 all_on_gpu: false
-dynamic_dataset_generation_during_training : true
+dynamic_dataset_generation_during_training : false
 time_windows: [
     10, 20, 30, 40, 50, 60, 70, 80, 90, 100,
     110, 120, 130, 140, 150, 160, 170, 180, 190, 200,
@@ -36,26 +36,26 @@ time_windows: [
 ]
 
 batch_sizes: [
-    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
-    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
-    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
-    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
-    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
-    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
-    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
-    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
-    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
-    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
-    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
-    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
-    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
-    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
-    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
-    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
-    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
-    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
-    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
-    256, 256, 256, 256, 256, 256, 256, 256, 256, 256]
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+    128, 128, 128, 128, 128, 128, 128, 128, 128, 128]
 
 waiting_epochs_before_new_dataset_creation: [
     50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
@@ -81,5 +81,5 @@ waiting_epochs_before_new_dataset_creation: [
 ]
 number_of_workers: 8
 checkpoint: false  # if true uses existing checkpoint
-device : 'cuda' #device where to train
+device : 'cuda:1' #device where to train
 which_normalization: 'mean_std' # min_max or mean_std

@@ -16,7 +16,6 @@ def build_dataset(batch_size:int, time_window: int, data_training_path: str, dat
     
     training_path = f"{data_training_path}{str(time_window)}{indeces_training_boundaries}.h5"
     validation_path = f"{data_validation_path}{str(time_window)}{indeces_validation_boundaries}.h5"
-    
     #build dataset made out of 'time_window' chunks
     subprocess.run(['python', '-m', 'src.dataset_generation.sliced_dataset.main', 
                 '--t_W', str(time_window), 
@@ -36,43 +35,47 @@ def build_dataset(batch_size:int, time_window: int, data_training_path: str, dat
     print('Length dataset: ', length_dataset)
     print('Batch size: ', batch_size)
     print('-------------------------------------------')
-    training_loader = DataLoader(dataset_training, batch_size = batch_size, num_workers = number_of_workers, shuffle=True,drop_last=False,pin_memory=pin_memory)
+    training_loader = DataLoader(dataset_training, batch_size = batch_size, num_workers = number_of_workers, shuffle=True,drop_last=False,pin_memory=pin_memory, prefetch_factor=2 if number_of_workers > 0 else None)
     validation_loader = DataLoader(dataset_validation, batch_size = batch_size, num_workers = number_of_workers, shuffle=True,drop_last=False,pin_memory=pin_memory)
     
     return training_loader, validation_loader
   
-def save_checkpoint(enco, f , dec, optimizer, scheduler, epoch, loss, loss_coeff_2, start_backprop,full_training_count,filepath):
+def save_checkpoint(encoder, f , decoder, optimizer, scheduler, epoch, loss_value, loss_coefficients_AR, before_next_window_change, how_many_datasets_creations, autoregressive_step, full_training_count,filepath):
   
     checkpoint = {
-            'enco':enco.state_dict(),
+            'encoder':encoder.state_dict(),
             'f':f.state_dict(),
-            'dec':dec.state_dict(),
-            'optim':optimizer.state_dict(),
+            'decoder':decoder.state_dict(),
+            'optimizer':optimizer.state_dict(),
             'scheduler':scheduler.state_dict(),
             'epoch' : epoch,
-            'loss' : loss,
-            'loss_coeff_2': loss_coeff_2,
-            'start_backprop': start_backprop,
-            'full_training_count' : full_training_count
+            'loss_value' : loss_value,
+            'loss_coefficients_AR' : loss_coefficients_AR,
+            'before_next_window_change' : before_next_window_change,
+            'how_many_datasets_creations' : how_many_datasets_creations,
+            'autoregressive_step': autoregressive_step,
+            'full_training_count': full_training_count,
         }
     tc.save(checkpoint, filepath)
 
 
-def load_checkpoint(enco, f , dec, optim, scheduler, filepath, device):
+def load_checkpoint(encoder, f , decoder, optimizer, scheduler, filepath, device):
 
     checkpoint = tc.load(filepath, map_location=device)
-    enco.load_state_dict(checkpoint['enco'])
+    encoder.load_state_dict(checkpoint['encoder'])
     f.load_state_dict(checkpoint['f'])
-    dec.load_state_dict(checkpoint['dec'])
-    optim.load_state_dict(checkpoint['optim'])
+    decoder.load_state_dict(checkpoint['decoder'])
+    optimizer.load_state_dict(checkpoint['optimizer'])
     scheduler.load_state_dict(checkpoint['scheduler'])
     epoch = checkpoint['epoch']
-    loss = checkpoint['loss']
-    loss_coeff_2 = checkpoint['loss_coeff_2']
-    start_backprop = checkpoint['start_backprop']
+    loss_value = checkpoint['loss_value']
+    loss_coefficients_AR = checkpoint['loss_coefficients_AR']
+    before_next_window_change = checkpoint['before_next_window_change']
+    how_many_datasets_creations = checkpoint['how_many_datasets_creations']
+    autoregressive_step = checkpoint['autoregressive_step']
     full_training_count = checkpoint['full_training_count']
         
-    return enco, f , dec, optim, scheduler , epoch, loss, loss_coeff_2, start_backprop, full_training_count
+    return encoder, f , decoder, optimizer, scheduler , epoch, loss_value, loss_coefficients_AR, before_next_window_change, how_many_datasets_creations, autoregressive_step, full_training_count
 
 
 class ASTEC_Dataset(Dataset):
@@ -270,16 +273,16 @@ def dynamics_MSE(input: tc.tensor, target: tc.tensor, length_of_padding: tc.tens
 def initialize_model_to_last_checkpoint(encoder, f, decoder, device : tc.device, path_to_checkpoint:str ):
 
     checkpoint = tc.load(path_to_checkpoint, map_location=device, weights_only=False)
-    encoder.load_state_dict(checkpoint['enco'])
+    encoder.load_state_dict(checkpoint['encoder'])
     f.load_state_dict(checkpoint['f'])
-    decoder.load_state_dict(checkpoint['dec'])
+    decoder.load_state_dict(checkpoint['decoder'])
 
 def initialize_parameters(model_information, encoder, decoder, f, device):
     if not model_information['is_coupled'][0] and model_information['is_coupled'][1] == 'NODE':
         checkpoint = tc.load(model_information['path_trained_AE']+'/checkpoint/check.pt', map_location=device, weights_only=False)
 
-        encoder.load_state_dict(checkpoint['enco'])
-        decoder.load_state_dict(checkpoint['dec'])
+        encoder.load_state_dict(checkpoint['encoder'])
+        decoder.load_state_dict(checkpoint['decoder'])
 
         for param in encoder.parameters():
             param.requires_grad = False
