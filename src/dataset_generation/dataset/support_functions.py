@@ -268,7 +268,6 @@ def fill_dictionary_of_variables(output_dict:dict, name:str, f:h5py._hl.files.Fi
         
     next_time_step = f['dimensions/time_points'][1:index_stop]
     previous_time_step = f['dimensions/time_points'][0:index_stop-1]
-    
     DT = next_time_step - previous_time_step
     DT = np.concatenate([next_time_step - previous_time_step, [DT[-1]]])[::subsampling_index]
     

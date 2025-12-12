@@ -1,8 +1,3 @@
-#Data information
-data_training_file_dinamic: 'data_training_normalized_t_W_' #use when modifying dynamically during training the dataset
-data_validation_file_dinamic: 'data_validation_normalized_t_W_' #use when modifying dynamically during training the dataset
-data_training_file : 'data_training_normalized_t_W_10_404_554.h5' #use when using a fixed dataset during training 
-data_validation_file : 'data_validation_normalized_t_W_10_555_585.h5' #use when using a fixed dataset during training 
 #Training information
 
 loss_coefficients: # coefficients that are multiplied to the loss function terms, signaling the relative importance of each [AE, TF, AUTOREGRESSIVE, TIME_GENERALIZATION]

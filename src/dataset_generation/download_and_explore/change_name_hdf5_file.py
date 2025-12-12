@@ -33,5 +33,5 @@ def rename_all_in_directory(directory):
             except Exception as e:
                 print(f"Error renaming {filename}: {e}")
 
-directory = '../../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/original_hdf5/'
+directory = '../../../../../../tudelft.net/staff-umbrella/eldar/ASTEC/ordered_hdf5/'
 rename_all_in_directory(directory)

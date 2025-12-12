@@ -35,10 +35,10 @@ class AE_NODE:
         self.which_normalization = config_training['which_normalization']
         self.data_path = config_training['data_path']
         self.where_to_save_data = config_training['where_to_save_data']
-        self.data_training_path = config_training['where_to_save_data'] + '/' + model_information['data_training_file']
-        self.data_validation_path = config_training['where_to_save_data'] + '/' + model_information['data_validation_file']
-        self.data_training_path_dynamic = config_training['where_to_save_data'] + '/' + model_information['data_training_file_dinamic']
-        self.data_validation_path_dynamic = config_training['where_to_save_data'] + '/' + model_information['data_validation_file_dinamic']
+        self.data_training_path = config_training['where_to_save_data'] + '/' + config_training['data_training_file']
+        self.data_validation_path = config_training['where_to_save_data'] + '/' + config_training['data_validation_file']
+        self.data_training_path_dynamic = config_training['where_to_save_data'] + '/' + config_training['data_training_file_dinamic']
+        self.data_validation_path_dynamic = config_training['where_to_save_data'] + '/' + config_training['data_validation_file_dinamic']
         self.batch_sizes = config_training['batch_sizes']
         self.early_stopping = config_training['early_stopping']
         self.number_of_workers = config_training['number_of_workers']
@@ -67,7 +67,6 @@ class AE_NODE:
         self.indeces_validation_boundaries = self.indeces_validation_boundaries[:-1]
         
         self.reinitialize_model_at_each_dataset_reshape = config_training['reinitialize_model_at_each_dataset_reshape']
-        
         #save conversion name file 
         shutil.copy( self.data_path + '/rename_log.txt', self.PATH_logs + '/rename_log.txt')
         
