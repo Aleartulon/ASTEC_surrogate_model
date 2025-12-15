@@ -336,7 +336,7 @@ class Convolutional_Decoder(nn.Module):
         for i in range(self.len_filters-1):
             self.transposed_convolutionals.extend([nn.ConvTranspose2d(self.filters[i],self.filters[i+1],self.kernel[i],self.strides[i],padding=self.size_kernel[i], output_padding = 0)])
             if convolutional_information["group_norm_decoder"][i+1]:
-                self.group_norm_layers.append(tc.nn.GroupNorm(self.filters[i]//2, self.filters[i]))
+                self.group_norm_layers.append(tc.nn.GroupNorm(self.filters[i+1]//2, self.filters[i+1]))
             else:
                 self.group_norm_layers.append(None)
             nn.init.xavier_uniform_(self.transposed_convolutionals[i].weight)
@@ -353,6 +353,8 @@ class Convolutional_Decoder(nn.Module):
         length = len(self.transposed_convolutionals)
         for i in range(length-1):
             x = self.transposed_convolutionals[i](x)
+            if self.convolutional_information[i+1]:
+                x = self.group_norm_layers[i+1](x)
             x = self.activation(x)
         x = self.transposed_convolutionals[-1](x)
         return x
@@ -367,26 +369,48 @@ class F_Latent(nn.Module):
         self.elu = nn.ELU()
         self.leaky = nn.LeakyReLU()
         self.activation = self.ELU
-        self.n_layers = model_information['n_layers_f']
+        self.number_of_layers = model_information['number_of_layers_f']
         self.parameter_information = model_information['parameter_information']
         self.n_FiLM_conditioning = model_information['n_FiLM_conditioning']
         self.scaling_output_factor = model_information['scaling_output_factor']
-
-        self.dropout = nn.Dropout(p=0.5)
-        
-        self.final_latent_dim = model_information['auto_encoding']['final_reduction_and_initial_increase']['output_dimension_encoder']
         n_neurons = model_information['n_neurons_f']
-
+        self.final_latent_dim = model_information['auto_encoding']['final_reduction_and_initial_increase']['output_dimension_encoder']
+        self.layer_norm_node = model_information['layer_norm_node']
+        self.layers_norm = tc.nn.ModuleList()
+        max_number_layer_norm = self.number_of_layers + 2 if self.number_of_layers > 0 else 1
+        
+        if max_number_layer_norm != len(model_information['layer_norm_node']):
+            raise TypeError(f'Length layer_norm_f is wrong. It is {len(model_information["layer_norm_node"])}, should be {max_number_layer_norm}.')
+        
+        #get dimensions of the output of each layer
+        dimension_outputs_layers = []
+        if self.number_of_layers > 0:
+            dimension_outputs_layers.append(n_neurons)
+        for i in range(self.number_of_layers):
+            dimension_outputs_layers.append(n_neurons)
+        dimension_outputs_layers.append(self.final_latent_dim)
+        
+        #build list of layers norm where needed
+        for count, l in enumerate(model_information['layer_norm_node']):
+            if l:
+                self.layers_norm.append(tc.nn.LayerNorm(dimension_outputs_layers[count]))
+            else:
+                self.layers_norm.append(None)
+                
         if self.parameter_information == 'concatenation':
-            if self.n_layers !=0:
+            if self.number_of_layers !=0:
 
                 if self.param_dim > 0:
                     self.linears = nn.ModuleList([nn.Linear(self.final_latent_dim + self.param_dim, n_neurons, bias = True)])
+                    self.layers_norm.append(tc.nn.LayerNorm(n_neurons))
                 else:
                     self.linears = nn.ModuleList([nn.Linear(self.final_latent_dim, n_neurons, bias = True)])
+                    self.layers_norm.append(tc.nn.LayerNorm(n_neurons))
 
-                self.linears.extend([nn.Linear(n_neurons, n_neurons, bias = True) for i in range(self.n_layers )])
+                self.linears.extend([nn.Linear(n_neurons, n_neurons, bias = True) for i in range(self.number_of_layers)])
+                self.layers_norm.extend([ tc.nn.LayerNorm(n_neurons) for i in range(self.number_of_layers)])
                 self.linears.append(nn.Linear(n_neurons, self.final_latent_dim, bias = True))
+                self.layers_norm.append(tc.nn.LayerNorm(self.final_latent_dim))
 
                 for i in self.linears:
                     nn.init.xavier_uniform_(i.weight)
@@ -394,11 +418,14 @@ class F_Latent(nn.Module):
                 nn.init.xavier_uniform_(self.linears[-1].weight)
                 
             else:
+                
                 if self.param_dim > 0:
                     self.dfnn = nn.Linear(self.final_latent_dim + self.param_dim, self.final_latent_dim, bias = True)
+                    self.layers_norm.append(tc.nn.LayerNorm(self.final_latent_dim))
                     nn.init.xavier_uniform_(i.weight)
                 else:
                     self.dfnn = nn.Linear(self.final_latent_dim, self.final_latent_dim, bias = True)
+                    self.layers_norm.append(tc.nn.LayerNorm(self.final_latent_dim))
                     nn.init.xavier_uniform_(i.weight)
 
 
@@ -411,8 +438,11 @@ class F_Latent(nn.Module):
                 self.param_FiLM_beta.extend([nn.Linear(self.param_dim, n_neurons, bias = True) for i in range(self.n_FiLM_conditioning)])
 
             self.linears = nn.ModuleList([nn.Linear(self.final_latent_dim, n_neurons, bias = True)])
-            self.linears.extend([nn.Linear(n_neurons, n_neurons, bias = True) for i in range(self.n_layers )])
-            self.linears.append(nn.Linear(n_neurons, self.final_latent_dim, bias = True))        
+            self.layers_norm.append(tc.nn.LayerNorm(n_neurons))
+            self.linears.extend([nn.Linear(n_neurons, n_neurons, bias = True) for i in range(self.number_of_layers )])
+            self.layers_norm.extend([tc.nn.LayerNorm(n_neurons) for i in range(self.number_of_layers )])
+            self.linears.append(nn.Linear(n_neurons, self.final_latent_dim, bias = True))   
+            self.layers_norm.append(tc.nn.LayerNorm(self.final_latent_dim))     
 
             for i in self.linears:
                 nn.init.xavier_uniform_(i.weight)
@@ -423,18 +453,6 @@ class F_Latent(nn.Module):
             raise ValueError("Wrong name of the type of parameter information")
 
     def forward(self, x:tc.tensor, parameter:tc.tensor):
-        """forward pass of the f function, which takes as input latent vectors x and parameters parameter. It takes (T-1) snapshots, all of them besides the last one to predict the next one
-
-        Args:
-            x (torch.tensor): a tensor of latent vectors of dimension [B*(T-1), final_latent_dim], where B is batch size, T is the len of the time series and latent dim is the dimension of the latent space.
-            parameter (torch.tensor): a tensor of dimension [B*(T-1), dim_param], where B is batch size, T is the len of the time series and dim_param is the number of parameters.
-
-        Returns:
-            torch.tensor: a tensor of latent vectors of dimension [B*T, final_latent_dim], where B is batch size, T is the len of the time series and latent dim is the dimension of the latent space.
-            It is the output of the function f (representing dx/dt).
-        """        
-        
-        x_input = x  # Store original input for final residual
         
         if self.parameter_information == 'concatenation':
             if self.param_dim > 0:
@@ -442,15 +460,21 @@ class F_Latent(nn.Module):
             
             # First layer
             x = self.linears[0](x)
+            if self.layer_norm_node[0]:
+                x = self.layers_norm[0](x)
             x = self.activation(x)
             
             # Middle layers with residual connections
-            for i in self.linears[1:-1]:
+            for count, i in enumerate(self.linears[1:-1]):
                 x = i(x)
+                if self.layer_norm_node[count+1]:
+                    x = self.layers_norm[count+1](x)
                 x = self.activation(x)
             
             # Final layer
             x = self.linears[-1](x)
+            if self.layer_norm_node[-1]:
+                x = self.layers_norm[-1](x)
             
             return x * self.scaling_output_factor
             
@@ -467,6 +491,8 @@ class F_Latent(nn.Module):
                 parameter_vector_gamma = self.param_FiLM_gamma[1](parameter)
                 parameter_vector_beta = self.param_FiLM_beta[1](parameter)
                 x = parameter_vector_gamma * x + parameter_vector_beta
+            if self.layer_norm_node[0]:
+                x = self.layers_norm[0](x)
             x = self.activation(x)
             
             # Middle layers with residual connections
@@ -476,9 +502,13 @@ class F_Latent(nn.Module):
                     parameter_vector_gamma = self.param_FiLM_gamma[count+1](parameter)
                     parameter_vector_beta = self.param_FiLM_beta[count+1](parameter)
                     x = parameter_vector_gamma * x + parameter_vector_beta
+                if self.layer_norm_node[count+1]:
+                    x = self.layers_norm[count+1](x)
                 x = self.activation(x)
                 
             # Final layer
             x = self.linears[-1](x)
-            
+            if self.layer_norm_node[-1]:
+                x = self.layers_norm[-1](x)
+                
             return x * self.scaling_output_factor

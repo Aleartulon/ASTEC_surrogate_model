@@ -10,20 +10,20 @@ loss_coefficients: # coefficients that are multiplied to the loss function terms
 
 loss_coefficients_not_coupled: # coefficients that are multiplied to the loss function terms when the trainin of AE and NODE is decoupled, signaling the relative importance of each [AE, TF, AUTOREGRESSIVE, TIME_GENERALIZATION]
 
-  AE: [1,1] #first one is for the field reconstruction, second one for the latent reconstruction per shape
-  TF: 0
-  AR: 0
-  Random_DT: 0
-  AR_strength: 0.0
-  lambda_regularization: 0.0001 #coefficients in front of the regularization term for the latent vector
+  AE: [0,0] #first one is for the field reconstruction, second one for the latent reconstruction per shape
+  TF: 1
+  AR: 1
+  Random_DT: 1
+  AR_strength: 0.001
+  lambda_regularization: 0.0 #coefficients in front of the regularization term for the latent vector
 
 k: 4 # stage of the Runge-Kutta solver for the latent dynamics
 time_of_AE: 50 # number of initial epochs where only the AutoEncoder is trained, i.e., loss_coeff_TF_AR_together = [1, 0, 0, 0]. 
 time_of_lr_war_up: 10 #number of epochs of the linear warm-up of the learning rate
 time_only_TF : 0 #number of initial epochs after warm up where only TF and not AR approach is used
 clipping: [1, 2.5] #[if 1 clipping is applied to f, maximum norm allowed to gradients]
-is_coupled : [false, 'AE'] #if true the AutoEncoder (AE) is trained coupled with the NODE. if false, if 'AE' the AE is trained, if 'NODE' the NODE is trained.
-path_trained_AE : '../../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/saved_logs/AE_NODE/Models/multiple_trajectories_only_AE/' #if is_coupled : [false, 'NODE'], provide the path to the models weights of the AE
+is_coupled : [true, 'NODE'] #if true the AutoEncoder (AE) is trained coupled with the NODE. if false, if 'AE' the AE is trained, if 'NODE' the NODE is trained.
+path_trained_AE : '../../../../../../../scratch/ROM_datasets_ale/ASTEC/saved_logs/AE_NODE/Models/dataset_1_153_192_396_398_500_layer_norm/' #if is_coupled : [false, 'NODE'], provide the path to the models weights of the AE
 
 autoregressive_step:
   which_technique: 'fully_autoregressive' # this can be 'TBPP_from_end', 'TBPP_from_start', 'fully_autoregressive'
@@ -37,8 +37,8 @@ auto_encoding:
 
     list_of_neurons_decoder: [50,50,60]
     last_activation_decoder: false
-    layer_norm_encoder : [true, true, true, true, true]
-    layer_norm_decoder : [true, true, true, true, true]
+    layer_norm_encoder : [true, true, true, true, false]
+    layer_norm_decoder : [true, true, true, true, false]
 
   #Auto-Encoder plenum
   auto_encoder_plenum:
@@ -49,8 +49,8 @@ auto_encoding:
 
     list_of_neurons_decoder: [50,50,50]
     last_activation_decoder: false
-    layer_norm_encoder : [true, true, true, true, true]
-    layer_norm_decoder : [true, true, true, true, true]
+    layer_norm_encoder : [true, true, true, true, false]
+    layer_norm_decoder : [true, true, true, true, false]
 
   #Auto-Encoder boundaries
   auto_encoder_boundaries:
@@ -58,7 +58,7 @@ auto_encoding:
     output_dimension_encoder: 30 #dimension of the latent space
     list_of_neurons_encoder: []
     last_activation_encoder: false
-    layer_norm_encoder : [true]
+    layer_norm_encoder : [false]
 
   #Auto-Encoder core
   auto_encoder_core:
@@ -73,8 +73,8 @@ auto_encoding:
     filters_decoder: [64,32,16,8] #number of middle of the decoder. First one is filters_encoder[-1] and last one is input_dimension_encoder[-2]
     strides_decoder: [[1,1],[2,1],[2,1],[1,1],[1,1],[1,1]] #strides of the decoder
     last_activation_decoder: false
-    group_norm_encoder : [true, true, true, true]
-    group_norm_decoder : [true,true,true,true,true,true, true]
+    group_norm_encoder : [true, true, true, false]
+    group_norm_decoder : [true,true,true,true,true,true, false]
 
   #Auto-Encoder vessel
   auto_encoder_vessel:
@@ -89,8 +89,8 @@ auto_encoding:
     filters_decoder: [64,32, 20, 18] #number of filters of the Decoder
     strides_decoder: [[1,1],[2,1],[2,1],[1,1],[1,1],[1,1]] #strides of the Decoder
     last_activation_decoder: false
-    group_norm_encoder : [true, true, true, true]
-    group_norm_decoder : [true,true,true,true,true,true, true]
+    group_norm_encoder : [true, true, true, false]
+    group_norm_decoder : [true,true,true,true,true,true, false]
 
   #Auto-Encoder faces
   auto_encoder_faces:
@@ -105,8 +105,8 @@ auto_encoding:
     filters_decoder: [64,32,16,8] #number of filters of the Encoder
     strides_decoder: [[1,1],[2,2],[2,1],[1,1],[1,1],[1,1]] #strides of the Encoder
     last_activation_decoder: false
-    group_norm_encoder : [true, true, true, true]
-    group_norm_decoder : [true,true,true,true,true,true, true]
+    group_norm_encoder : [true, true, true, false]
+    group_norm_decoder : [true,true,true,true,true,true, false]
 
   # Final_reduction
   final_reduction_and_initial_increase:
@@ -117,17 +117,17 @@ auto_encoding:
 
     list_of_neurons_decoder: [30,30,50]
     last_activation_decoder: false
-    layer_norm_encoder : [true, true, true, true, true]
-    layer_norm_decoder : [true,true,true, true, true]
+    layer_norm_encoder : [true, true, true, true, false]
+    layer_norm_decoder : [true,true,true, true, false]
 
 #NODE
-n_layers_f: 2 #number of hidden Dense layers which build up the function f
+number_of_layers_f: 4 #number of hidden Dense layers which build up the function f
 parameter_information: "concatenation" #how the parameter information is passed to f. either 'concatenation' or 'FiLM'
 n_FiLM_conditioning : 1 #number of FiLM layers (if FiLM is chosen instead of concatenation). FiLM = 1 only applies to the latent vector
 n_neurons_f: 200 #number of neurons of each layer of f
 NODE: true
 scaling_output_factor: 0.1
-layer_norm_node : [true, true, true,true]
+layer_norm_node : [true, true, true, true ,true, false]
 
 #Global
 weight_decay:
