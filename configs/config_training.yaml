@@ -1,5 +1,5 @@
 physics_model : '../../../../scratch/ROM_datasets_ale/ASTEC/saved_logs/' # this is the Path to a directory for the training on a given dataset
-description : 'dataset_1_153_192_396_398_500_20_latent_only_AE_LOCA/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
+description : 'dataset_1_153_192_396_398_500_layer_norm/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
 data_path : '../../../../scratch/ROM_datasets_ale/ASTEC/made_datasets/only_loca/' #path of training and validation data
 where_to_save_data : '../../../../scratch/ROM_datasets_ale/ASTEC/' #if dynamic_dataset_generation_during_training this is where data is saved, else it is where data for training is found
 model: 'AE_NODE'
@@ -7,7 +7,7 @@ indeces_training_boundaries : [1,153,192,396, 398, 500]
 indeces_validation_boundaries : [511, 582]
 reinitialize_model_at_each_dataset_reshape: false
 epochs: 10000 #maximum number of epochs
-learning_rate: 0.0015 #initial learning rate
+learning_rate: 0.001 #initial learning rate
 gamma_lr: 0.999 # gamma of  tc.optim.lr_scheduler.ExponentialLR()
 early_stopping: 500
 all_on_gpu: false
@@ -25,7 +25,7 @@ time_windows: [
     910, 920, 930, 940, 950, 960, 970, 980, 990, 1000,
     1010, 1020, 1030, 1040, 1050, 1060, 1070, 1080, 1090, 1100,
     1110, 1120, 1130, 1140, 1150, 1160, 1170, 1180, 1190, 1200,
-    1210, 1220, 1230, 1240, 1250, 1260, 1270, 1280, 1290, 1300,
+    1210, 1220, 1230, 1240, 1250, 1260, 1270, 2560, 1290, 1300,
     1310, 1320, 1330, 1340, 1350, 1360, 1370, 1380, 1390, 1400,
     1410, 1420, 1430, 1440, 1450, 1460, 1470, 1480, 1490, 1500,
     1510, 1520, 1530, 1540, 1550, 1560, 1570, 1580, 1590, 1600,
@@ -36,26 +36,26 @@ time_windows: [
 ]
 
 batch_sizes: [
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
-    128, 128, 128, 128, 128, 128, 128, 128, 128, 128]
+    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
+    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
+    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
+    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
+    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
+    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
+    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
+    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
+    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
+    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
+    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
+    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
+    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
+    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
+    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
+    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
+    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
+    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
+    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
+    256, 256, 256, 256, 256, 256, 256, 256, 256, 256]
 
 waiting_epochs_before_new_dataset_creation: [
     50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
@@ -81,7 +81,7 @@ waiting_epochs_before_new_dataset_creation: [
 ]
 number_of_workers: 8
 checkpoint: false  # if true uses existing checkpoint
-device : 'cuda:2' #device where to train
+device : 'cuda:1' #device where to train
 which_normalization: 'mean_std' # min_max or mean_std
 
 #Data information if dynamic_dataset_generation_during_training is false

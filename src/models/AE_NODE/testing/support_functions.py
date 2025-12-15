@@ -8,15 +8,6 @@ from src.models.AE_NODE.training.data_functions import dynamics_MSE
 from src.models.AE_NODE.training.architecture import F_Latent
 from torch import nn
 
-def compute_errors_autoencoder(trajectory: str, error_per_trajectory_per_field : dict, reconstructed_fields : list, fields : list, which_error: str):
-    if which_error == 'MSE_default':
-        _, MSE_default = auto_encoding_MSE(reconstructed_fields, fields, None, False)
-        error_per_trajectory_per_field['MSE_default'][trajectory] = MSE_default
-        
-    elif which_error == 'MSE_normalized':
-        _, MSE_normalized = auto_encoding_MSE(reconstructed_fields, fields, None, True)
-        error_per_trajectory_per_field['MSE_normalized'][trajectory] = MSE_normalized
-    
 def fill_in_dictionaries_autoencoder_step(trajectory:str, reconstructed_fields_per_trajectory:dict, latent_vectors_per_trajectory_per_field:dict,  final_latent_vector_per_trajectory:dict, denormalized_fields_per_trajectory:dict,
                                                  reconstructed_fields:list, latent_in_per_shape:list, latent_boundaries_variables:tc.tensor, definitive_latent_vector:tc.tensor, fields: list, boundary_conditions:list):
     
@@ -67,6 +58,7 @@ def MSE_normalized_by_mean(input:list, target:list, per_time_step: bool = False)
     input = input.double()
     target = target.double()
     loss = nn.MSELoss(reduction='none')
+    epsilon = 1e-8
     array_of_errors = []
     for count, i in enumerate(input):
         e = loss(i, target[count])
@@ -81,7 +73,7 @@ def MSE_normalized_by_mean(input:list, target:list, per_time_step: bool = False)
                 e = e.mean(dim = where_to_contract)
                 norm = norm.mean(dim = where_to_contract)
             
-        array_of_errors.append(e/norm)
+        array_of_errors.append(e/(norm+epsilon))
         
     return array_of_errors
 
@@ -89,6 +81,7 @@ def L2_error_norm(input:list, target:list, per_time_step: bool = False):
     array_of_errors = []
     input = input.double()
     target = target.double()
+    epsilon = 1e-8
     for count, i in enumerate(input):
         if len(i.size()) <= 2:
             e = tc.abs(i - target[count]).double()
@@ -99,7 +92,7 @@ def L2_error_norm(input:list, target:list, per_time_step: bool = False):
         if not per_time_step:
             e = e.mean(0)
             norm = norm.mean(0)
-        array_of_errors.append(e/norm)
+        array_of_errors.append(e/(norm+epsilon))
             
     return array_of_errors
     
