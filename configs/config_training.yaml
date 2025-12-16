@@ -1,17 +1,17 @@
 physics_model : '../../../../scratch/ROM_datasets_ale/ASTEC/saved_logs/' # this is the Path to a directory for the training on a given dataset
-description : 'dataset_1_153_192_396_398_500_layer_norm/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
+description : 'dataset_1_153_192_396_398_500_layer_norm_only_AE/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
 data_path : '../../../../scratch/ROM_datasets_ale/ASTEC/made_datasets/only_loca/' #path of training and validation data
 where_to_save_data : '../../../../scratch/ROM_datasets_ale/ASTEC/' #if dynamic_dataset_generation_during_training this is where data is saved, else it is where data for training is found
 model: 'AE_NODE'
 indeces_training_boundaries : [1,153,192,396, 398, 500]
 indeces_validation_boundaries : [511, 582]
-reinitialize_model_at_each_dataset_reshape: true
+reinitialize_model_at_each_dataset_reshape: false
 epochs: 10000 #maximum number of epochs
 learning_rate: 0.002 #initial learning rate
 gamma_lr: 0.999 # gamma of  tc.optim.lr_scheduler.ExponentialLR()
 early_stopping: 500
 all_on_gpu: false
-dynamic_dataset_generation_during_training : true
+dynamic_dataset_generation_during_training : false
 time_windows: [
     10, 20, 30, 40, 50, 60, 70, 80, 90, 100,
     110, 120, 130, 140, 150, 160, 170, 180, 190, 200,

@@ -167,23 +167,3 @@ class Training_Losses():
             final_sum += b_new.squeeze(0) * self.RK[str(self.k)][-1][i+2]
         e2 = definitive_latent + final_sum * dt
         return e2
-    
-    
-    def L2_relative_loss_general(self, inp:tc.tensor, target:tc.tensor, latent:bool):
-
-        eps = tc.tensor(1e-8)
-        if latent:
-            #with tc.no_grad():
-            norm = tc.sum(target**2, dim=-1, keepdim=True)**0.5
-            L2_relative = tc.mean(tc.sum((inp - target)**2,dim=-1, keepdim=True)**0.5 / tc.max(norm, eps))
-            return L2_relative
-        else:
-
-            if dim_inp > 1:
-                inp = inp.flatten(start_dim=-dim_inp)
-                target = target.flatten(start_dim=-dim_inp)
-            norm = tc.linalg.vector_norm(target, dim=-1)
-            L2_relative = tc.mean(tc.linalg.vector_norm(inp - target, dim=-1) / tc.max(norm, eps))
-            return L2_relative
-        
-    

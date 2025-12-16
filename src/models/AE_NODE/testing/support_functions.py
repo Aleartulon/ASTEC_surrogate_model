@@ -39,7 +39,6 @@ def compute_errors(trajectory:str, input: list, target:list, is_AE:bool):
     for count, i in enumerate(input):
         error = MSE_normalized_by_mean(i, target[count])
         dictionary_of_errors[str(trajectory)]['MSE_normalized_by_mean'].append(error)
-        
         #compute L2_error_norm
         error = L2_error_norm(i, target[count])
         dictionary_of_errors[str(trajectory)]['L2_error_norm'].append(error)
@@ -54,45 +53,43 @@ def compute_errors(trajectory:str, input: list, target:list, is_AE:bool):
     
     return dictionary_of_errors
 
-def MSE_normalized_by_mean(input:list, target:list, per_time_step: bool = False):
-    input = input.double()
-    target = target.double()
+def MSE_normalized_by_mean(input:tc.tensor, target:tc.tensor, per_time_step: bool = False):
+    input = input.double().squeeze(0)
+    target = target.double().squeeze(0)
     loss = nn.MSELoss(reduction='none')
     epsilon = 1e-8
     array_of_errors = []
-    for count, i in enumerate(input):
-        e = loss(i, target[count])
-        norm = (target[count]**2)
-        if not per_time_step:
-            where_to_contract = (0,) + tuple(np.arange(2,len(i.size()),1))
-            e = e.mean(dim = where_to_contract)
-            norm = norm.mean(dim = where_to_contract)
-        else:
-            where_to_contract = tuple(np.arange(2,len(i.size()),1))
-            if len(i.size())>2:
-                e = e.mean(dim = where_to_contract)
-                norm = norm.mean(dim = where_to_contract)
-            
-        array_of_errors.append(e/(norm+epsilon))
+    e = loss(input, target)
+    norm = (target**2)
+    where_to_contract = tuple(np.arange(2,len(input.size()),1))
+    if len(input.size())>2:
+        e = e.mean(dim = where_to_contract)
+        norm = norm.mean(dim = where_to_contract)
+        
+    e_normalized = e/(norm+epsilon)
+    if per_time_step:
+        array_of_errors.append(e_normalized)
+    else:
+        e_normalized = e_normalized.mean(0)
+        array_of_errors.append(e_normalized)
         
     return array_of_errors
 
-def L2_error_norm(input:list, target:list, per_time_step: bool = False):
+def L2_error_norm(input:tc.tensor, target:tc.tensor, per_time_step: bool = False):
     array_of_errors = []
-    input = input.double()
-    target = target.double()
+    input = input.double().squeeze(0)
+    target = target.double().squeeze(0)
     epsilon = 1e-8
-    for count, i in enumerate(input):
-        if len(i.size()) <= 2:
-            e = tc.abs(i - target[count]).double()
-            norm = tc.abs(target[count]).double()
-        else:
-            e = tc.linalg.vector_norm(i - target[count], dim = tuple(np.arange(2,len(i.size()),1))).double()
-            norm = tc.linalg.vector_norm(target[count], dim = tuple(np.arange(2,len(i.size()),1))).double()
-        if not per_time_step:
-            e = e.mean(0)
-            norm = norm.mean(0)
-        array_of_errors.append(e/(norm+epsilon))
+    if len(input.size()) <= 2: #for scalars it reduces to this computation
+        e = tc.abs(input - target).double()
+        norm = tc.abs(target).double()
+    else:
+        e = tc.linalg.vector_norm(input - target, dim = tuple(np.arange(2,len(input.size()),1))).double()
+        norm = tc.linalg.vector_norm(target, dim = tuple(np.arange(2,len(input.size()),1))).double()
+    e_normalized = e/(norm+epsilon)
+    if not per_time_step:
+        e_normalized = e_normalized.mean(0)
+    array_of_errors.append(e_normalized)
             
     return array_of_errors
     
