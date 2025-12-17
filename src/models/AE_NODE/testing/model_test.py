@@ -11,7 +11,6 @@ from src.models.AE_NODE.training.data_functions import standard_and_inverse_norm
 from src.models.AE_NODE.training.method_functions import Training_Losses
 from src.models.AE_NODE.testing.support_functions import *
 from src.dataset_generation.dataset.support_functions import build_dictionary_of_variables
-
 import matplotlib.pyplot as plt
 
 class Model_Test:
@@ -28,6 +27,7 @@ class Model_Test:
         self.directory_images_AutoEncoding_final_latent = self.directory_images + 'AutoEncoding/final_latent'
         self.directory_images_AutoEncoding_latent_per_shape = self.directory_images + 'AutoEncoding/latent_per_shape'
         self.directory_images_AutoEncoding_errors = self.directory_images + 'AutoEncoding/errors_reconstruction_fields'
+        self.directory_images_AutoEncoding_global_errors = self.directory_images + 'AutoEncoding/global_errors_reconstruction_fields'
         
         self.directory_images_TF_fields_reconstruction_scalar = self.directory_images + 'TF/fields_reconstruction_scalar'
         self.directory_images_TF_fields_reconstruction_2d = self.directory_images + 'TF/fields_reconstruction_2d'
@@ -35,6 +35,7 @@ class Model_Test:
         self.directory_images_TF_final_latent = self.directory_images + 'TF/final_latent'
         self.directory_images_TF_latent_per_shape = self.directory_images + 'TF/latent_per_shape'
         self.directory_images_TF_errors_fields = self.directory_images + 'TF/errors_reconstruction_fields'
+        self.directory_images_TF_global_errors_fields = self.directory_images + 'TF/global_errors_reconstruction_fields'
         self.directory_images_TF_errors_definitive_latent = self.directory_images + 'TF/errors_reconstruction_definitive_latent'
         self.directory_images_TF_errors_latent_per_shape = self.directory_images + 'TF/errors_reconstruction_latent_per_shape'
         
@@ -44,6 +45,7 @@ class Model_Test:
         self.directory_images_AE_NODE_final_latent = self.directory_images + 'AE_NODE/final_latent'
         self.directory_images_AE_NODE_latent_per_shape = self.directory_images + 'AE_NODE/latent_per_shape'
         self.directory_images_AE_NODE_errors_fields = self.directory_images + 'AE_NODE/errors_reconstruction_fields'
+        self.directory_images_AE_NODE_global_errors_fields = self.directory_images + 'AE_NODE/global_errors_reconstruction_fields'
         self.directory_images_AE_NODE_errors_definitive_latent = self.directory_images + 'AE_NODE/errors_reconstruction_definitive_latent'
         self.directory_images_AE_NODE_errors_latent_per_shape = self.directory_images + 'AE_NODE/errors_reconstruction_latent_per_shape'
         
@@ -81,6 +83,7 @@ class Model_Test:
         self.indeces_training_boundaries =  self.config_training['indeces_training_boundaries']
         
         self.indeces_training_boundaries = '_'
+        self.generate_istograms = information["generate_istograms"]
         
         for i in self.config_training['indeces_training_boundaries']:
             self.indeces_training_boundaries += str(i) + '_'
@@ -121,6 +124,7 @@ class Model_Test:
         os.makedirs(self.directory_images+'/'+ name +'/final_latent', exist_ok=True)
         os.makedirs(self.directory_images+'/'+ name +'/latent_per_shape', exist_ok=True)
         os.makedirs(self.directory_images+'/'+ name +'/errors_reconstruction_fields', exist_ok=True)
+        os.makedirs(self.directory_images+'/'+ name +'/global_errors_reconstruction_fields', exist_ok=True)
         
         if not AE:
             os.makedirs(self.directory_images+'/'+ name +'/errors_reconstruction_definitive_latent', exist_ok=True)
@@ -138,6 +142,9 @@ class Model_Test:
                     
                 if self.autoencoding_latent_figures:
                     self.generate_pictures_latent_space(str(trajectory_to_be_plotted), latent_vectors_per_trajectory_per_shape_AE, definitive_latent_vector_per_trajectory_AE,Time, 'AE')
+                    
+            #compute global errors AutoEncoding
+            compute_global_errors(self.directory_images_AutoEncoding_errors, self.directory_images_AutoEncoding_global_errors, generate_istograms = self.generate_istograms, which_prediction = 'AutoEncoder')
             
             # print Operator Actions of wanted simulations
             self.print_operator_actions(definitive_latent_vector_per_trajectory_AE)
@@ -170,7 +177,9 @@ class Model_Test:
                         definitive_latent_vector_per_trajectory_AE[trajectory_to_be_plotted] = definitive_latent_vector_per_trajectory_AE[trajectory_to_be_plotted][1:,:]
                         latent_vectors_per_trajectory_per_shape_AE[trajectory_to_be_plotted] = [x[1:,:] for x in latent_vectors_per_trajectory_per_shape_AE[trajectory_to_be_plotted]]
                     self.generate_pictures_latent_space(trajectory_to_be_plotted, latent_vectors_per_trajectory_per_shape_AE, definitive_latent_vector_per_trajectory_AE, Time, 'AE_NODE', latent_vectors_per_trajectory_per_shape_AE_NODE, definitive_latent_vector_per_trajectory_AE_NODE)
-                
+                    
+            #compute global errors AE_NODE
+            compute_global_errors(self.directory_images_AE_NODE_errors_fields, self.directory_images_AE_NODE_global_errors_fields, generate_istograms = self.generate_istograms, which_prediction = 'AE NODE')
             print('-----------------------------------------------------------------------')
             
     def print_operator_actions(self, definitive_latent_vector_per_trajectory_AE:dict):

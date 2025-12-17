@@ -3,10 +3,13 @@ from torch.utils.data import Dataset
 import torch as tc
 import h5py
 import numpy as np
+import pandas as pd
+import os
 from src.models.AE_NODE.training.data_functions import auto_encoding_MSE
 from src.models.AE_NODE.training.data_functions import dynamics_MSE
 from src.models.AE_NODE.training.architecture import F_Latent
 from torch import nn
+import matplotlib.pyplot as plt
 
 def fill_in_dictionaries_autoencoder_step(trajectory:str, reconstructed_fields_per_trajectory:dict, latent_vectors_per_trajectory_per_field:dict,  final_latent_vector_per_trajectory:dict, denormalized_fields_per_trajectory:dict,
                                                  reconstructed_fields:list, latent_in_per_shape:list, latent_boundaries_variables:tc.tensor, definitive_latent_vector:tc.tensor, fields: list, boundary_conditions:list):
@@ -92,4 +95,91 @@ def L2_error_norm(input:tc.tensor, target:tc.tensor, per_time_step: bool = False
     array_of_errors.append(e_normalized)
             
     return array_of_errors
+    
+def compute_global_errors(where_to_get_data:str, where_to_save_data: str, generate_istograms: bool, which_prediction: str):
+    txt_files = [f for f in os.listdir(where_to_get_data) if f.endswith('.txt')]
+    # create dictionary of errors
+    dictionary_of_errors = {
+        'MSE_normalized_by_mean' :{},
+        'L2_error_norm' : {}
+    }
+    statistics_errors = {
+        'MSE_normalized_by_mean' :{},
+        'L2_error_norm' : {}
+    }
+    df = pd.read_csv(f"{where_to_get_data}/{txt_files[0]}", sep='\t')
+    for x in df['Variable name']:
+        dictionary_of_errors['MSE_normalized_by_mean'][x] = []
+        dictionary_of_errors['L2_error_norm'][x] = []
+        
+        statistics_errors['MSE_normalized_by_mean'][x] = []
+        statistics_errors['L2_error_norm'][x] = []
+        
+    # Now cycle over all and append
+    for f in txt_files:
+        df = pd.read_csv(f"{where_to_get_data}/{f}", sep='\t')
+        norm_by_mean = df['MSE_normalized_by_mean']
+        L2_norm = df['L2_error_norm']
+        variable_name = df['Variable name']
+        for count, name in enumerate(variable_name):
+            dictionary_of_errors['MSE_normalized_by_mean'][name].append(norm_by_mean[count])
+            dictionary_of_errors['L2_error_norm'][name].append(L2_norm[count])
+            
+    # compute average and std for variable
+    for name in dictionary_of_errors['MSE_normalized_by_mean']:
+        mean = np.mean(dictionary_of_errors['MSE_normalized_by_mean'][name])
+        std = np.std(dictionary_of_errors['MSE_normalized_by_mean'][name])
+        
+        statistics_errors['MSE_normalized_by_mean'][name].append(mean)
+        statistics_errors['MSE_normalized_by_mean'][name].append(std)
+        
+    for name in dictionary_of_errors['L2_error_norm']:
+        mean = np.mean(dictionary_of_errors['L2_error_norm'][name])
+        std = np.std(dictionary_of_errors['L2_error_norm'][name])
+        
+        statistics_errors['L2_error_norm'][name].append(mean)
+        statistics_errors['L2_error_norm'][name].append(std)
+        
+    write_dict_to_txt(statistics_errors['MSE_normalized_by_mean'], f"{where_to_save_data}/MSE_normalized_by_mean.txt", len(txt_files), txt_files)
+    write_dict_to_txt(statistics_errors['L2_error_norm'], f"{where_to_save_data}/L2_error_norm.txt", len(txt_files),txt_files)
+    
+    # generate instograms
+    if generate_istograms:
+        for variable in dictionary_of_errors['MSE_normalized_by_mean']:
+            plt.figure(figsize = (5,5))
+            plt.hist(dictionary_of_errors['MSE_normalized_by_mean'][variable], bins=100, edgecolor='black')
+            plt.xlabel('MSE normalized by mean', fontsize = 16)
+            plt.ylabel('Frequency', fontsize = 16)
+            plt.title(f"{variable.replace('_', ' ')}, {which_prediction} prediction", fontsize = 16)
+            plt.savefig(f'{where_to_save_data}/hist_{variable}_MSE_normalized_by_mean.png', dpi=300, bbox_inches='tight')
+            plt.close()
+            
+        for variable in dictionary_of_errors['L2_error_norm']:
+            plt.figure(figsize = (5,5))
+            plt.hist(dictionary_of_errors['L2_error_norm'][variable], bins=100, edgecolor='black')
+            plt.xlabel('L2 error norm', fontsize = 16)
+            plt.ylabel('Frequency', fontsize = 16)
+            plt.title(f"{variable.replace('_', ' ')}, {which_prediction} prediction", fontsize = 16)
+            plt.savefig(f'{where_to_save_data}/hist_{variable}_L2_error_norm.png', dpi=300, bbox_inches='tight')
+            plt.close()
+        
+    return 0
+
+def write_dict_to_txt(data_dict, output_file, how_many_trajectories: int, which_trajectories: list):
+
+    with open(output_file, 'w') as f:
+        # Write header
+        f.write(f"{'Variable name':<40} {'Mean':<20} {'Std':<20}\n")
+        f.write("-" * 80 + "\n")
+        
+        # Write data rows
+        for var_name, values in data_dict.items():
+            mean = values[0]
+            std = values[1]
+            f.write(f"{var_name:<40} {mean:<20.10e} {std:<20.10e}\n")
+        f.write("-" * 80 + "\n")
+        f.write(f"{how_many_trajectories} total trajectories for testing \n")
+        f.write(f"Files used:")
+        for i in which_trajectories:
+            f.write(f"{i}\n")
     

@@ -1,7 +1,7 @@
 path_to_test_data : '../../../../../../../scratch/ROM_datasets_ale/ASTEC/made_datasets/only_loca/'
 name_test_file: 'data_testing_582_602.h5'
 path_to_model: '../../../../../../../scratch/ROM_datasets_ale/ASTEC/saved_logs/AE_NODE/Models/dataset_1_153_192_396_398_500_layer_norm_only_AE/'
-device: 'cuda:1'
+device: 'cuda:2'
 trajectories_to_be_plotted : [587,594,601]
 autoencoding_figures : true
 autoencoding_latent_figures : true
@@ -12,3 +12,4 @@ TF_fields_prediction_figures: true
 TF_latent_prediction_figures: true
 compute_TF : true
 operator_actions_indeces : [587,594,601]
+generate_istograms : true

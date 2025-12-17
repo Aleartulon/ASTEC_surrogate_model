@@ -106,6 +106,13 @@ class AE_NODE:
             self.maxima_or_mean[key] = self.maxima_or_mean[key].to(self.device)
             self.minima_or_std[key] = self.minima_or_std[key].to(self.device)
             
+        for key in self.maxima_or_mean:
+            print(f'maxima_or_mean {key}, ',self.maxima_or_mean[key])   
+            print(' ')
+            
+        for key in self.minima_or_std:
+            print(f'minima_or_std {key}, ',self.minima_or_std[key])
+            
         #define the ENCODER, the function f of the latent dynamics and the Decoder 
         self.encoder = Encoder(config_training, model_information)
         self.decoder = Decoder(config_training, model_information)
