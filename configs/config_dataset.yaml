@@ -9,7 +9,7 @@ percentages_sampling_testing : [0.1, 0.9] # percentage of testing trajectories w
 subsampling_training : [1,2] # subsamplings of trajectories in training dataset
 subsampling_validation : [1,2] # subsamplings of trajectories in validation dataset
 subsampling_testing : [1 , 1] # subsamplings of trajectories in testing dataset
-device : 'cuda'
+device : 'cuda:1'
 save_dictionary_per_time_lengths : false
 which_normalization : 'mean_std' #min_max or mean_std
-testing: true
+testing: false

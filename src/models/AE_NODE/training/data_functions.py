@@ -220,8 +220,6 @@ def auto_encoding_MSE(input: list, target: list, length_of_padding: tc.tensor = 
                 normalized_loss = element_loss / (normalization + epsilon)
                 masked_normalized_loss = normalized_loss[mask]
                 mse_per_variable.append(masked_normalized_loss.sum() / mask.sum())
-                if masked_normalized_loss.sum() / mask.sum() > 1e10:
-                    print('a')
                 mse = tc.concatenate([mse, masked_normalized_loss]) #only send the ones not masked to mse
             else:
                 masked_loss = element_loss[mask]
@@ -233,11 +231,6 @@ def auto_encoding_MSE(input: list, target: list, length_of_padding: tc.tensor = 
             if is_denormalized_validation:
                 normalization = get_target_normalization(target[count])
                 not_reduced_mse = not_reduced_mse / (normalization + epsilon)
-                if not_reduced_mse.mean() >1e10:
-                    print('b')
-                    print(target[count])
-                    print(normalization)
-                    exit()
             mse_per_variable.append(not_reduced_mse.mean())
             mse = tc.concatenate([mse,not_reduced_mse.flatten()])
     mse_per_variable = tc.stack(mse_per_variable)

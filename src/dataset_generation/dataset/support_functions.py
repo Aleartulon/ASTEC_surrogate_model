@@ -333,16 +333,35 @@ def extract_input_output_bc_variables(path, index_simulation:str, subsampling_in
     name_simulation = str(index_simulation) + '.h5'
     with h5py.File(path+'/'+str(name_simulation), 'r') as f:
         vessel_rupture_time = f['other/global/vessel_rupture_time'][-1]
+        print(' ')
+        print('vessel_rupture_time:', vessel_rupture_time)
         if not np.isnan(vessel_rupture_time):
             index_stop = np.where(f['dimensions/time_points'][:] >= vessel_rupture_time)[0][0]
             index_stop = len(f['dimensions/time_points'][0:index_stop])
         else:
-            index_stop = len(f['dimensions/time_points'][:])
+            index_stop = check_index_stop_for_not_vessel_rupture_simulations(f)
+        print('index_stop:', index_stop)
         time_of_simulations.append(f['dimensions/time_points'][:][0:index_stop][::subsampling_index])   
+        print('Last time step present: ', time_of_simulations[0][-1])
         output_dict[index_simulation] = build_dictionary_of_variables()
         fill_dictionary_of_variables(output_dict, index_simulation, f, index_stop, subsampling_index)
 
     return output_dict, time_of_simulations
+
+def check_index_stop_for_not_vessel_rupture_simulations(file: h5py._hl.files.File):
+    # Load all datasets once
+    Q_m_liq = file['vessel/face/Q_m_liq_face'][:]
+    V_gas = file['vessel/face/V_gas_face'][:]
+    V_liq = file['vessel/face/V_liq_face'][:]
+
+    mask = (Q_m_liq > 1e30) | (V_gas > 1e30) | (V_liq > 1e30)
+
+    bad_timesteps = np.any(mask, axis=tuple(range(1, mask.ndim)))
+    bad_indices = np.where(bad_timesteps)[0]
+    
+    if len(bad_indices) > 0:
+        return bad_indices[0] - 1
+    return len(Q_m_liq) - 1
 
 def extract_time_of_simulation(path, index_simulation:str, subsampling_index:int):
     name_simulation = str(index_simulation) + '.h5'
