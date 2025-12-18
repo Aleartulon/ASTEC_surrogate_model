@@ -178,6 +178,14 @@ class Astec_Dataset():
             with open(f"{self.where_to_save_data}/minima_or_std{self.indeces_training_boundaries}.pkl", 'rb') as file:
                 self.minima_or_std = pickle.load(file)
                 
+            for key in self.maxima_or_mean:
+                print(f'maxima_or_mean {key}, ',self.maxima_or_mean[key])
+                
+            print(' ')
+            
+            for key in self.minima_or_std:
+                print(f'minima_or_std {key}, ',self.minima_or_std[key])
+                
         #normalize dictionary_per_simulation 
         t9 = time.time()
         with h5py.File(self.path_to_constructed_data, 'r+') as f:

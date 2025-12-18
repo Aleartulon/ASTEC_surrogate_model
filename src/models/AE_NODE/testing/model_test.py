@@ -90,19 +90,25 @@ class Model_Test:
         self.indeces_training_boundaries = self.indeces_training_boundaries[:-1]
         
         #get normalization
-        
         with open(f"{self.path_to_test_data}/maxima_or_mean{self.indeces_training_boundaries}.pkl", 'rb') as file:
             self.maxima_or_mean = pickle.load(file)
         
-        with open(f"{self.path_to_test_data}/maxima_or_mean{self.indeces_training_boundaries}.pkl", 'rb') as file:
+        with open(f"{self.path_to_test_data}/minima_or_std{self.indeces_training_boundaries}.pkl", 'rb') as file:
             self.minima_or_std = pickle.load(file)
         
+        for key in self.maxima_or_mean:
+                print(f'maxima_or_mean {key}, ',self.maxima_or_mean[key])
+                
+        print(' ')
+            
+        for key in self.minima_or_std:
+            print(f'minima_or_std {key}, ',self.minima_or_std[key])
+                
         for key in self.maxima_or_mean:
             self.maxima_or_mean[key] = self.maxima_or_mean[key].to(self.device)
             self.minima_or_std[key] = self.minima_or_std[key].to(self.device)
             
-        print('Minima or std', self.minima_or_std)
-        print('Maxima or mean', self.maxima_or_mean)
+            
         
         #define models and load saved checkpoint  
         self.encoder = Encoder(self.config_training, self.models_information)

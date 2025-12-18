@@ -7,8 +7,6 @@ from src.models.AE_NODE.training.architecture import *
 from src.models.AE_NODE.training.data_functions import *
 from src.models.AE_NODE.training.training_validation_functions import Training
 
-
-
 class AE_NODE:
     def __init__(self , config_training: dict, model_information: dict):
         
@@ -19,7 +17,7 @@ class AE_NODE:
         self.epochs = config_training['epochs']
         self.PATH_logs = config_training['PATH']
         self.checkpoint = config_training['checkpoint']
-        
+        self.mixed_precision = config_training['mixed_precision']
 
         self.loss_coefficients = model_information['loss_coefficients'] if model_information['is_coupled'][0] else model_information['loss_coefficients_not_coupled']
         self.time_only_TF = model_information['time_only_TF']
@@ -94,7 +92,6 @@ class AE_NODE:
                 dataset_validation = ASTEC_Dataset(self.data_validation_path, self.all_on_gpu, self.device)
                 self.validation_loader = DataLoader(dataset_validation, batch_size = self.batch_sizes[0], num_workers = self.number_of_workers, shuffle=True,drop_last=False,pin_memory=self.pin_memory)
         #get normalization information
-        
         with open(f"{config_training['data_path']}/maxima_or_mean{self.indeces_training_boundaries}.pkl", 'rb') as f:
             self.maxima_or_mean = pickle.load(f)
 
@@ -133,14 +130,12 @@ class AE_NODE:
         self.scheduler = tc.optim.lr_scheduler.ExponentialLR(self.optim, config_training['gamma_lr'])
         
         self.RK = {k: tc.tensor([[self.safe_eval(val) for val in row] for row in v]) for k, v in model_information['RK'].items()}
-        if tc.cuda.is_available():
+        if tc.cuda.is_available() and self.mixed_precision:
             self.scaler = GradScaler()
             print("Scaler defined")
         else:
             self.scaler = None
-        
-        
-        
+
         #training starts
         
     def start_training(self):

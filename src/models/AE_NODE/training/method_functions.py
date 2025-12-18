@@ -123,9 +123,7 @@ class Training_Losses():
                 fields = [tensor[:, 1:, ...] for tensor in fields]
                 
             reconstructed_latent = tc.zeros_like(true_latent)[:,1:,:]
-            
-            with tc.no_grad():
-                next_latent, _, _ , _ = self.encoder(initial_condition)
+            next_latent, _, _ , _ = self.encoder(initial_condition)
             
             for count in range(number_of_time_steps-1):
                 
