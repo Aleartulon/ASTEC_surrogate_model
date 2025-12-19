@@ -216,8 +216,8 @@ def auto_encoding_MSE(input: list, target: list, length_of_padding: tc.tensor = 
             element_loss = loss_no_reduction(i, target[count]) 
             mask = create_padding_mask( size_of_tensor=i.size(), length_of_padding=length_of_padding, device = device).bool()
             if is_denormalized_validation:
-                normalization = get_target_normalization(target[count])
-                normalized_loss = element_loss / (normalization + epsilon)
+                normalization = get_maxima(target[count])
+                normalized_loss = element_loss**0.5 / (normalization + epsilon)
                 masked_normalized_loss = normalized_loss[mask]
                 mse_per_variable.append(masked_normalized_loss.sum() / mask.sum())
                 mse = tc.concatenate([mse, masked_normalized_loss]) #only send the ones not masked to mse
@@ -229,24 +229,22 @@ def auto_encoding_MSE(input: list, target: list, length_of_padding: tc.tensor = 
         for count, i in enumerate(input):
             not_reduced_mse = loss_no_reduction(i,target[count])
             if is_denormalized_validation:
-                normalization = get_target_normalization(target[count])
-                not_reduced_mse = not_reduced_mse / (normalization + epsilon)
+                normalization = get_maxima(target[count])
+                not_reduced_mse = not_reduced_mse**0.5 / (normalization + epsilon)
             mse_per_variable.append(not_reduced_mse.mean())
             mse = tc.concatenate([mse,not_reduced_mse.flatten()])
     mse_per_variable = tc.stack(mse_per_variable)
     return mse.mean(), mse_per_variable
 
-def get_target_normalization(target: tc.tensor):
+def get_maxima(target: tc.tensor):
     size = target.size()
-    normalization = (target**2).mean((0,1))
-    normalization = normalization[None,None,...]
+    where_to_contract = tuple(np.arange(3,len(target.size()),1))
+    maxima = tc.amax(target, (1,) + where_to_contract) 
     if len(size) > 3:
-        where_to_contract = tuple(np.arange(3,len(size),1))
-        normalization = (target**2).mean(where_to_contract)
-        normalization = normalization[:,:,:,None,None]
+        maxima = maxima[:, None,:,None,None]
     else:
-        normalization = target**2
-    return normalization
+        maxima = maxima[:, None,:]
+    return maxima
     
 def dynamics_MSE(input: tc.tensor, target: tc.tensor, length_of_padding: tc.tensor = None):
     device = input[0].device

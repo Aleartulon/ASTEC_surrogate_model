@@ -128,13 +128,14 @@ def RMSE(input:tc.tensor, target:tc.tensor, per_time_step: bool = False):
     return array_of_errors
 
 def RMSE_divided_by_max(input:tc.tensor, target:tc.tensor, per_time_step: bool = False):
+    epsilon = 1e-8
     input = input.double().squeeze(0)
     target = target.double().squeeze(0)
     loss = nn.MSELoss(reduction='none')
     array_of_errors = []
     e = loss(input, target) ** 0.5
     where_to_contract = tuple(np.arange(2,len(input.size()),1))
-    maxima = tc.amax(e, (0,) + where_to_contract) 
+    maxima = tc.amax(target, (0,) + where_to_contract) + epsilon
     
     if len(input.size())>2:
         maxima = maxima[None, :, None, None]
