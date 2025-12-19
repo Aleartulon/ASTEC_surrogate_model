@@ -56,9 +56,9 @@ class Training_Losses():
         else:
             l1_mean, l1_per_shape = auto_encoding_MSE(reconstructed_variables, fields, length_of_padding) 
             l1_latent, _ = auto_encoding_MSE(reconstructed_latent_per_shape, latent_per_shape, length_of_padding)  #latent reconstruction per shape
-            reconstructed_variables = standard_and_inverse_normalization_field(reconstructed_variables, self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)
-            fields = standard_and_inverse_normalization_field(fields, self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)
-            l1_mean_denormalized, l1_mean_denormalized_per_variable = auto_encoding_MSE(reconstructed_variables, fields, length_of_padding, is_denormalized_validation = True)
+            #reconstructed_variables = standard_and_inverse_normalization_field(reconstructed_variables, self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)
+            #fields = standard_and_inverse_normalization_field(fields, self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)
+            l1_mean_denormalized, l1_mean_denormalized_per_variable = auto_encoding_MSE(reconstructed_variables, fields, length_of_padding, is_denormalized_validation = False)
 
             l1 = [l1_mean * loss_coeff[0][0], l1_per_shape * loss_coeff[0][0], l1_mean_denormalized * loss_coeff[0][0], l1_mean_denormalized_per_variable * loss_coeff[0][0], l1_latent * loss_coeff[0][1]]
             
@@ -119,13 +119,11 @@ class Training_Losses():
             
         if which_technique == 'fully_autoregressive' or (not train):  #Encode initial condition and evolve in latent. Always done at validation to compute the actual final loss autoregressively
             if (not train):
-                fields = standard_and_inverse_normalization_field(fields, self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)
+                #fields = standard_and_inverse_normalization_field(fields, self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)
                 fields = [tensor[:, 1:, ...] for tensor in fields]
                 
             reconstructed_latent = tc.zeros_like(true_latent)[:,1:,:]
-            
-            with tc.no_grad():
-                next_latent, _, _ , _ = self.encoder(initial_condition)
+            next_latent, _, _ , _ = self.encoder(initial_condition)
             
             for count in range(number_of_time_steps-1):
                 
@@ -141,7 +139,7 @@ class Training_Losses():
                 output_decoder = [tensor.reshape((B, T) + tensor.size()[1:]) for tensor in output_decoder]
                 output_decoder = standard_and_inverse_normalization_field(output_decoder, self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)
 
-                l_final, l_final_per_variable = auto_encoding_MSE(output_decoder, fields, F.relu((length_of_padding-1)), is_denormalized_validation = True) 
+                l_final, l_final_per_variable = auto_encoding_MSE(output_decoder, fields, F.relu((length_of_padding-1)), is_denormalized_validation = False) 
                 
                 return l2_AR * loss_coeff, (l_final, l_final_per_variable)
             
@@ -167,23 +165,3 @@ class Training_Losses():
             final_sum += b_new.squeeze(0) * self.RK[str(self.k)][-1][i+2]
         e2 = definitive_latent + final_sum * dt
         return e2
-    
-    
-    def L2_relative_loss_general(self, inp:tc.tensor, target:tc.tensor, latent:bool):
-
-        eps = tc.tensor(1e-8)
-        if latent:
-            #with tc.no_grad():
-            norm = tc.sum(target**2, dim=-1, keepdim=True)**0.5
-            L2_relative = tc.mean(tc.sum((inp - target)**2,dim=-1, keepdim=True)**0.5 / tc.max(norm, eps))
-            return L2_relative
-        else:
-
-            if dim_inp > 1:
-                inp = inp.flatten(start_dim=-dim_inp)
-                target = target.flatten(start_dim=-dim_inp)
-            norm = tc.linalg.vector_norm(target, dim=-1)
-            L2_relative = tc.mean(tc.linalg.vector_norm(inp - target, dim=-1) / tc.max(norm, eps))
-            return L2_relative
-        
-    

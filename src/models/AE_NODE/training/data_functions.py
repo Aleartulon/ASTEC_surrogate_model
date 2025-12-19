@@ -204,55 +204,48 @@ def create_padding_mask(size_of_tensor: list, length_of_padding: tc.tensor, devi
 def auto_encoding_MSE(input: list, target: list, length_of_padding: tc.tensor = None, is_denormalized_validation = False):
     device = input[0].device
     loss_no_reduction = nn.MSELoss(reduction='none')
-    loss = nn.MSELoss()
-    
+    epsilon = 1e-8
     mse = tc.tensor([], device = device)
     mse_per_variable = []
-    counting_elements = []
     if is_denormalized_validation:
-        for count, i in enumerate(input):
-            if is_denormalized_validation:
-                i = i.double()
-                target[count] = target[count].double()
+       input = [x.double() for x in input]
+       target = [x.double() for x in target]
         
     if (length_of_padding is not None) and tc.any(length_of_padding != 0.0):
-        for count, i in enumerate(input):  
-            size = i.size() 
-            
+        for count, i in enumerate(input): 
             element_loss = loss_no_reduction(i, target[count]) 
             mask = create_padding_mask( size_of_tensor=i.size(), length_of_padding=length_of_padding, device = device).bool()
-            masked_loss = element_loss[mask] #flattened vector of values not masked
             if is_denormalized_validation:
-                masked_target = ((target[count])**2)[mask].mean()
-                mse_per_variable.append((masked_loss/masked_target).sum() / mask.sum())
-                mse = tc.concatenate([mse, masked_loss/masked_target]) #only send the ones not masked to mse
-                
+                normalization = get_maxima(target[count])
+                normalized_loss = element_loss**0.5 / (normalization + epsilon)
+                masked_normalized_loss = normalized_loss[mask]
+                mse_per_variable.append(masked_normalized_loss.sum() / mask.sum())
+                mse = tc.concatenate([mse, masked_normalized_loss]) #only send the ones not masked to mse
             else:
+                masked_loss = element_loss[mask]
                 mse_per_variable.append(masked_loss.sum() / mask.sum())
-                mse = tc.concatenate([mse, masked_loss])
-                
-            counting_elements.append(mask.sum())
-                
+                mse = tc.concatenate([mse, masked_loss])     
     else:
         for count, i in enumerate(input):
-            size = i.size()
-            normal_mse = loss(i,target[count])
             not_reduced_mse = loss_no_reduction(i,target[count])
-            
             if is_denormalized_validation:
-                normal_mse = normal_mse/(target[count]**2).mean()
-                not_reduced_mse = (not_reduced_mse / (target[count]**2).mean()).flatten()
-                
-            mse_per_variable.append(normal_mse)
+                normalization = get_maxima(target[count])
+                not_reduced_mse = not_reduced_mse**0.5 / (normalization + epsilon)
+            mse_per_variable.append(not_reduced_mse.mean())
             mse = tc.concatenate([mse,not_reduced_mse.flatten()])
-            
-            counting_elements.append(np.prod(size))
-                
-    #print('mse_per_variable',mse_per_variable)
     mse_per_variable = tc.stack(mse_per_variable)
-    counting_elements = tc.tensor(counting_elements, device = device)
     return mse.mean(), mse_per_variable
 
+def get_maxima(target: tc.tensor):
+    size = target.size()
+    where_to_contract = tuple(np.arange(3,len(target.size()),1))
+    maxima = tc.amax(target, (1,) + where_to_contract) 
+    if len(size) > 3:
+        maxima = maxima[:, None,:,None,None]
+    else:
+        maxima = maxima[:, None,:]
+    return maxima
+    
 def dynamics_MSE(input: tc.tensor, target: tc.tensor, length_of_padding: tc.tensor = None):
     device = input[0].device
     loss_no_reduction = nn.MSELoss(reduction='none')
@@ -267,8 +260,6 @@ def dynamics_MSE(input: tc.tensor, target: tc.tensor, length_of_padding: tc.tens
     else:
         mse = loss(input,target)
         return mse
-    
-
     
 def initialize_model_to_last_checkpoint(encoder, f, decoder, device : tc.device, path_to_checkpoint:str ):
 

@@ -2,6 +2,7 @@
 """
 Script to rename all .h5 files in a directory to numbered format (1.h5, 2.h5, etc.)
 in the order they appear in the directory, and create a log file mapping new names to original names.
+Only renames files that don't start with 'dataset'.
 """
 
 import os
@@ -9,12 +10,13 @@ import sys
 from pathlib import Path
 from datetime import datetime
 
-# python rename_files_with_numbers.py '../../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/original_hdf5/'
+# python rename_files_with_numbers.py '../../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/ordered_hdf5/'
 
 
 def rename_files_in_directory(directory_path, file_extension='.h5'):
     """
     Rename all files with the specified extension in directory order.
+    Only renames files whose names don't start with 'dataset'.
     
     Args:
         directory_path: Path to the directory containing files
@@ -33,10 +35,21 @@ def rename_files_in_directory(directory_path, file_extension='.h5'):
         return
     
     # Get all files with the specified extension
-    files = [f for f in directory.iterdir() if f.is_file() and f.suffix == file_extension]
+    all_files = [f for f in directory.iterdir() if f.is_file() and f.suffix == file_extension]
+    
+    # Filter out files that start with 'dataset'
+    files = [f for f in all_files if not f.stem.startswith('dataset')]
+    
+    skipped_files = [f for f in all_files if f.stem.startswith('dataset')]
+    
+    if skipped_files:
+        print(f"Skipping {len(skipped_files)} files that start with 'dataset':")
+        for f in skipped_files:
+            print(f"  - {f.name}")
+        print()
     
     if not files:
-        print(f"No {file_extension} files found in '{directory_path}'.")
+        print(f"No {file_extension} files found to rename in '{directory_path}'.")
         return
     
     # Sort files by name (as they appear in directory listing)
@@ -92,8 +105,16 @@ def rename_files_in_directory(directory_path, file_extension='.h5'):
         log_file.write(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
         log_file.write(f"Directory: {directory.absolute()}\n")
         log_file.write(f"Total files renamed: {len(rename_mapping)}\n")
+        log_file.write(f"Files skipped (starting with 'dataset'): {len(skipped_files)}\n")
         log_file.write("=" * 80 + "\n\n")
         
+        if skipped_files:
+            log_file.write("Skipped files:\n")
+            for f in skipped_files:
+                log_file.write(f"  {f.name}\n")
+            log_file.write("\n")
+        
+        log_file.write("Renamed files:\n")
         for new_number, original_name in rename_mapping:
             log_file.write(f"{new_number} corresponds to: {original_name}\n")
     

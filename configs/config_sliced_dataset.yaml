@@ -1,6 +1,6 @@
 path_to_dataset : '../../../../../scratch/ROM_datasets_ale/ASTEC/made_datasets/only_loca/'
 where_to_save_data: '../../../../../scratch/ROM_datasets_ale/ASTEC/'
 device : 'cuda:1'
-indeces_training_boundaries : [404,554]
-indeces_validation_boundaries : [555,585]
+indeces_training_boundaries : [1,153,192,396, 398, 500]
+indeces_validation_boundaries : [511, 582]
 t_W : 10 #temporal window for time subsets of time series

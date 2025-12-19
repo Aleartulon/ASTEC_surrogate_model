@@ -11,7 +11,6 @@ from src.models.AE_NODE.training.data_functions import standard_and_inverse_norm
 from src.models.AE_NODE.training.method_functions import Training_Losses
 from src.models.AE_NODE.testing.support_functions import *
 from src.dataset_generation.dataset.support_functions import build_dictionary_of_variables
-
 import matplotlib.pyplot as plt
 
 class Model_Test:
@@ -28,6 +27,7 @@ class Model_Test:
         self.directory_images_AutoEncoding_final_latent = self.directory_images + 'AutoEncoding/final_latent'
         self.directory_images_AutoEncoding_latent_per_shape = self.directory_images + 'AutoEncoding/latent_per_shape'
         self.directory_images_AutoEncoding_errors = self.directory_images + 'AutoEncoding/errors_reconstruction_fields'
+        self.directory_images_AutoEncoding_global_errors = self.directory_images + 'AutoEncoding/global_errors_reconstruction_fields'
         
         self.directory_images_TF_fields_reconstruction_scalar = self.directory_images + 'TF/fields_reconstruction_scalar'
         self.directory_images_TF_fields_reconstruction_2d = self.directory_images + 'TF/fields_reconstruction_2d'
@@ -35,6 +35,7 @@ class Model_Test:
         self.directory_images_TF_final_latent = self.directory_images + 'TF/final_latent'
         self.directory_images_TF_latent_per_shape = self.directory_images + 'TF/latent_per_shape'
         self.directory_images_TF_errors_fields = self.directory_images + 'TF/errors_reconstruction_fields'
+        self.directory_images_TF_global_errors_fields = self.directory_images + 'TF/global_errors_reconstruction_fields'
         self.directory_images_TF_errors_definitive_latent = self.directory_images + 'TF/errors_reconstruction_definitive_latent'
         self.directory_images_TF_errors_latent_per_shape = self.directory_images + 'TF/errors_reconstruction_latent_per_shape'
         
@@ -44,6 +45,7 @@ class Model_Test:
         self.directory_images_AE_NODE_final_latent = self.directory_images + 'AE_NODE/final_latent'
         self.directory_images_AE_NODE_latent_per_shape = self.directory_images + 'AE_NODE/latent_per_shape'
         self.directory_images_AE_NODE_errors_fields = self.directory_images + 'AE_NODE/errors_reconstruction_fields'
+        self.directory_images_AE_NODE_global_errors_fields = self.directory_images + 'AE_NODE/global_errors_reconstruction_fields'
         self.directory_images_AE_NODE_errors_definitive_latent = self.directory_images + 'AE_NODE/errors_reconstruction_definitive_latent'
         self.directory_images_AE_NODE_errors_latent_per_shape = self.directory_images + 'AE_NODE/errors_reconstruction_latent_per_shape'
         
@@ -81,25 +83,32 @@ class Model_Test:
         self.indeces_training_boundaries =  self.config_training['indeces_training_boundaries']
         
         self.indeces_training_boundaries = '_'
+        self.generate_istograms = information["generate_istograms"]
         
         for i in self.config_training['indeces_training_boundaries']:
             self.indeces_training_boundaries += str(i) + '_'
         self.indeces_training_boundaries = self.indeces_training_boundaries[:-1]
         
         #get normalization
-        
         with open(f"{self.path_to_test_data}/maxima_or_mean{self.indeces_training_boundaries}.pkl", 'rb') as file:
             self.maxima_or_mean = pickle.load(file)
         
-        with open(f"{self.path_to_test_data}/maxima_or_mean{self.indeces_training_boundaries}.pkl", 'rb') as file:
+        with open(f"{self.path_to_test_data}/minima_or_std{self.indeces_training_boundaries}.pkl", 'rb') as file:
             self.minima_or_std = pickle.load(file)
         
+        for key in self.maxima_or_mean:
+                print(f'maxima_or_mean {key}, ',self.maxima_or_mean[key])
+                
+        print(' ')
+            
+        for key in self.minima_or_std:
+            print(f'minima_or_std {key}, ',self.minima_or_std[key])
+                
         for key in self.maxima_or_mean:
             self.maxima_or_mean[key] = self.maxima_or_mean[key].to(self.device)
             self.minima_or_std[key] = self.minima_or_std[key].to(self.device)
             
-        print('Minima or std', self.minima_or_std)
-        print('Maxima or mean', self.maxima_or_mean)
+            
         
         #define models and load saved checkpoint  
         self.encoder = Encoder(self.config_training, self.models_information)
@@ -121,6 +130,7 @@ class Model_Test:
         os.makedirs(self.directory_images+'/'+ name +'/final_latent', exist_ok=True)
         os.makedirs(self.directory_images+'/'+ name +'/latent_per_shape', exist_ok=True)
         os.makedirs(self.directory_images+'/'+ name +'/errors_reconstruction_fields', exist_ok=True)
+        os.makedirs(self.directory_images+'/'+ name +'/global_errors_reconstruction_fields', exist_ok=True)
         
         if not AE:
             os.makedirs(self.directory_images+'/'+ name +'/errors_reconstruction_definitive_latent', exist_ok=True)
@@ -128,7 +138,6 @@ class Model_Test:
         
     def test(self):
         with tc.no_grad():
-                
             # auto-encoding verification
             print('------------------------- Purely AutoEncoding -------------------------')
             reconstructed_fields_per_trajectory_AE, latent_vectors_per_trajectory_per_shape_AE, definitive_latent_vector_per_trajectory_AE, denormalized_fields_per_trajectory, Time = self.autoencoding()
@@ -138,6 +147,9 @@ class Model_Test:
                     
                 if self.autoencoding_latent_figures:
                     self.generate_pictures_latent_space(str(trajectory_to_be_plotted), latent_vectors_per_trajectory_per_shape_AE, definitive_latent_vector_per_trajectory_AE,Time, 'AE')
+                    
+            #compute global errors AutoEncoding
+            compute_global_errors(self.directory_images_AutoEncoding_errors, self.directory_images_AutoEncoding_global_errors, generate_istograms = self.generate_istograms, which_prediction = 'AutoEncoder')
             
             # print Operator Actions of wanted simulations
             self.print_operator_actions(definitive_latent_vector_per_trajectory_AE)
@@ -170,7 +182,9 @@ class Model_Test:
                         definitive_latent_vector_per_trajectory_AE[trajectory_to_be_plotted] = definitive_latent_vector_per_trajectory_AE[trajectory_to_be_plotted][1:,:]
                         latent_vectors_per_trajectory_per_shape_AE[trajectory_to_be_plotted] = [x[1:,:] for x in latent_vectors_per_trajectory_per_shape_AE[trajectory_to_be_plotted]]
                     self.generate_pictures_latent_space(trajectory_to_be_plotted, latent_vectors_per_trajectory_per_shape_AE, definitive_latent_vector_per_trajectory_AE, Time, 'AE_NODE', latent_vectors_per_trajectory_per_shape_AE_NODE, definitive_latent_vector_per_trajectory_AE_NODE)
-                
+                    
+            #compute global errors AE_NODE
+            compute_global_errors(self.directory_images_AE_NODE_errors_fields, self.directory_images_AE_NODE_global_errors_fields, generate_istograms = self.generate_istograms, which_prediction = 'AE NODE')
             print('-----------------------------------------------------------------------')
             
     def print_operator_actions(self, definitive_latent_vector_per_trajectory_AE:dict):
@@ -746,6 +760,16 @@ class Model_Test:
         faces_variables = [key + '_faces' for key in dictionary_of_variables['dictionary_of_input_variables_140']]
         all_variables = (scalar_variables + core_variables + vessel_variables + lower_plenum_variables + faces_variables)
         
+        MSE = []
+        for arr in error_per_trajectory_AE[trajectory]['MSE']:
+            for error in arr:
+                MSE+=tuple(error.cpu().numpy())
+                
+        RMSE = []
+        for arr in error_per_trajectory_AE[trajectory]['RMSE']:
+            for error in arr:
+                RMSE+=tuple(error.cpu().numpy())
+                
         MSE_normalized_by_mean = []
         for arr in error_per_trajectory_AE[trajectory]['MSE_normalized_by_mean']:
             for error in arr:
@@ -755,11 +779,27 @@ class Model_Test:
         for arr in error_per_trajectory_AE[trajectory]['L2_error_norm']:
             for error in arr:
                 L2_error_norm+=tuple(error.cpu().numpy())
-            
+        
+        RMSE_divided_by_max = []
+        for arr in error_per_trajectory_AE[trajectory]['RMSE_divided_by_max']:
+            for error in arr:
+                RMSE_divided_by_max+=tuple(error.cpu().numpy())
+                
+        MSE_per_time_step = []
+        for arr in error_per_trajectory_AE[trajectory]['MSE_per_time_step']:
+            for error in arr:
+                for count in range(error.size(-1)):  
+                    MSE_per_time_step.append(error[:,count].cpu().numpy())
+        RMSE_per_time_step = []
+        for arr in error_per_trajectory_AE[trajectory]['RMSE_per_time_step']:
+            for error in arr:
+                for count in range(error.size(-1)):     
+                    RMSE_per_time_step.append(error[:,count].cpu().numpy())
+                    
         MSE_normalized_by_mean_per_time_step = []
         for arr in error_per_trajectory_AE[trajectory]['MSE_normalized_by_mean_per_time_step']:
             for error in arr:
-                for count in range(error.size(-1)):     
+                for count in range(error.size(-1)): 
                     MSE_normalized_by_mean_per_time_step.append(error[:,count].cpu().numpy())
                     
         L2_error_norm_per_time_step = []
@@ -768,11 +808,17 @@ class Model_Test:
                 for count in range(error.size(-1)): 
                     L2_error_norm_per_time_step.append(error[:,count].cpu().numpy())
                     
+        RMSE_divided_by_max_per_time_step = []
+        for arr in error_per_trajectory_AE[trajectory]['RMSE_divided_by_max_per_time_step']:
+            for error in arr:
+                for count in range(error.size(-1)): 
+                    RMSE_divided_by_max_per_time_step.append(error[:,count].cpu().numpy())
+                    
         #first deal with global errors per trajectory independent of time-steps
         with open(saving_directory + f'/{trajectory}_global_errors.txt', 'w') as f:
-            f.write('Variable name\tMSE_normalized_by_mean\tL2_error_norm\n')
+            f.write('Variable name\tMSE\tRMSE\tMSE_normalized_by_mean\tL2_error_norm\tRMSE_divided_by_max\n')
             for i in range(len(all_variables)):
-                f.write(f'{all_variables[i]}\t{MSE_normalized_by_mean[i]}\t{L2_error_norm[i]}\n')
+                f.write(f'{all_variables[i]}\t{MSE[i]}\t{RMSE[i]}\t{MSE_normalized_by_mean[i]}\t{L2_error_norm[i]}\t{RMSE_divided_by_max[i]}\n')
                 
         if trajectory in self.trajectories_to_be_plotted:
             if which_prediction == 'AE':
@@ -785,20 +831,51 @@ class Model_Test:
             #now deal with global errors per trajectory per time-steps
             for count, variable_name in enumerate(all_variables):
                 plt.figure(figsize=(10,5))
+    
+                plt.plot(time[index_time:].cpu().numpy()/3600, MSE_per_time_step[count])
+                plt.title(variable_name, fontsize = 16)
+                plt.xlabel('Time, h', fontsize = 16)
+                plt.ylabel('MSE', fontsize = 16)
+                plt.yscale('log')
+                plt.savefig(f'{saving_directory}/{trajectory}_{variable_name}_MSE_per_time_step.png', dpi=300, bbox_inches='tight')
+                plt.close()
+                
+                plt.figure(figsize=(10,5))
+                plt.plot(time[index_time:].cpu().numpy()/3600, RMSE_per_time_step[count])
+                plt.title(variable_name, fontsize = 16)
+                plt.xlabel('Time, h', fontsize = 16)
+                plt.ylabel('RMSE', fontsize = 16)
+                plt.yscale('log')
+                plt.savefig(f'{saving_directory}/{trajectory}_{variable_name}_RMSE_per_time_step.png', dpi=300, bbox_inches='tight')
+                plt.close()
+                
+                plt.figure(figsize=(10,5))
                 plt.plot(time[index_time:].cpu().numpy()/3600, MSE_normalized_by_mean_per_time_step[count])
                 plt.title(variable_name, fontsize = 16)
                 plt.xlabel('Time, h', fontsize = 16)
                 plt.ylabel('MSE normalized by mean', fontsize = 16)
+                plt.yscale('log')
                 plt.savefig(f'{saving_directory}/{trajectory}_{variable_name}_MSE_normalized_by_mean_per_time_step.png', dpi=300, bbox_inches='tight')
                 plt.close()
+                
                 plt.figure(figsize=(10,5))
                 plt.title(variable_name, fontsize = 16)
                 plt.plot(time[index_time:].cpu().numpy()/3600, L2_error_norm_per_time_step[count])
                 plt.xlabel('Time, h', fontsize = 16)
                 plt.ylabel('L2 error norm per time step', fontsize = 16)
+                plt.yscale('log')
                 plt.savefig(f'{saving_directory}/{trajectory}_{variable_name}_L2_error_norm_per_time_step.png', dpi=300, bbox_inches='tight')
                 plt.close()
-            
+                
+                plt.figure(figsize=(10,5))
+                plt.plot(time[index_time:].cpu().numpy()/3600, RMSE_divided_by_max_per_time_step[count])
+                plt.title(variable_name, fontsize = 16)
+                plt.xlabel('Time, h', fontsize = 16)
+                plt.ylabel('RMSE divided by max', fontsize = 16)
+                plt.yscale('log')
+                plt.savefig(f'{saving_directory}/{trajectory}_{variable_name}_RMSE_divided_by_max_per_time_step.png', dpi=300, bbox_inches='tight')
+                plt.close()
+             
     def generate_pictures_errors_latent_NODE_per_shape(self, trajectory:str, latent_error :dict, time:tc.tensor): 
         all_variables = ('scalar', 'core', 'vessel', 'lower_plenum', 'faces')
         
@@ -865,6 +942,7 @@ class Model_Test:
             for error in arr:
                 for count in range(error.size(-1)): 
                     L2_error_norm_per_time_step.append(error[:,count].cpu().numpy())
+                    
         #save files with average error in latent space per dimension
         with open(self.directory_images_AE_NODE_errors_definitive_latent + f'/{trajectory}_latent_errors_averaged_across_time.txt', 'w') as f:
             f.write('Dimension\tMSE_normalized_by_mean\tL2_error_norm\n')
