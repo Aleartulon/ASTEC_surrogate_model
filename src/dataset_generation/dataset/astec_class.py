@@ -110,7 +110,7 @@ class Astec_Dataset():
             
         # create dictionary and hdf5 file
         self.dictionary_per_simulation = {}
-        
+        skipped_simulations = []
         with h5py.File(self.path_to_constructed_data, 'w') as f:
             dict_to_hdf5(self.dictionary_per_simulation, f)
         
@@ -122,6 +122,14 @@ class Astec_Dataset():
             print(f'Simulation: {index_simulation}. Build dictionary of data divided by number of simulation: {t2-t1} seconds')
             single_simulation = self.make_channels_for_dictionary_per_simulation(single_simulation) #build dictionary of data divided by simulations and make channels per spatial domain
             t3 = time.time()
+            skip_simulation = False
+            for i in single_simulation[index_simulation]:
+                if np.any(single_simulation[index_simulation][i] > 1e30):
+                    print(f'Element too large in {i} of simulation {index_simulation}, skipping this simulation')
+                    skip_simulation = True
+            if skip_simulation:
+                skipped_simulations.append(index_simulation)
+                continue
             print(f'Simulation: {index_simulation}. Build dictionary of data divided by simulations and make channels per spatial domain: {t3-t2} seconds')
             single_simulation = self.substitute_NaN_with_zeros(single_simulation) #substitute with zeros the NaN values
             t4 = time.time()
@@ -169,6 +177,14 @@ class Astec_Dataset():
             
             with open(f"{self.where_to_save_data}/minima_or_std{self.indeces_training_boundaries}.pkl", 'rb') as file:
                 self.minima_or_std = pickle.load(file)
+                
+            for key in self.maxima_or_mean:
+                print(f'maxima_or_mean {key}, ',self.maxima_or_mean[key])
+                
+            print(' ')
+            
+            for key in self.minima_or_std:
+                print(f'minima_or_std {key}, ',self.minima_or_std[key])
                 
         #normalize dictionary_per_simulation 
         t9 = time.time()
@@ -242,6 +258,7 @@ class Astec_Dataset():
                     else:
                         continue
                     print(f"trajectory {simulation}, shape {shape}: {size} ")
+        print(f'Skipped simulations: {skipped_simulations}')
                         
         
             
