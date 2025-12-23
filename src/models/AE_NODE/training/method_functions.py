@@ -137,7 +137,7 @@ class Training_Losses():
                 output_decoder, _ = self.decoder(reconstructed_latent)
  
                 output_decoder = [tensor.reshape((B, T) + tensor.size()[1:]) for tensor in output_decoder]
-                output_decoder = standard_and_inverse_normalization_field(output_decoder, self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)
+                #output_decoder = standard_and_inverse_normalization_field(output_decoder, self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)
 
                 l_final, l_final_per_variable = auto_encoding_MSE(output_decoder, fields, F.relu((length_of_padding-1)), is_denormalized_validation = False) 
                 
@@ -153,13 +153,12 @@ class Training_Losses():
         final_sum = self.f(definitive_latent, latent_boudaries)*self.RK[str(self.k)][-1][1]
 
         for i in range(self.k-1):
-            mu_in_time = latent_boudaries.clone() #avoid in place operation which messes with backprop.
             s = tc.zeros_like(definitive_latent, device = self.device)
 
             for j in range(i+1):
                 s +=  b[j] * self.RK[str(self.k)][i+1][j+1]
 
-            b_new = self.f(definitive_latent + dt * s, mu_in_time).unsqueeze(0).to(self.device)
+            b_new = self.f(definitive_latent + dt * s, latent_boudaries).unsqueeze(0).to(self.device)
             b[i+1,:,:] = b_new
 
             final_sum += b_new.squeeze(0) * self.RK[str(self.k)][-1][i+2]
