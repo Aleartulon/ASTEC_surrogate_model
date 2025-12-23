@@ -270,7 +270,7 @@ class Training():
                 valid_l1_data, valid_l1_per_shape_data, valid_l1_unnorm_data, valid_l1_unnorm_per_variable_data, valid_l1_latent_data, valid_l2_TF_data, valid_l2_AR_data, valid_l3_data, valid_real_data, valid_real_per_variable_data, valid_regularization_data, valid_loss_data = self.valid_epoch([[1,1],1,1,1])
                 
             time2 = time.time()
-            if self.dynamic_dataset_generation_during_training and i > (self.time_only_TF + self.time_of_AE) and how_many_datasets_creations < len(self.time_windows):
+            if self.dynamic_dataset_generation_during_training and i > (np.max([self.time_only_TF + self.time_of_AE, self.time_of_lr_war_up])) and how_many_datasets_creations < len(self.time_windows):
                 
                 if before_next_window_change == 0:
                     self.training_loader, self.validation_loader = build_dataset(self.batch_sizes[how_many_datasets_creations], self.time_windows[how_many_datasets_creations],

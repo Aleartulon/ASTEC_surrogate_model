@@ -11,5 +11,5 @@ actual_latent_prediction_figures: true
 TF_fields_prediction_figures: true
 TF_latent_prediction_figures: true
 compute_TF : true
-operator_actions_indeces : [587,594,601]
+operator_actions_indeces : [584]
 generate_istograms : true
