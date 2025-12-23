@@ -147,7 +147,8 @@ class Model_Test:
                     
                 if self.autoencoding_latent_figures:
                     self.generate_pictures_latent_space(str(trajectory_to_be_plotted), latent_vectors_per_trajectory_per_shape_AE, definitive_latent_vector_per_trajectory_AE,Time, 'AE')
-                    
+            
+            del reconstructed_fields_per_trajectory_AE   
             #compute global errors AutoEncoding
             compute_global_errors(self.directory_images_AutoEncoding_errors, self.directory_images_AutoEncoding_global_errors, generate_istograms = self.generate_istograms, which_prediction = 'AutoEncoder')
             
@@ -167,7 +168,8 @@ class Model_Test:
                         definitive_latent_vector_per_trajectory_AE[trajectory_to_be_plotted] = definitive_latent_vector_per_trajectory_AE[trajectory_to_be_plotted][1:,:]
                         latent_vectors_per_trajectory_per_shape_AE[trajectory_to_be_plotted] = [x[1:,:] for x in latent_vectors_per_trajectory_per_shape_AE[trajectory_to_be_plotted]]
                         self.generate_pictures_latent_space(trajectory_to_be_plotted, latent_vectors_per_trajectory_per_shape_AE, definitive_latent_vector_per_trajectory_AE, Time, 'TF', latent_vectors_per_trajectory_per_shape_TF, definitive_latent_vector_per_trajectory_TF)
-                
+                        
+            del reconstructed_fields_per_trajectory_TF
             # actual prediction in latent space
             print('------------------------- Actual Prediction -------------------------')  
             reconstructed_fields_per_trajectory_AE_NODE, latent_vectors_per_trajectory_per_shape_AE_NODE, definitive_latent_vector_per_trajectory_AE_NODE = self.autoregressive_prediction()
@@ -222,7 +224,7 @@ class Model_Test:
                     dataset = ops[key]
                     value = dataset[()]
                     desc = description[key]
-                    print(f'{key:15s}: {value:12.6f} | {desc}')
+                    print(f'{key:15s}: {value:12.6f} h | {desc}')
                     arr_per_operator.append(value)
                     labels.append(key)
                     info_text.append(f'{key}: {value:.2f} h | {desc}') 

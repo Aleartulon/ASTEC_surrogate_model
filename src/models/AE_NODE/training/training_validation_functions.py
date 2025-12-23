@@ -55,7 +55,7 @@ class Training():
         self.decoder.train()
         for fields, boundary_conditions, dt, length_of_padding in self.training_loader:
             self.optim.zero_grad()
-            with autocast(enabled=(self.scaler is not None)):
+            with tc.amp.autocast('cuda', enabled=(self.scaler is not None)):
                 
                 l1,l2_TF,l2_AR,l3, _,regularization_latent = self.training_losses.loss_sup_mixed(fields, boundary_conditions, dt, length_of_padding, loss_coefficients, True)
                 
@@ -270,7 +270,7 @@ class Training():
                 valid_l1_data, valid_l1_per_shape_data, valid_l1_unnorm_data, valid_l1_unnorm_per_variable_data, valid_l1_latent_data, valid_l2_TF_data, valid_l2_AR_data, valid_l3_data, valid_real_data, valid_real_per_variable_data, valid_regularization_data, valid_loss_data = self.valid_epoch([[1,1],1,1,1])
                 
             time2 = time.time()
-            if self.dynamic_dataset_generation_during_training and i > (self.time_only_TF + self.time_of_AE) and how_many_datasets_creations < len(self.time_windows):
+            if self.dynamic_dataset_generation_during_training and i > (np.max([self.time_only_TF + self.time_of_AE, self.time_of_lr_war_up])) and how_many_datasets_creations < len(self.time_windows):
                 
                 if before_next_window_change == 0:
                     self.training_loader, self.validation_loader = build_dataset(self.batch_sizes[how_many_datasets_creations], self.time_windows[how_many_datasets_creations],
@@ -288,11 +288,7 @@ class Training():
                     
                     #fetch the best model of previous iteration
                     if self.reinitialize_model_at_each_dataset_reshape:
-                        param_before = list(self.encoder.parameters())[0][0, 0].item()
                         initialize_model_to_last_checkpoint(self.encoder, self.f, self.decoder, self.device, self.PATH_logs+'/checkpoint/check.pt')
-                        # Print same parameter after reload
-                        param_after_load = list(self.encoder.parameters())[0][0, 0].item()
-                        #print(f"Param before: {param_before}, after load: {param_after_load}")
                     
                 before_next_window_change-=1
             

@@ -1,8 +1,8 @@
 path_to_hdf5 : '../../../../../../../tudelft.net/staff-umbrella/eldar/ASTEC/ordered_hdf5/'
-where_to_save_data: '../../../../../../scratch/ROM_datasets_ale/ASTEC/made_datasets/only_loca_mean_std/'
-indeces_training_boundaries : [1,153,192,396, 398, 500]
-indeces_validation_boundaries : [511, 582]
-indeces_testing_boundaries : [582, 602]
+where_to_save_data: '../../../../../../scratch/ROM_datasets_ale/ASTEC/made_datasets/only_loca_min_max/'
+indeces_training_boundaries : [1,2] #[1,153,192,396, 398, 500]
+indeces_validation_boundaries : [1,2] #[511, 582]
+indeces_testing_boundaries : [1,2] #[582, 602]
 percentages_sampling_training : [0.1, 0.9] # percentage of training trajectories with a given subsampling
 percentages_sampling_validation : [0.1,0.9] # percentage of validation trajectories with a given subsampling
 percentages_sampling_testing : [0.1, 0.9] # percentage of testing trajectories with a given subsampling
@@ -11,5 +11,5 @@ subsampling_validation : [1,2] # subsamplings of trajectories in validation data
 subsampling_testing : [1 , 1] # subsamplings of trajectories in testing dataset
 device : 'cuda:2'
 save_dictionary_per_time_lengths : false
-which_normalization : 'mean_std' #min_max or mean_std
-testing: false
+which_normalization : 'min_max' #min_max or mean_std
+testing: true
