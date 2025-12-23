@@ -12,3 +12,4 @@ testing_pipeline-old.ipynb
 downloads/
 assas_data_downloader.log
 *.log
+*.txt

@@ -1,5 +1,5 @@
 physics_model : '../../../../scratch/ROM_datasets_ale/ASTEC/saved_logs/' # this is the Path to a directory for the training on a given dataset
-description : 'dataset_1_2_min_max_15_latent_no_clip_no_NODE_few_layer_norm/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
+description : 'dataset_1_153_192_396_398_500_few_layer_norm/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
 data_path : '../../../../scratch/ROM_datasets_ale/ASTEC/made_datasets/only_loca_min_max/' #path of training and validation data
 where_to_save_data : '../../../../scratch/ROM_datasets_ale/ASTEC/' #if dynamic_dataset_generation_during_training this is where data is saved, else it is where data for training is found
 model: 'AE_NODE'
@@ -12,7 +12,7 @@ gamma_lr: 0.999 # gamma of  tc.optim.lr_scheduler.ExponentialLR()
 early_stopping: 500
 all_on_gpu: false
 dynamic_dataset_generation_during_training : true
-time_windows: [11, 201, 501, 1000, 1500, 2000, 2500, 3000]
+time_windows: [11, 201, 501, 1001, 1501, 2001, 2501, 3001]
 batch_sizes: [256, 256, 128, 64, 48, 32, 16,8 ]
 waiting_epochs_before_new_dataset_creation: [10, 10,10,10,10,10,10,10]
 number_of_workers: 8
