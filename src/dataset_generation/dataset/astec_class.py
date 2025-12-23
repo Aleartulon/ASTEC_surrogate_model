@@ -364,5 +364,6 @@ class Astec_Dataset():
                 operator_actions_dict[op] = (f['other/private/'+ op][0])/ 3600.0
                 if np.isnan(f['other/private/'+ op][0]).any() or not np.isfinite(f['other/private/'+ op][0]).any():
                     raise TypeError(f"Operator action {op} in simulation {trajectory} is NaN")
+        print(operator_actions_dict)
         return operator_actions_dict
                 

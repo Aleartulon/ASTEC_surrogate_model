@@ -2,7 +2,7 @@ import numpy as np
 import torch as tc
 import pickle
 import shutil
-from torch.cuda.amp import GradScaler
+from torch.amp import GradScaler
 from src.models.AE_NODE.training.architecture import *
 from src.models.AE_NODE.training.data_functions import *
 from src.models.AE_NODE.training.training_validation_functions import Training
@@ -131,7 +131,7 @@ class AE_NODE:
         
         self.RK = {k: tc.tensor([[self.safe_eval(val) for val in row] for row in v]) for k, v in model_information['RK'].items()}
         if tc.cuda.is_available() and self.mixed_precision:
-            self.scaler = GradScaler()
+            self.scaler = GradScaler('cuda')
             print("Scaler defined")
         else:
             self.scaler = None

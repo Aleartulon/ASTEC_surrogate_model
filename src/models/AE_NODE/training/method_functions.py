@@ -137,7 +137,7 @@ class Training_Losses():
                 output_decoder, _ = self.decoder(reconstructed_latent)
  
                 output_decoder = [tensor.reshape((B, T) + tensor.size()[1:]) for tensor in output_decoder]
-                output_decoder = standard_and_inverse_normalization_field(output_decoder, self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)
+                #output_decoder = standard_and_inverse_normalization_field(output_decoder, self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)
 
                 l_final, l_final_per_variable = auto_encoding_MSE(output_decoder, fields, F.relu((length_of_padding-1)), is_denormalized_validation = False) 
                 

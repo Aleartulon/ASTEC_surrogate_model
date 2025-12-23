@@ -222,7 +222,7 @@ class Model_Test:
                     dataset = ops[key]
                     value = dataset[()]
                     desc = description[key]
-                    print(f'{key:15s}: {value:12.6f} | {desc}')
+                    print(f'{key:15s}: {value:12.6f} h | {desc}')
                     arr_per_operator.append(value)
                     labels.append(key)
                     info_text.append(f'{key}: {value:.2f} h | {desc}') 

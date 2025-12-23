@@ -2,9 +2,9 @@
 
 loss_coefficients: # coefficients that are multiplied to the loss function terms, signaling the relative importance of each [AE, TF, AUTOREGRESSIVE, TIME_GENERALIZATION]
   AE: [1,1] #first one is for the field reconstruction, second one for the latent reconstruction per shape
-  TF: 1
+  TF: 1.0
   AR: 1
-  Random_DT: 1
+  Random_DT: 1.0
   AR_strength: 0.0001
   lambda_regularization: 0.001 #coefficients in front of the regularization term for the latent vector
 
@@ -22,7 +22,7 @@ time_of_AE: 50 # number of initial epochs where only the AutoEncoder is trained,
 time_of_lr_war_up: 10 #number of epochs of the linear warm-up of the learning rate
 time_only_TF : 0 #number of initial epochs after warm up where only TF and not AR approach is used
 clipping: [1, 2.5] #[if 1 clipping is applied to f, maximum norm allowed to gradients]
-is_coupled : [false, 'AE'] #if true the AutoEncoder (AE) is trained coupled with the NODE. if false, if 'AE' the AE is trained, if 'NODE' the NODE is trained.
+is_coupled : [true, 'AE'] #if true the AutoEncoder (AE) is trained coupled with the NODE. if false, if 'AE' the AE is trained, if 'NODE' the NODE is trained.
 path_trained_AE : '../../../../../../../scratch/ROM_datasets_ale/ASTEC/saved_logs/AE_NODE/Models/dataset_1_153_192_396_398_500_layer_norm/' #if is_coupled : [false, 'NODE'], provide the path to the models weights of the AE
 
 autoregressive_step:
@@ -126,7 +126,7 @@ parameter_information: "concatenation" #how the parameter information is passed 
 n_FiLM_conditioning : 1 #number of FiLM layers (if FiLM is chosen instead of concatenation). FiLM = 1 only applies to the latent vector
 n_neurons_f: 200 #number of neurons of each layer of f
 NODE: true
-scaling_output_factor: 0.1
+scaling_output_factor: 1.0
 layer_norm_node : [true, true, true, true ,true, false]
 
 #Global
