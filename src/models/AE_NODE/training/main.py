@@ -10,6 +10,7 @@ from src.common_functions import load_config
 tc.set_default_dtype(tc.float32)
 
 def main():
+    print(f"PID process: {os.getpid()}")
     if tc.cuda.is_available():
         tc.backends.cuda.matmul.allow_tf32 = True
         tc.backends.cudnn.allow_tf32 = True

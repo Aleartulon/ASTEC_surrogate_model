@@ -28,7 +28,6 @@ class Astec_Dataset():
             self.indeces_training = np.concatenate(self.indeces_training)
         else:
             self.indeces_training = config_dataset['indeces_training_boundaries']
-            
         x = config_dataset['indeces_validation_boundaries']
         if len(x) > 1:
             self.indeces_validation = [np.arange(x[2*i],x[2*i+1]+1,1) for i in range(int(len(x)/2))]
@@ -37,7 +36,6 @@ class Astec_Dataset():
             self.indeces_validation = config_dataset['indeces_validation_boundaries']
         
         x = config_dataset['indeces_testing_boundaries']
-        
         if len(x) > 1:
             self.indeces_testing = [np.arange(x[2*i],x[2*i+1]+1,1) for i in range(int(len(x)/2))]
             self.indeces_testing = np.concatenate(self.indeces_testing)
@@ -113,7 +111,6 @@ class Astec_Dataset():
         skipped_simulations = []
         with h5py.File(self.path_to_constructed_data, 'w') as f:
             dict_to_hdf5(self.dictionary_per_simulation, f)
-        
         for count, index_simulation in enumerate(indeces):
             index_simulation = str(index_simulation)
             t1 = time.time()

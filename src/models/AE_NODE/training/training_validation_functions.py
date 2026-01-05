@@ -270,27 +270,6 @@ class Training():
                 valid_l1_data, valid_l1_per_shape_data, valid_l1_unnorm_data, valid_l1_unnorm_per_variable_data, valid_l1_latent_data, valid_l2_TF_data, valid_l2_AR_data, valid_l3_data, valid_real_data, valid_real_per_variable_data, valid_regularization_data, valid_loss_data = self.valid_epoch([[1,1],1,1,1])
                 
             time2 = time.time()
-            if self.dynamic_dataset_generation_during_training and i > (np.max([self.time_only_TF + self.time_of_AE, self.time_of_lr_war_up])) and how_many_datasets_creations < len(self.time_windows):
-                
-                if before_next_window_change == 0:
-                    self.training_loader, self.validation_loader = build_dataset(self.batch_sizes[how_many_datasets_creations], self.time_windows[how_many_datasets_creations],
-                                                                                    self.data_training_path_dynamic, self.data_validation_path_dynamic, 
-                                                                                    self.number_of_workers, self.data_path, self.where_to_save_data, 
-                                                                                    self.which_normalization, self.device, 
-                                                                                    self.config_training['indeces_training_boundaries'], self.config_training['indeces_validation_boundaries'],
-                                                                                    self.all_on_gpu, self.pin_memory, self.indeces_training_boundaries, self.indeces_validation_boundaries)
-                    before_next_window_change = self.waiting_epochs_before_new_dataset_creation[how_many_datasets_creations]
-                    how_many_datasets_creations+=1
-                    os.remove(f"{self.data_training_path_dynamic}{str(self.time_windows[how_many_datasets_creations-2])}{self.indeces_training_boundaries}.h5")
-                    os.remove(f"{self.data_validation_path_dynamic}{str(self.time_windows[how_many_datasets_creations-2])}{self.indeces_validation_boundaries}.h5")
-                    checkpoint = tc.load(self.PATH_logs+'/checkpoint/check.pt', map_location=self.device, weights_only=False)
-                    loss_value = checkpoint['loss_value'] * 10
-                    
-                    #fetch the best model of previous iteration
-                    if self.reinitialize_model_at_each_dataset_reshape:
-                        initialize_model_to_last_checkpoint(self.encoder, self.f, self.decoder, self.device, self.PATH_logs+'/checkpoint/check.pt')
-                    
-                before_next_window_change-=1
             
             if i > self.time_of_lr_war_up:
                 self.scheduler.step()
@@ -392,3 +371,26 @@ class Training():
                 print('Models saved!')
                 save_checkpoint(self.encoder, self.f , self.decoder, self.optim, self.scheduler, i, loss_value, self.loss_coefficients['AR'] , before_next_window_change, how_many_datasets_creations-1, self.autoregressive_step, full_training_count,self.PATH_logs+'/checkpoint/check.pt')
                 early_stopping = 0
+                
+            # check if it is needed to change the lenght of time series of the dataset.
+            if self.dynamic_dataset_generation_during_training and i > (np.max([self.time_only_TF + self.time_of_AE, self.time_of_lr_war_up])) and how_many_datasets_creations < len(self.time_windows):
+                
+                if before_next_window_change == 0:
+                    self.training_loader, self.validation_loader = build_dataset(self.batch_sizes[how_many_datasets_creations], self.time_windows[how_many_datasets_creations],
+                                                                                    self.data_training_path_dynamic, self.data_validation_path_dynamic, 
+                                                                                    self.number_of_workers, self.data_path, self.where_to_save_data, 
+                                                                                    self.which_normalization, self.device, 
+                                                                                    self.config_training['indeces_training_boundaries'], self.config_training['indeces_validation_boundaries'],
+                                                                                    self.all_on_gpu, self.pin_memory, self.indeces_training_boundaries, self.indeces_validation_boundaries)
+                    before_next_window_change = self.waiting_epochs_before_new_dataset_creation[how_many_datasets_creations]
+                    how_many_datasets_creations+=1
+                    os.remove(f"{self.data_training_path_dynamic}{str(self.time_windows[how_many_datasets_creations-2])}{self.indeces_training_boundaries}.h5")
+                    os.remove(f"{self.data_validation_path_dynamic}{str(self.time_windows[how_many_datasets_creations-2])}{self.indeces_validation_boundaries}.h5")
+                    checkpoint = tc.load(self.PATH_logs+'/checkpoint/check.pt', map_location=self.device, weights_only=False)
+                    loss_value = 100
+                    
+                    #fetch the best model of previous iteration
+                    if self.reinitialize_model_at_each_dataset_reshape:
+                        initialize_model_to_last_checkpoint(self.encoder, self.f, self.decoder, self.device, self.PATH_logs+'/checkpoint/check.pt')
+                    
+                before_next_window_change-=1
