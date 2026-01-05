@@ -781,14 +781,14 @@ class Model_Test:
                     
         #first deal with global errors per trajectory independent of time-steps
         with open(saving_directory + f'/{trajectory}_global_errors.txt', 'w') as f:
-            head = "Variable name "
+            head = "Variable name\t"
             for metric in dict_of_errors:
                 if not (len(metric) > 4 and metric[-4:] == 'step'): 
                     head += metric + '\t'
             head += "\n"
             f.write(head)
             for i in range(len(all_variables)):
-                column = str(all_variables[i]) + " "
+                column = str(all_variables[i]) + "\t"
                 for metric in dict_of_errors:
                     if not (len(metric) > 4 and metric[-4:] == 'step'): 
                         column += str(dict_of_errors[metric][i]) + '\t'

@@ -43,13 +43,15 @@ def compute_errors(trajectory:str, input: list, target:list, is_AE:bool): #WATCH
                                              'L2_error_norm' : [], 
                                              'RMSE_divided_by_max' : [],
                                              'RMSE_divided_by_mean' : [],
+                                             'RMSE_divided_by_std' : [],
                                              
                                              'MSE_per_time_step':[], 
                                              'RMSE_per_time_step':[], 
                                              'MSE_normalized_by_mean_per_time_step':[], 
                                              'L2_error_norm_per_time_step' : [],
                                              'RMSE_divided_by_max_per_time_step':[],
-                                             'RMSE_divided_by_mean_per_time_step' : []
+                                             'RMSE_divided_by_mean_per_time_step' : [],
+                                             'RMSE_divided_by_std_per_time_step' : []
                                              }
     
     #compute MSE_normalized_by_mean
@@ -71,12 +73,16 @@ def compute_errors(trajectory:str, input: list, target:list, is_AE:bool): #WATCH
         dictionary_of_errors[str(trajectory)]['L2_error_norm'].append(error)
         
         #compute RMSE_divided_by_max
-        error = RMSE_divided_by_mean_or_max(i, target[count], 'max')
+        error = RMSE_divided_by_something(i, target[count], 'max')
         dictionary_of_errors[str(trajectory)]['RMSE_divided_by_max'].append(error)
         
         #compute RMSE_divided_by_mean
-        error = RMSE_divided_by_mean_or_max(i, target[count], 'mean')
+        error = RMSE_divided_by_something(i, target[count], 'mean')
         dictionary_of_errors[str(trajectory)]['RMSE_divided_by_mean'].append(error)
+        
+        #compute RMSE_divided_by_std
+        error = RMSE_divided_by_something(i, target[count], 'std')
+        dictionary_of_errors[str(trajectory)]['RMSE_divided_by_std'].append(error)
         
         ############################################################################################
     
@@ -97,12 +103,16 @@ def compute_errors(trajectory:str, input: list, target:list, is_AE:bool): #WATCH
         dictionary_of_errors[str(trajectory)]['L2_error_norm_per_time_step'].append(error)
         
         #compute RMSE_divided_by_max_per_time_step
-        error = RMSE_divided_by_mean_or_max(i, target[count], 'max', per_time_step = True)
+        error = RMSE_divided_by_something(i, target[count], 'max', per_time_step = True)
         dictionary_of_errors[str(trajectory)]['RMSE_divided_by_max_per_time_step'].append(error)
         
         #compute RMSE_divided_by_mean_per_time_step
-        error = RMSE_divided_by_mean_or_max(i, target[count], 'mean', per_time_step = True)
+        error = RMSE_divided_by_something(i, target[count], 'mean', per_time_step = True)
         dictionary_of_errors[str(trajectory)]['RMSE_divided_by_mean_per_time_step'].append(error)
+        
+        #compute RMSE_divided_by_std_per_time_step
+        error = RMSE_divided_by_something(i, target[count], 'std', per_time_step = True)
+        dictionary_of_errors[str(trajectory)]['RMSE_divided_by_std_per_time_step'].append(error)
         
     return dictionary_of_errors
 
@@ -138,28 +148,32 @@ def RMSE(input:tc.tensor, target:tc.tensor, per_time_step: bool = False):
         array_of_errors.append(e)
     return array_of_errors
 
-def RMSE_divided_by_mean_or_max(input:tc.tensor, target:tc.tensor, which_division:str, per_time_step: bool = False):
+def RMSE_divided_by_something(input:tc.tensor, target:tc.tensor, which_division:str, per_time_step: bool = False):
+    epsilon = 1e-8
     input = input.double().squeeze(0)
     target = target.double().squeeze(0)
+
     loss = nn.MSELoss(reduction='none')
     array_of_errors = []
     e = loss(input, target) ** 0.5
     where_to_contract = tuple(np.arange(2,len(input.size()),1))
     if which_division == 'max':
-        maxima_or_mean = tc.amax(target, (0,) + where_to_contract)
+        normalization = tc.amax(target, (0,) + where_to_contract) + epsilon
     elif which_division == 'mean':
-        maxima_or_mean = tc.mean(tc.abs(target), (0,) + where_to_contract)
+        normalization = tc.mean(tc.abs(target), (0,) + where_to_contract) + epsilon
+    elif which_division == 'std':
+        normalization = tc.std(target, (0,) + where_to_contract) + epsilon
     else:
         raise TypeError('Division you put is not existent.')
     
     if len(input.size())>2:
-        maxima_or_mean = maxima_or_mean[None, :, None, None]
-        e = e/maxima_or_mean
+        normalization = normalization[None, :, None, None]
+        e = e/normalization
         e = e.mean(dim = where_to_contract) 
     
     else:
-        maxima_or_mean = maxima_or_mean[None, :]
-        e = e/maxima_or_mean
+        normalization = normalization[None, :]
+        e = e/normalization
     if per_time_step:
         array_of_errors.append(e)
     else:
@@ -209,27 +223,20 @@ def L2_error_norm(input:tc.tensor, target:tc.tensor, per_time_step: bool = False
     
 def compute_global_errors(where_to_get_data:str, where_to_save_data: str, generate_istograms: bool, which_prediction: str):
     txt_files = [f for f in os.listdir(where_to_get_data) if f.endswith('.txt')]
+    df = pd.read_csv(f"{where_to_get_data}/{txt_files[0]}", sep='\t')
     # create dictionary of errors
     dictionary_of_errors = {
-        'MSE' :{},
-        'RMSE' :{},
-        'MSE_normalized_by_mean' :{},
-        'L2_error_norm' : {},
-        'RMSE_divided_by_max' :{},
-        'RMSE_divided_by_mean' :{}
     }
     statistics_errors = {
-        'MSE' :{},
-        'RMSE' :{},
-        'MSE_normalized_by_mean' :{},
-        'L2_error_norm' : {},
-        'RMSE_divided_by_max' :{},
-        'RMSE_divided_by_mean' :{}
     }
     
+    for metric in df.keys()[1:-1]:
+        dictionary_of_errors[metric] = {}
+        statistics_errors[metric] = {}
+        
     df = pd.read_csv(f"{where_to_get_data}/{txt_files[0]}", sep='\t')
     for metric in dictionary_of_errors:
-        for x in df['Variable name']:
+        for x in df[df.columns[0]]:
             dictionary_of_errors[metric][x] = []
             statistics_errors[metric][x] = []
         
@@ -237,7 +244,7 @@ def compute_global_errors(where_to_get_data:str, where_to_save_data: str, genera
     for f in txt_files:
         df = pd.read_csv(f"{where_to_get_data}/{f}", sep='\t')
         
-        variable_name = df['Variable name']
+        variable_name = df[df.columns[0]]
         for count, name in enumerate(variable_name):
             for metric in dictionary_of_errors:
                 column = df[metric]

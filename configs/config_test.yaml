@@ -12,4 +12,4 @@ TF_fields_prediction_figures: true
 TF_latent_prediction_figures: true
 compute_TF : true
 operator_actions_indeces : [1]
-generate_istograms : true
+generate_istograms : false
