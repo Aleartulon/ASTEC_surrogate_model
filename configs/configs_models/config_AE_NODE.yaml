@@ -127,7 +127,7 @@ n_FiLM_conditioning : 1 #number of FiLM layers (if FiLM is chosen instead of con
 n_neurons_f: 200 #number of neurons of each layer of f
 NODE: true
 scaling_output_factor: 1.0
-layer_norm_node : [true, true, true, true ,true, false]
+layer_norm_node : [false, false, true, true ,false, false]
 
 #Global
 weight_decay:
