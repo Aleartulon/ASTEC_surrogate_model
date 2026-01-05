@@ -83,6 +83,7 @@ class Model_Test:
         self.indeces_training_boundaries =  self.config_training['indeces_training_boundaries']
         
         self.indeces_training_boundaries = '_'
+        self.generate_images_error_per_time_step = information['generate_images_error_per_time_step']
         self.generate_istograms = information["generate_istograms"]
         
         for i in self.config_training['indeces_training_boundaries']:
@@ -804,18 +805,19 @@ class Model_Test:
                 raise TypeError('Wrong type of prediction')
             
             #now deal with global errors per trajectory per time-steps
-            for count, variable_name in enumerate(all_variables):
-                plt.figure(figsize=(10,5))
-                
-                for metric in dict_of_errors:
-                    if len(metric) > 4 and metric[-4:] == 'step':
-                        plt.plot(time[index_time:].cpu().numpy()/3600, dict_of_errors[metric][count])
-                        plt.title(variable_name, fontsize = 16)
-                        plt.xlabel('Time, h', fontsize = 16)
-                        plt.ylabel(metric.replace("_", " "), fontsize = 16)
-                        plt.yscale('log')
-                        plt.savefig(f'{saving_directory}/{trajectory}_{variable_name}_{metric}.png', dpi=300, bbox_inches='tight')
-                        plt.close()
+            if self.generate_images_error_per_time_step:
+                for count, variable_name in enumerate(all_variables):
+                    plt.figure(figsize=(10,5))
+                    
+                    for metric in dict_of_errors:
+                        if len(metric) > 4 and metric[-4:] == 'step':
+                            plt.plot(time[index_time:].cpu().numpy()/3600, dict_of_errors[metric][count])
+                            plt.title(variable_name, fontsize = 16)
+                            plt.xlabel('Time, h', fontsize = 16)
+                            plt.ylabel(metric.replace("_", " "), fontsize = 16)
+                            plt.yscale('log')
+                            plt.savefig(f'{saving_directory}/{trajectory}_{variable_name}_{metric}.png', dpi=300, bbox_inches='tight')
+                            plt.close()
                         
     def generate_pictures_errors_latent_NODE_per_shape(self, trajectory:str, latent_error :dict, time:tc.tensor): 
         all_variables = ('scalar', 'core', 'vessel', 'lower_plenum', 'faces')
