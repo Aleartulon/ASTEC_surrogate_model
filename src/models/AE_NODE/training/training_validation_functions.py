@@ -41,15 +41,15 @@ class Training():
             
             
     def train_epoch(self, loss_coefficients):
-        l1_loss = 0
-        l1_loss_per_shape = np.zeros(self.number_of_different_domains)
-        l1_loss_latent = 0
-        l2_TF_loss = 0
-        l2_AR_loss = 0
-        l3_loss = 0
-        loss = 0
-        count = 0
-        regularization_loss = 0
+        l1_loss = tc.tensor(0.0, device = self.device)
+        l1_loss_per_shape = tc.zeros(self.number_of_different_domains, device = self.device)
+        l1_loss_latent =  tc.tensor(0.0, device = self.device)
+        l2_TF_loss =  tc.tensor(0.0, device = self.device)
+        l2_AR_loss =  tc.tensor(0.0, device = self.device)
+        l3_loss =  tc.tensor(0.0, device = self.device)
+        loss =  tc.tensor(0.0, device = self.device)
+        count = 0.0
+        regularization_loss =  tc.tensor(0.0, device = self.device)
         self.encoder.train()
         self.f.train()
         self.decoder.train()
@@ -84,36 +84,35 @@ class Training():
                     
                     self.optim.step()
                  
-        
-                loss += (l1_mean +l1_latent+ l2_TF+l2_AR+l3).detach().cpu().item()
-                l1_loss += (l1_mean).detach().cpu().numpy()
-                l1_loss_per_shape += (l1_mean_per_shape).detach().cpu().numpy()
-                l1_loss_latent += (l1_latent).detach().cpu().numpy()
-                l2_TF_loss += l2_TF.detach().cpu().item()
-                l2_AR_loss += l2_AR.detach().cpu().item()
-                l3_loss += l3.detach().cpu().item()
+                loss += (l1_mean +l1_latent+ l2_TF+l2_AR+l3).detach()
+                l1_loss += (l1_mean).detach()
+                l1_loss_per_shape += (l1_mean_per_shape).detach()
+                l1_loss_latent += (l1_latent).detach()
+                l2_TF_loss += l2_TF.detach()
+                l2_AR_loss += l2_AR.detach()
+                l3_loss += l3.detach()
                 
-                regularization_loss += regularization_latent.detach().cpu().item()
+                regularization_loss += regularization_latent.detach()
                 count += 1
 
-        return l1_loss/count, l1_loss_per_shape/count, l1_loss_latent/count ,l2_TF_loss/count, l2_AR_loss/count ,l3_loss/count, regularization_loss/count, loss/count
+        return l1_loss.cpu().item()/count, l1_loss_per_shape.cpu().numpy()/count, l1_loss_latent.cpu().item()/count ,l2_TF_loss.cpu().item()/count, l2_AR_loss.cpu().item()/count ,l3_loss.cpu().item()/count, regularization_loss.cpu().item()/count, loss.cpu().item()/count
         
 
     def valid_epoch(self, loss_coefficients):
         
-        l1_loss = 0
-        l1_loss_per_shape = np.zeros(self.number_of_different_domains)
-        l1_loss_unnorm_per_variable = np.zeros(self.number_of_different_domains)
-        l1_loss_unnorm = 0
-        l1_loss_latent = 0
-        l2_TF_loss = 0
-        l2_AR_loss = 0
-        l3_loss = 0
-        loss = 0
-        count = 0
-        regularization_loss = 0
-        loss_real = 0
-        loss_real_per_shape = np.zeros(self.number_of_different_domains)
+        l1_loss =  tc.tensor(0.0, device = self.device)
+        l1_loss_per_shape = tc.zeros(self.number_of_different_domains, device = self.device)
+        l1_loss_unnorm_per_variable = tc.zeros(self.number_of_different_domains, device = self.device)
+        l1_loss_unnorm =  tc.tensor(0.0, device = self.device)
+        l1_loss_latent =  tc.tensor(0.0, device = self.device)
+        l2_TF_loss =  tc.tensor(0.0, device = self.device)
+        l2_AR_loss =  tc.tensor(0.0, device = self.device)
+        l3_loss =  tc.tensor(0.0, device = self.device)
+        loss =  tc.tensor(0.0, device = self.device)
+        count = 0.0
+        regularization_loss =  tc.tensor(0.0, device = self.device)
+        loss_real =  tc.tensor(0.0, device = self.device)
+        loss_real_per_shape = tc.zeros(self.number_of_different_domains, device = self.device)
         
         
         self.encoder.eval()
@@ -134,22 +133,22 @@ class Training():
                 l_real_mean = l_final[0]
                 l_real_per_shape = l_final[1]
                 
-                loss_real +=  l_real_mean.detach().item()
-                loss += (l1_mean + l1_latent+ l2_TF + l2_AR + l3 + l_real_mean).detach().cpu().item()
-                loss_real_per_shape += (l_real_per_shape).detach().cpu().numpy()
-                l1_loss += (l1_mean ).detach().cpu().numpy()
-                l1_loss_per_shape += (l1_mean_per_shape).detach().cpu().numpy()
-                l1_loss_unnorm += (l1_mean_denormalized).detach().cpu().item()
-                l1_loss_unnorm_per_variable += (l1_mean_per_denormalized_per_variable).detach().cpu().numpy()
-                l1_loss_latent += (l1_latent).detach().cpu().item()
-                l2_TF_loss += l2_TF.detach().cpu().item()
-                l2_AR_loss += l2_AR.detach().cpu().item()
-                l3_loss += l3.detach().cpu().item()
-                regularization_loss += regularization_latent.detach().cpu().item()
+                loss_real +=  l_real_mean.detach()
+                loss += (l1_mean + l1_latent+ l2_TF + l2_AR + l3 + l_real_mean).detach()
+                loss_real_per_shape += (l_real_per_shape).detach()
+                l1_loss += (l1_mean ).detach()
+                l1_loss_per_shape += (l1_mean_per_shape).detach()
+                l1_loss_unnorm += (l1_mean_denormalized).detach()
+                l1_loss_unnorm_per_variable += (l1_mean_per_denormalized_per_variable).detach()
+                l1_loss_latent += (l1_latent).detach()
+                l2_TF_loss += l2_TF.detach()
+                l2_AR_loss += l2_AR.detach()
+                l3_loss += l3.detach()
+                regularization_loss += regularization_latent.detach()
                 count += 1
                 t1 = time.time()
                 #print('validation: ', t1-t0)
-        return l1_loss/count, l1_loss_per_shape/count, l1_loss_unnorm/count, l1_loss_unnorm_per_variable/count, l1_loss_latent/count, l2_TF_loss/count, l2_AR_loss/count , l3_loss/count, loss_real/count, loss_real_per_shape/count, regularization_loss/count , loss/count
+        return l1_loss.cpu().item()/count, l1_loss_per_shape.cpu().numpy()/count, l1_loss_unnorm.cpu().item()/count, l1_loss_unnorm_per_variable.cpu().numpy()/count, l1_loss_latent.cpu().item()/count, l2_TF_loss.cpu().item()/count, l2_AR_loss.cpu().item()/count , l3_loss.cpu().item()/count, loss_real.cpu().item()/count, loss_real_per_shape.cpu().numpy()/count, regularization_loss.cpu().item()/count , loss.cpu().item()/count
 
 
     def training(self):
@@ -235,9 +234,6 @@ class Training():
         os.makedirs(self.PATH_logs+'/checkpoint/',exist_ok=True)
 
         print("------------------TRAINING STARTS------------------")
-        
-        
-        
         # cycle over epochs
         for i in np.arange(first_epoch, self.epochs, 1):
             early_stopping += 1
@@ -253,9 +249,10 @@ class Training():
                 valid_l1_data, valid_l1_per_shape_data, valid_l1_unnorm_data, valid_l1_unnorm_per_variable_data, valid_l1_latent_data, valid_l2_TF_data, valid_l2_AR_data, valid_l3_data, valid_real_data, valid_real_per_variable_data, valid_regularization_data, valid_loss_data = self.valid_epoch([[1,1],1,1,1])
                 if self.is_coupled[0]:
                     valid_loss_data = 100.0
-            elif i >=self.time_of_AE and i < self.time_only_TF: #use only TF
+            elif i >=self.time_of_AE and i < (self.time_only_TF+ self.time_of_AE): #use only TF
                 before_training = time.time()
                 train_l1_data, train_l1_per_shape_data, train_l1_latent_data, train_l2_TF_data, train_l2_AR_data, train_l3_data, train_regularization_data, train_loss_data = self.train_epoch([self.loss_coefficients['AE'],self.loss_coefficients['TF'],0, self.loss_coefficients['Random_DT']])
+                before_validation = time.time()
                 valid_l1_data, valid_l1_per_shape_data, valid_l1_unnorm_data, valid_l1_unnorm_per_variable_data, valid_l1_latent_data, valid_l2_TF_data, valid_l2_AR_data, valid_l3_data, valid_real_data, valid_real_per_variable_data, valid_regularization_data, valid_loss_data = self.valid_epoch([[1,1],1,1,1])
             else:
                 if self.loss_coefficients['AR'] >= maximum_loss_coefficient_AR:
