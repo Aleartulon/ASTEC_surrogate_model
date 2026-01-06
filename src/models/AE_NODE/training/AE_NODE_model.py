@@ -49,6 +49,8 @@ class AE_NODE:
         else:
             self.pin_memory = True
             
+        
+        self.persistent_workers = True if self.number_of_workers > 0 else False
         self.waiting_epochs_before_new_dataset_creation = config_training['waiting_epochs_before_new_dataset_creation']
         self.dynamic_dataset_generation_during_training = config_training['dynamic_dataset_generation_during_training']
         self.time_windows = config_training['time_windows']
@@ -122,6 +124,13 @@ class AE_NODE:
         self.encoder.to(self.device)
         self.f.to(self.device)
         self.decoder.to(self.device)
+        
+        # In AE_NODE_model.py, replace your torch.compile section with:
+        if hasattr(tc, 'compile'):
+            self.encoder = tc.compile(self.encoder, mode='default')
+            self.decoder = tc.compile(self.decoder, mode='default')
+            self.f = tc.compile(self.f, mode='default')
+            print("Models compiled with torch.compile()")
 
         #define optimizer, the pre scheduler for the warmup of the model and the scheduler
         self.optim = tc.optim.Adam(params_to_optimize, lr=config_training['learning_rate'])
