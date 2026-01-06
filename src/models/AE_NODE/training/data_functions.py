@@ -35,8 +35,8 @@ def build_dataset(batch_size:int, time_window: int, data_training_path: str, dat
     print('Length dataset: ', length_dataset)
     print('Batch size: ', batch_size)
     print('-------------------------------------------')
-    training_loader = DataLoader(dataset_training, batch_size = batch_size, num_workers = number_of_workers, shuffle=True,drop_last=False,pin_memory=pin_memory, prefetch_factor=2 if number_of_workers > 0 else None)
-    validation_loader = DataLoader(dataset_validation, batch_size = batch_size, num_workers = number_of_workers, shuffle=True,drop_last=False,pin_memory=pin_memory)
+    training_loader = DataLoader(dataset_training, batch_size = batch_size, num_workers = number_of_workers, shuffle=True,drop_last=False,pin_memory=pin_memory, prefetch_factor=4 if number_of_workers > 0 else None, persistent_workers=True if number_of_workers > 0 else False)
+    validation_loader = DataLoader(dataset_validation, batch_size = batch_size, num_workers = number_of_workers, shuffle=True,drop_last=False,pin_memory=pin_memory, prefetch_factor=2 if number_of_workers > 0 else None, persistent_workers=True if number_of_workers > 0 else False)
     
     return training_loader, validation_loader
   
