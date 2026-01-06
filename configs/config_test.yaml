@@ -1,8 +1,8 @@
 path_to_test_data : '../../../../../../../scratch/ROM_datasets_ale/ASTEC/made_datasets/only_loca_min_max/'
-name_test_file: 'data_testing_1_3.h5'
-path_to_model: '../../../../../../../scratch/ROM_datasets_ale/ASTEC/saved_logs/AE_NODE/Models/dataset_1_3_all_layer_norm_50_patience_1_layer_norm_scaling_output_factor_0.1/'
+name_test_file: 'data_testing_582_602.h5'
+path_to_model: '../../../../../../../scratch/ROM_datasets_ale/ASTEC/saved_logs/AE_NODE/Models/dataset_1_153_192_396_398_500_few_layer_norm_ONLY_AE/'
 device: 'cuda:0'
-trajectories_to_be_plotted : [1]
+trajectories_to_be_plotted : [582]
 autoencoding_figures : true
 autoencoding_latent_figures : true
 latent_prediction_figures : true
@@ -11,6 +11,6 @@ actual_latent_prediction_figures: true
 TF_fields_prediction_figures: true
 TF_latent_prediction_figures: true
 compute_TF : true
-operator_actions_indeces : [1]
+operator_actions_indeces : [582]
 generate_images_error_per_time_step : false
 generate_istograms : false

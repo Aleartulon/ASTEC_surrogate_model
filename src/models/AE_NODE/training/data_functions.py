@@ -40,7 +40,7 @@ def build_dataset(batch_size:int, time_window: int, data_training_path: str, dat
     
     return training_loader, validation_loader
   
-def save_checkpoint(encoder, f , decoder, optimizer, scheduler, epoch, loss_value, loss_coefficients_AR, before_next_window_change, how_many_datasets_creations, autoregressive_step, full_training_count,filepath):
+def save_checkpoint(encoder, f , decoder, optimizer, scheduler, epoch, loss_value, loss_coefficients_AR, before_next_window_change, how_many_datasets_creations, autoregressive_step, time_of_AE, time_of_only_TF,filepath):
   
     checkpoint = {
             'encoder':encoder.state_dict(),
@@ -54,7 +54,8 @@ def save_checkpoint(encoder, f , decoder, optimizer, scheduler, epoch, loss_valu
             'before_next_window_change' : before_next_window_change,
             'how_many_datasets_creations' : how_many_datasets_creations,
             'autoregressive_step': autoregressive_step,
-            'full_training_count': full_training_count,
+            'time_of_AE': time_of_AE,
+            'time_of_only_TF': time_of_only_TF,
         }
     tc.save(checkpoint, filepath)
 
@@ -73,9 +74,10 @@ def load_checkpoint(encoder, f , decoder, optimizer, scheduler, filepath, device
     before_next_window_change = checkpoint['before_next_window_change']
     how_many_datasets_creations = checkpoint['how_many_datasets_creations']
     autoregressive_step = checkpoint['autoregressive_step']
-    full_training_count = checkpoint['full_training_count']
+    time_of_AE = checkpoint['time_of_AE']
+    time_of_only_TF = checkpoint['time_of_only_TF']
         
-    return encoder, f , decoder, optimizer, scheduler , epoch, loss_value, loss_coefficients_AR, before_next_window_change, how_many_datasets_creations, autoregressive_step, full_training_count
+    return encoder, f , decoder, optimizer, scheduler , epoch, loss_value, loss_coefficients_AR, before_next_window_change, how_many_datasets_creations, autoregressive_step, time_of_AE, time_of_only_TF
 
 
 class ASTEC_Dataset(Dataset):

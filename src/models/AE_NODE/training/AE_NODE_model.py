@@ -26,6 +26,7 @@ class AE_NODE:
         self.time_of_lr_war_up = model_information['time_of_lr_war_up']
         self.clipping = model_information['clipping']
         self.is_coupled = model_information['is_coupled']
+        self.compile = config_training['compile']
         if not self.is_coupled[0]:
             self.time_of_AE = 0
         self.autoregressive_step = model_information['autoregressive_step']
@@ -126,11 +127,12 @@ class AE_NODE:
         self.decoder.to(self.device)
         
         # In AE_NODE_model.py, replace your torch.compile section with:
-        if hasattr(tc, 'compile'):
-            self.encoder = tc.compile(self.encoder, mode='default')
-            self.decoder = tc.compile(self.decoder, mode='default')
-            self.f = tc.compile(self.f, mode='default')
-            print("Models compiled with torch.compile()")
+        if self.compile:
+            if hasattr(tc, 'compile'):
+                self.encoder = tc.compile(self.encoder, mode='default')
+                self.decoder = tc.compile(self.decoder, mode='default')
+                self.f = tc.compile(self.f, mode='default')
+                print("Models compiled with torch.compile()")
 
         #define optimizer, the pre scheduler for the warmup of the model and the scheduler
         self.optim = tc.optim.Adam(params_to_optimize, lr=config_training['learning_rate'])

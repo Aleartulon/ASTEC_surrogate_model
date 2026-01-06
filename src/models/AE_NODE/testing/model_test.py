@@ -420,27 +420,31 @@ class Model_Test:
         
     def load_checkpoint_on_models(self):
         checkpoint = tc.load(self.path_to_model+'/checkpoint/check.pt', map_location=self.device, weights_only=False)
+        # remove things added by compiler
+        encoder_state_dict = {k.replace('_orig_mod.', ''): v 
+                            for k, v in checkpoint['encoder'].items()}
+        f_state_dict = {k.replace('_orig_mod.', ''): v 
+                        for k, v in checkpoint['f'].items()}
+        decoder_state_dict = {k.replace('_orig_mod.', ''): v 
+                            for k, v in checkpoint['decoder'].items()}
         
-        self.encoder.load_state_dict(checkpoint['encoder'])
-        self.f.load_state_dict(checkpoint['f'])
-        self.decoder.load_state_dict(checkpoint['decoder'])
-
+        self.encoder.load_state_dict(encoder_state_dict)
+        self.f.load_state_dict(f_state_dict)
+        self.decoder.load_state_dict(decoder_state_dict)
+        
         total_params_enc = sum(p.numel() for p in self.encoder.parameters() if p.requires_grad)
         total_params_dec = sum(p.numel() for p in self.decoder.parameters() if p.requires_grad)
         total_params_f = sum(p.numel() for p in self.f.parameters() if p.requires_grad)
-
-        memory_in_mb = (total_params_enc+total_params_dec+total_params_f * 4) / (1024 ** 2)
+        memory_in_mb = (total_params_enc+total_params_dec+total_params_f) * 4 / (1024 ** 2)  # Fixed: added parentheses
         print(f"Model memory: {memory_in_mb:.2f} MB")
-
         print(f"Total number of parameters enc: {total_params_enc}")
         print(f"Total number of parameters dec : {total_params_dec}")
         print(f"Total number of parameters input f: {total_params_f}")
         print(f"Total number of parameters: {total_params_enc+total_params_dec+total_params_f}")
-
+        
         self.encoder.to(self.device)
         self.f.to(self.device)
         self.decoder.to(self.device)
-
         self.encoder.eval()
         self.f.eval()
         self.decoder.eval()

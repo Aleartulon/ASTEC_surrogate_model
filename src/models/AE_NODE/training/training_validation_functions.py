@@ -153,12 +153,10 @@ class Training():
 
     def training(self):
         if self.checkpoint:
-            first_epoch, loss_value, before_next_window_change, how_many_datasets_creations, full_training_count = 0, 0, 0, 0, 0
-            self.encoder, self.f , self.decoder, self.optim, self.scheduler, first_epoch, loss_value, self.loss_coefficients['AR'], before_next_window_change, how_many_datasets_creations, self.autoregressive_step, full_training_count = load_checkpoint(self.encoder, self.f , self.decoder, self.optim, self.scheduler, self.PATH_logs+'/checkpoint/check.pt', self.device)
+            maximum_loss_coefficient_AR = self.loss_coefficients['AR'] # this line should be before calling load_checkpoint
+            self.encoder, self.f , self.decoder, self.optim, self.scheduler, first_epoch, loss_value, self.loss_coefficients['AR'], before_next_window_change, how_many_datasets_creations, self.autoregressive_step, time_of_AE, time_of_only_TF = load_checkpoint(self.encoder, self.f , self.decoder, self.optim, self.scheduler, self.PATH_logs+'/checkpoint/check.pt', self.device)
             
             early_stopping = 0 
-            maximum_loss_coefficient_AR = self.loss_coefficients['AR']
-            
             train_l1 = np.load(self.PATH_logs + "/losses/train_l1.npy", allow_pickle=True)
             train_l1_per_shape = np.load(self.PATH_logs + "/losses/train_l1_per_shape.npy", allow_pickle=True)
             train_l1_latent = np.load(self.PATH_logs + "/losses/train_l1_latent.npy", allow_pickle=True)
@@ -199,7 +197,6 @@ class Training():
             
             loss_value = 100
             early_stopping = 0 
-            full_training_count = 1
             first_epoch = 0
 
             train_l1 = np.zeros(self.epochs)
@@ -228,6 +225,8 @@ class Training():
             self.loss_coefficients['AR'] = 0.0
             before_next_window_change = self.waiting_epochs_before_new_dataset_creation[0]
             how_many_datasets_creations = 1
+            time_of_AE = True
+            time_of_only_TF = True
             
         # create losses file
         os.makedirs(self.PATH_logs+'/losses/',exist_ok=True)
@@ -235,26 +234,45 @@ class Training():
 
         print("------------------TRAINING STARTS------------------")
         # cycle over epochs
-        for i in np.arange(first_epoch, self.epochs, 1):
+
+        for i in np.arange(first_epoch, self.epochs+1, 1):
             early_stopping += 1
             if early_stopping == self.early_stopping:
                 print('Training stopped due to early stopping')
                 #writer.close()
                 break
             time1 = time.time()
-            if i < self.time_of_AE: #use only AR
+            if i < self.time_of_AE: #use only AE
                 before_training = time.time()
                 train_l1_data, train_l1_per_shape_data, train_l1_latent_data , train_l2_TF_data, train_l2_AR_data, train_l3_data, train_regularization_data, train_loss_data = self.train_epoch([self.loss_coefficients['AE'],0,0,0])
                 before_validation = time.time()
                 valid_l1_data, valid_l1_per_shape_data, valid_l1_unnorm_data, valid_l1_unnorm_per_variable_data, valid_l1_latent_data, valid_l2_TF_data, valid_l2_AR_data, valid_l3_data, valid_real_data, valid_real_per_variable_data, valid_regularization_data, valid_loss_data = self.valid_epoch([[1,1],1,1,1])
                 if self.is_coupled[0]:
-                    valid_loss_data = 100.0
+                    valid_loss_data = valid_l1_data
             elif i >=self.time_of_AE and i < (self.time_only_TF+ self.time_of_AE): #use only TF
+                if time_of_AE:
+                    initialize_model_to_last_checkpoint(self.encoder, self.f, self.decoder, self.device, self.PATH_logs+'/checkpoint/check.pt')
+                    loss_value = 100
+                    time_of_AE = False
                 before_training = time.time()
                 train_l1_data, train_l1_per_shape_data, train_l1_latent_data, train_l2_TF_data, train_l2_AR_data, train_l3_data, train_regularization_data, train_loss_data = self.train_epoch([self.loss_coefficients['AE'],self.loss_coefficients['TF'],0, self.loss_coefficients['Random_DT']])
                 before_validation = time.time()
                 valid_l1_data, valid_l1_per_shape_data, valid_l1_unnorm_data, valid_l1_unnorm_per_variable_data, valid_l1_latent_data, valid_l2_TF_data, valid_l2_AR_data, valid_l3_data, valid_real_data, valid_real_per_variable_data, valid_regularization_data, valid_loss_data = self.valid_epoch([[1,1],1,1,1])
+                valid_loss_data = valid_l1_data + valid_l1_latent_data + valid_l2_TF_data + valid_l3_data + valid_regularization_data
             else:
+                print('AR')
+                print(self.loss_coefficients['AR'])
+                if time_of_AE:
+                    initialize_model_to_last_checkpoint(self.encoder, self.f, self.decoder, self.device, self.PATH_logs+'/checkpoint/check.pt')
+                    time_of_AE = False
+                    time_of_only_TF = False
+                    loss_value = 100
+                    
+                if time_of_only_TF:
+                    initialize_model_to_last_checkpoint(self.encoder, self.f, self.decoder, self.device, self.PATH_logs+'/checkpoint/check.pt')
+                    time_of_only_TF = False
+                    loss_value = 100
+                    
                 if self.loss_coefficients['AR'] >= maximum_loss_coefficient_AR:
                     self.loss_coefficients['AR'] = maximum_loss_coefficient_AR
                 else:
@@ -366,7 +384,7 @@ class Training():
             if np.mean(valid_loss_data) < loss_value: #careful valid loss tot!!
                 loss_value = np.mean(valid_loss_data)
                 print('Models saved!')
-                save_checkpoint(self.encoder, self.f , self.decoder, self.optim, self.scheduler, i, loss_value, self.loss_coefficients['AR'] , before_next_window_change, how_many_datasets_creations-1, self.autoregressive_step, full_training_count,self.PATH_logs+'/checkpoint/check.pt')
+                save_checkpoint(self.encoder, self.f , self.decoder, self.optim, self.scheduler, i, loss_value, self.loss_coefficients['AR'] , before_next_window_change, how_many_datasets_creations-1, self.autoregressive_step, time_of_AE, time_of_only_TF, self.PATH_logs+'/checkpoint/check.pt')
                 early_stopping = 0
                 
             # check if it is needed to change the lenght of time series of the dataset.
