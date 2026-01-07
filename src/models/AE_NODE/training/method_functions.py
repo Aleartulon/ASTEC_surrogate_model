@@ -3,33 +3,33 @@ import time
 import torch.nn.functional as F
 
 class Training_Losses():
-    def __init__(self, training_instance):
-        self.__dict__.update(training_instance.__dict__)
+    def __init__(self, ae_node_instance):
+        self.parent = ae_node_instance
         
     def loss_sup_mixed(self, fields:list, boundary_conditions:tc.tensor, dt:tc.tensor, length_of_padding: tc.tensor, loss_coeff:list, train: bool):
-        if not self.all_on_gpu:
+        if not self.parent.all_on_gpu:
             for count, i in enumerate(fields):
-                fields[count] = i.to(self.device)
-            boundary_conditions = boundary_conditions.to(self.device)
-            length_of_padding = length_of_padding.to(self.device)
+                fields[count] = i.to(self.parent.device)
+            boundary_conditions = boundary_conditions.to(self.parent.device)
+            length_of_padding = length_of_padding.to(self.parent.device)
             
-            dt = dt.to(self.device)
+            dt = dt.to(self.parent.device)
         
         original_size = fields[0].size()
         
         #First loss: invertibility of autoencoder enc-dec-enc
         
-        if self.is_coupled[0] == True or (self.is_coupled[0] == False and self.is_coupled[1] == 'AE'):
+        if not self.parent.is_AE_frozen:
             definitive_latent, latent_boundaries, l1, regularization_latent = self.auto_encoding_loss(fields, boundary_conditions, length_of_padding, loss_coeff, train)
             
-        elif (self.is_coupled[0] == False and self.is_coupled[1] == 'NODE'):
+        else:
             with tc.no_grad():
                 definitive_latent, latent_boundaries, l1, regularization_latent = self.auto_encoding_loss(fields, boundary_conditions, length_of_padding, loss_coeff, train)
 
-        if self.is_coupled[0] == True or (self.is_coupled[0] == False and self.is_coupled[1] == 'NODE'):
+        if self.parent.is_coupled[0] == True or (self.parent.is_coupled[0] == False and self.parent.is_coupled[1] == 'NODE'):
             l2_TF, l2_AR, l3, l_final = self.latent_dynamics_loss(fields, definitive_latent, latent_boundaries, length_of_padding, original_size, train, dt, loss_coeff)
             
-        elif (self.is_coupled[0] == False and self.is_coupled[1] == 'AE'):
+        elif (self.parent.is_coupled[0] == False and self.parent.is_coupled[1] == 'AE'):
             with tc.no_grad():
                 l2_TF, l2_AR, l3, l_final = self.latent_dynamics_loss(fields, definitive_latent, latent_boundaries, length_of_padding, original_size, train, dt, loss_coeff)
 
@@ -37,8 +37,8 @@ class Training_Losses():
 
     def auto_encoding_loss(self, fields:list , boundaries:tc.tensor,length_of_padding:tc.tensor ,loss_coeff:list, train:bool):
         
-        definitive_latent, latent_per_shape , latent_boundaries, regularization_latent = self.encoder(fields, boundaries)
-        reconstructed_variables, reconstructed_latent_per_shape = self.decoder(definitive_latent)
+        definitive_latent, latent_per_shape , latent_boundaries, regularization_latent = self.parent.encoder(fields, self.parent.is_AE_frozen, boundaries)
+        reconstructed_variables, reconstructed_latent_per_shape = self.parent.decoder(definitive_latent, self.parent.is_AE_frozen)
         
         # separate the reconstruction of boundaries and fields
         for count, i in enumerate(reconstructed_variables):
@@ -56,8 +56,8 @@ class Training_Losses():
         else:
             l1_mean, l1_per_shape = auto_encoding_MSE(reconstructed_variables, fields, length_of_padding) 
             l1_latent, _ = auto_encoding_MSE(reconstructed_latent_per_shape, latent_per_shape, length_of_padding)  #latent reconstruction per shape
-            #reconstructed_variables = standard_and_inverse_normalization_field(reconstructed_variables, self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)
-            #fields = standard_and_inverse_normalization_field(fields, self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)
+            #reconstructed_variables = standard_and_inverse_normalization_field(reconstructed_variables, self.parent.maxima_or_mean, self.parent.minima_or_std, self.parent.which_normalization, True)
+            #fields = standard_and_inverse_normalization_field(fields, self.parent.maxima_or_mean, self.parent.minima_or_std, self.parent.which_normalization, True)
             l1_mean_denormalized, l1_mean_denormalized_per_variable = auto_encoding_MSE(reconstructed_variables, fields, length_of_padding, is_denormalized_validation = False)
 
             l1 = [l1_mean * loss_coeff[0][0], l1_per_shape * loss_coeff[0][0], l1_mean_denormalized * loss_coeff[0][0], l1_mean_denormalized_per_variable * loss_coeff[0][0], l1_latent * loss_coeff[0][1]]
@@ -87,7 +87,7 @@ class Training_Losses():
         if loss_coeff[3] <= 0:
             l3 = tc.tensor(0.0)
         else:
-            random_dt = tc.rand(number_batches*(number_of_time_steps-1),1, device=self.device) * dt
+            random_dt = tc.rand(number_batches*(number_of_time_steps-1),1, device=self.parent.device) * dt
             e2_middle_latent = self.processor_First_Order( input_processor,random_dt, latent_boundaries)
             e2_final = self.processor_First_Order(e2_middle_latent, dt-random_dt, latent_boundaries)
             e2_final = e2_final.reshape(number_batches, (number_of_time_steps-1), latent_dim)
@@ -104,28 +104,28 @@ class Training_Losses():
              
 
     def advance_from_ic(self, fields:list, true_latent:tc.tensor, dt:tc.tensor, latent_boundaries:tc.tensor, length_of_padding: tc.tensor, loss_coeff:float, train:bool):
-        which_technique = self.autoregressive_step['which_technique']
+        which_technique = self.parent.autoregressive_step['which_technique']
         number_of_time_steps = fields[0].size(1)
         initial_condition = [tensor[:, 0:1, ...] for tensor in fields]
         B = true_latent.size(0)
         T = number_of_time_steps - 1
         latent_dim = true_latent.size(-1)
         
-        if not (self.is_coupled[0]) and (self.is_coupled[1] == 'AE') and train:
+        if not (self.parent.is_coupled[0]) and (self.parent.is_coupled[1] == 'AE') and train:
             return tc.tensor(0.0), tc.tensor(0.0)
         
-        elif not (self.is_coupled[0]) and (self.is_coupled[1] == 'AE') and not train:
+        elif not (self.parent.is_coupled[0]) and (self.parent.is_coupled[1] == 'AE') and not train:
             return tc.tensor(0.0), (tc.tensor(0.0),tc.tensor(0.0))
             
         if which_technique == 'fully_autoregressive' or (not train):  #Encode initial condition and evolve in latent. Always done at validation to compute the actual final loss autoregressively
             if (not train):
-                #fields = standard_and_inverse_normalization_field(fields, self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)
+                #fields = standard_and_inverse_normalization_field(fields, self.parent.maxima_or_mean, self.parent.minima_or_std, self.parent.which_normalization, True)
                 fields = [tensor[:, 1:, ...] for tensor in fields]
                 
             reconstructed_latent = tc.zeros_like(true_latent)[:,1:,:]
             
             with tc.no_grad():
-                next_latent, _, _ , _ = self.encoder(initial_condition)
+                next_latent, _, _ , _ = self.parent.encoder(initial_condition, self.parent.is_AE_frozen)
             
             for count in range(number_of_time_steps-1):
                 
@@ -136,10 +136,10 @@ class Training_Losses():
             
             if (not train):
                 reconstructed_latent = reconstructed_latent.reshape(B * T, latent_dim)
-                output_decoder, _ = self.decoder(reconstructed_latent)
+                output_decoder, _ = self.parent.decoder(reconstructed_latent, self.parent.is_AE_frozen)
  
                 output_decoder = [tensor.reshape((B, T) + tensor.size()[1:]) for tensor in output_decoder]
-                #output_decoder = standard_and_inverse_normalization_field(output_decoder, self.maxima_or_mean, self.minima_or_std, self.which_normalization, True)
+                #output_decoder = standard_and_inverse_normalization_field(output_decoder, self.parent.maxima_or_mean, self.parent.minima_or_std, self.parent.which_normalization, True)
 
                 l_final, l_final_per_variable = auto_encoding_MSE(output_decoder, fields, F.relu((length_of_padding-1)), is_denormalized_validation = False) 
                 
@@ -149,20 +149,20 @@ class Training_Losses():
             
     def processor_First_Order(self, definitive_latent:tc.tensor, dt:tc.tensor, latent_boudaries:tc.tensor):
 
-        # self.k = 1 is Euler
-        b = tc.zeros((self.k, definitive_latent.size(0), definitive_latent.size(1)) , device= self.device)
-        b[0, :,:] = self.f(definitive_latent, latent_boudaries)
-        final_sum = self.f(definitive_latent, latent_boudaries)*self.RK[str(self.k)][-1][1]
+        # self.parent.k = 1 is Euler
+        b = tc.zeros((self.parent.k, definitive_latent.size(0), definitive_latent.size(1)) , device= self.parent.device)
+        b[0, :,:] = self.parent.f(definitive_latent, latent_boudaries)
+        final_sum = self.parent.f(definitive_latent, latent_boudaries)*self.parent.RK[str(self.parent.k)][-1][1]
 
-        for i in range(self.k-1):
-            s = tc.zeros_like(definitive_latent, device = self.device)
+        for i in range(self.parent.k-1):
+            s = tc.zeros_like(definitive_latent, device = self.parent.device)
 
             for j in range(i+1):
-                s +=  b[j] * self.RK[str(self.k)][i+1][j+1]
+                s +=  b[j] * self.parent.RK[str(self.parent.k)][i+1][j+1]
 
-            b_new = self.f(definitive_latent + dt * s, latent_boudaries).unsqueeze(0).to(self.device)
+            b_new = self.parent.f(definitive_latent + dt * s, latent_boudaries).unsqueeze(0).to(self.parent.device)
             b[i+1,:,:] = b_new
 
-            final_sum += b_new.squeeze(0) * self.RK[str(self.k)][-1][i+2]
+            final_sum += b_new.squeeze(0) * self.parent.RK[str(self.parent.k)][-1][i+2]
         e2 = definitive_latent + final_sum * dt
         return e2

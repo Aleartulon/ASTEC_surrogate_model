@@ -27,6 +27,8 @@ class AE_NODE:
         self.clipping = model_information['clipping']
         self.is_coupled = model_information['is_coupled']
         self.compile = config_training['compile']
+        self.freeze_AE_after_a_while = model_information['freeze_AE_after_a_while']
+        self.is_AE_frozen = True if not self.is_coupled[0] and self.is_coupled[1] == 'NODE' else False
         if not self.is_coupled[0]:
             self.time_of_AE = 0
         self.autoregressive_step = model_information['autoregressive_step']
@@ -42,6 +44,7 @@ class AE_NODE:
         self.early_stopping = config_training['early_stopping']
         self.number_of_workers = config_training['number_of_workers']
         self.all_on_gpu = config_training['all_on_gpu']
+        
 
         
         if self.all_on_gpu:

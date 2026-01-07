@@ -21,8 +21,7 @@ class Encoder(nn.Module):
         self.final_reduction = Fully_Connected_Encoder(config_training, model_information['auto_encoding']['final_reduction_and_initial_increase'])
         self.lambda_regularization = model_information['loss_coefficients']['lambda_regularization'] if model_information['is_coupled'][0] else model_information['loss_coefficients_not_coupled']['lambda_regularization'] 
         
-    def forward(self, fields:list, boundaries: tc.tensor = None):
-        
+    def forward(self, fields:list, is_AE_frozen: bool, boundaries: tc.tensor = None):
         if boundaries is not None:
             boundaries_variables = boundaries.flatten(0, 1) 
             latent_boundaries_variables = self.encoder_boundaries_variables(boundaries_variables) #final reduced vector of boundaries
@@ -47,7 +46,15 @@ class Encoder(nn.Module):
         regularization_latent = self.l1_latent_regularization(latent_in_variables, self.lambda_regularization, latent_boundaries_variables) #regularization latent space 
         definitive_latent = self.final_reduction(latent_in_variables) #final reduced vector of inner fields
         
-        
+        if is_AE_frozen:
+            definitive_latent = definitive_latent.detach()
+            for count, i in enumerate(latent_in_variables_separated):
+                if i != None:
+                    latent_in_variables_separated[count] = i.detach()
+            if latent_boundaries_variables != None:      
+                latent_boundaries_variables = latent_boundaries_variables.detach()
+            regularization_latent = regularization_latent.detach()
+            
         return definitive_latent, latent_in_variables_separated, latent_boundaries_variables, regularization_latent
     
     def l1_latent_regularization(self, latent_fields: tc.tensor, lambda_l1: float, latent_boundaries: tc.tensor = None):
@@ -213,7 +220,7 @@ class Decoder(nn.Module):
                 index += int( model_information['auto_encoding'][i]['output_dimension_encoder'])
         return indeces
            
-    def forward(self, definitive_latent:tc.tensor):
+    def forward(self, definitive_latent:tc.tensor, is_AE_frozen: bool):
             
         concatenated_latents = self.initial_increase(definitive_latent)
         latent_scalar_variables = concatenated_latents[:,0:self.indeces['auto_encoder_scalar']]
@@ -229,6 +236,15 @@ class Decoder(nn.Module):
         reconstructed_vessel_variables = self.decoder_vessel_variables(latent_vessel_variables)
         reconstructed_faces_variables = self.decoder_faces_variables(latent_faces_variables)
         
+        if is_AE_frozen:
+            reconstructed_scalar_variables = reconstructed_scalar_variables.detach()
+            reconstructed_core_variables = reconstructed_core_variables.detach()
+            reconstructed_vessel_variables = reconstructed_vessel_variables.detach()
+            reconstructed_plenum_variables = reconstructed_plenum_variables.detach()
+            reconstructed_faces_variables = reconstructed_faces_variables.detach()
+            for count, i in enumerate(latent_in_variables_separated):
+                latent_in_variables_separated[count] = i.detach()
+
         return [reconstructed_scalar_variables, reconstructed_core_variables, reconstructed_vessel_variables, reconstructed_plenum_variables , reconstructed_faces_variables], latent_in_variables_separated
     
 class Fully_Connected_Decoder(nn.Module):

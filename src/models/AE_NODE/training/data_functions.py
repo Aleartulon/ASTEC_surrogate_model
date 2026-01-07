@@ -40,14 +40,14 @@ def build_dataset(batch_size:int, time_window: int, data_training_path: str, dat
     
     return training_loader, validation_loader
   
-def save_checkpoint(encoder, f , decoder, optimizer, scheduler, epoch, loss_value, loss_coefficients_AR, before_next_window_change, how_many_datasets_creations, autoregressive_step, time_of_AE, time_of_only_TF,filepath):
+def save_checkpoint(encoder, f , decoder, optimizer, scheduler, epoch, loss_value, loss_coefficients_AR, before_next_window_change, how_many_datasets_creations, autoregressive_step, time_of_AE, time_of_only_TF,is_AE_frozen,filepath):
   
     checkpoint = {
-            'encoder':encoder.state_dict(),
-            'f':f.state_dict(),
-            'decoder':decoder.state_dict(),
-            'optimizer':optimizer.state_dict(),
-            'scheduler':scheduler.state_dict(),
+            'encoder_state_dict':encoder.state_dict(),
+            'f_state_dict':f.state_dict(),
+            'decoder_state_dict':decoder.state_dict(),
+            'optimizer_state_dict':optimizer.state_dict(),
+            'scheduler_state_dict':scheduler.state_dict(),
             'epoch' : epoch,
             'loss_value' : loss_value,
             'loss_coefficients_AR' : loss_coefficients_AR,
@@ -56,28 +56,31 @@ def save_checkpoint(encoder, f , decoder, optimizer, scheduler, epoch, loss_valu
             'autoregressive_step': autoregressive_step,
             'time_of_AE': time_of_AE,
             'time_of_only_TF': time_of_only_TF,
+            'is_AE_frozen' : is_AE_frozen
         }
     tc.save(checkpoint, filepath)
 
 
-def load_checkpoint(encoder, f , decoder, optimizer, scheduler, filepath, device):
-
-    checkpoint = tc.load(filepath, map_location=device)
-    encoder.load_state_dict(checkpoint['encoder'])
-    f.load_state_dict(checkpoint['f'])
-    decoder.load_state_dict(checkpoint['decoder'])
-    optimizer.load_state_dict(checkpoint['optimizer'])
-    scheduler.load_state_dict(checkpoint['scheduler'])
-    epoch = checkpoint['epoch']
+def load_checkpoint(encoder, f, decoder, optim, scheduler, path, device):
+    checkpoint = tc.load(path, map_location=device, weights_only=False)
+    print(checkpoint.keys())
+    encoder.load_state_dict(checkpoint['encoder_state_dict'])
+    f.load_state_dict(checkpoint['f_state_dict'])
+    decoder.load_state_dict(checkpoint['decoder_state_dict'])
+    optim.load_state_dict(checkpoint['optimizer_state_dict'])
+    scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
+    
+    first_epoch = checkpoint['epoch']
     loss_value = checkpoint['loss_value']
     loss_coefficients_AR = checkpoint['loss_coefficients_AR']
-    before_next_window_change = checkpoint['before_next_window_change']
-    how_many_datasets_creations = checkpoint['how_many_datasets_creations']
+    before_next_window = checkpoint['before_next_window_change']
+    datasets_count = checkpoint['how_many_datasets_creations']
     autoregressive_step = checkpoint['autoregressive_step']
     time_of_AE = checkpoint['time_of_AE']
     time_of_only_TF = checkpoint['time_of_only_TF']
-        
-    return encoder, f , decoder, optimizer, scheduler , epoch, loss_value, loss_coefficients_AR, before_next_window_change, how_many_datasets_creations, autoregressive_step, time_of_AE, time_of_only_TF
+    is_AE_frozen = checkpoint['is_AE_frozen']
+    
+    return first_epoch, loss_value, loss_coefficients_AR, before_next_window, datasets_count, autoregressive_step, time_of_AE, time_of_only_TF, is_AE_frozen
 
 
 class ASTEC_Dataset(Dataset):
@@ -266,16 +269,16 @@ def dynamics_MSE(input: tc.tensor, target: tc.tensor, length_of_padding: tc.tens
 def initialize_model_to_last_checkpoint(encoder, f, decoder, device : tc.device, path_to_checkpoint:str ):
 
     checkpoint = tc.load(path_to_checkpoint, map_location=device, weights_only=False)
-    encoder.load_state_dict(checkpoint['encoder'])
-    f.load_state_dict(checkpoint['f'])
-    decoder.load_state_dict(checkpoint['decoder'])
+    encoder.load_state_dict(checkpoint['encoder_state_dict'])
+    f.load_state_dict(checkpoint['f_state_dict'])
+    decoder.load_state_dict(checkpoint['decoder_state_dict'])
 
 def initialize_parameters(model_information, encoder, decoder, f, device):
     if not model_information['is_coupled'][0] and model_information['is_coupled'][1] == 'NODE':
         checkpoint = tc.load(model_information['path_trained_AE']+'/checkpoint/check.pt', map_location=device, weights_only=False)
 
-        encoder.load_state_dict(checkpoint['encoder'])
-        decoder.load_state_dict(checkpoint['decoder'])
+        encoder.load_state_dict(checkpoint['encoder_state_dict'])
+        decoder.load_state_dict(checkpoint['decoder_state_dict'])
 
         for param in encoder.parameters():
             param.requires_grad = False
