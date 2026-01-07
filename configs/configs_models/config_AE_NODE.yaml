@@ -4,7 +4,7 @@ loss_coefficients: # coefficients that are multiplied to the loss function terms
   AE: [1,1] #first one is for the field reconstruction, second one for the latent reconstruction per shape
   TF: 1
   AR: 1
-  Random_DT: 0.0
+  Random_DT: 1.0
   AR_strength: 0.0001
   lambda_regularization: 0.001 #coefficients in front of the regularization term for the latent vector
 
@@ -22,8 +22,8 @@ time_of_AE: 50 # number of initial epochs where only the AutoEncoder is trained,
 time_of_lr_war_up: 10 #number of epochs of the linear warm-up of the learning rate
 time_only_TF : 10 #number of initial epochs after warm up where only TF and not AR approach is used
 clipping: [0, 1.5] #[if 1 clipping is applied to f, maximum norm allowed to gradients]
-is_coupled : [false, 'NODE'] #if true the AutoEncoder (AE) is trained coupled with the NODE. if false, if 'AE' the AE is trained, if 'NODE' the NODE is trained.
-freeze_AE_after_a_while : [true, 0.0013, 10] # if true, AE layers are frozen during training once they reach a good enough accuracy (second entry) and window is larger than (third entry)
+is_coupled : [true, 'NODE'] #if true the AutoEncoder (AE) is trained coupled with the NODE. if false, if 'AE' the AE is trained, if 'NODE' the NODE is trained.
+freeze_AE_after_a_while : [true, 0.0025, 50] # if true, AE layers are frozen during training once they reach a good enough accuracy (second entry) and window is larger than (third entry)
 path_trained_AE : '../../../../../../../scratch/ROM_datasets_ale/ASTEC/saved_logs/AE_NODE/Models/try/' #if is_coupled : [false, 'NODE'], provide the path to the models weights of the AE
 
 autoregressive_step:

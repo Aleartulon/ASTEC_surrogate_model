@@ -372,7 +372,7 @@ class Training():
                 print('Models saved!')
                 save_checkpoint(self.parent.encoder, self.parent.f , self.parent.decoder, self.parent.optim, self.parent.scheduler, i, loss_value, self.parent.loss_coefficients['AR'] , before_next_window_change, how_many_datasets_creations-1, self.parent.autoregressive_step, time_of_AE, time_of_only_TF, self.parent.is_AE_frozen, self.parent.PATH_logs+'/checkpoint/check.pt')
                 early_stopping = 0
-                if self.parent.freeze_AE_after_a_while[0] and valid_l1_data < float(self.parent.freeze_AE_after_a_while[1]) and self.parent.time_windows[how_many_datasets_creations-1] >= int(self.parent.freeze_AE_after_a_while[2]):
+                if i > (self.parent.time_only_TF+ self.parent.time_of_AE) and self.parent.freeze_AE_after_a_while[0] and valid_l1_data < float(self.parent.freeze_AE_after_a_while[1]) and self.parent.time_windows[how_many_datasets_creations-1] >= int(self.parent.freeze_AE_after_a_while[2]):
                     if not self.parent.is_AE_frozen:
                         for param in self.parent.encoder.parameters():
                             param.requires_grad = False
