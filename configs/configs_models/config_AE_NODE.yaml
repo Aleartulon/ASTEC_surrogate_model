@@ -23,7 +23,7 @@ time_of_lr_war_up: 5 #number of epochs of the linear warm-up of the learning rat
 time_only_TF : 5 #number of initial epochs after warm up where only TF and not AR approach is used
 clipping: [0, 1.5] #[if 1 clipping is applied to f, maximum norm allowed to gradients]
 is_coupled : [true, 'NODE'] #if true the AutoEncoder (AE) is trained coupled with the NODE. if false, if 'AE' the AE is trained, if 'NODE' the NODE is trained.
-freeze_AE_after_a_while : [true, 0.11, 10] # if true, AE layers are frozen during training once they reach a good enough accuracy (second entry) and window is larger than (third entry)
+freeze_AE_after_a_while : [true, 0.002, 200] # if true, AE layers are frozen during training once they reach a good enough accuracy (second entry) and window is larger than (third entry)
 path_trained_AE : '../../../../../../../scratch/ROM_datasets_ale/ASTEC/saved_logs/AE_NODE/Models/try/' #if is_coupled : [false, 'NODE'], provide the path to the models weights of the AE
 
 autoregressive_step:

@@ -144,7 +144,8 @@ class Training():
                 self.parent.optim, 
                 self.parent.scheduler, 
                 self.parent.PATH_logs+'/checkpoint/check.pt', 
-                self.parent.device
+                self.parent.device,
+                self.parent 
             )
             
             early_stopping = 0 
@@ -371,7 +372,7 @@ class Training():
                 '\nvalid AR loss = ' + str(valid_l2_AR_data) + 
                 '\nRandom dt valid loss = ' + str(valid_l3_data) + 
                 '\nvalid regularization = ' + str(valid_regularization_data))
-            print('The validation loss has not decreased for ' + str(early_stopping) + ' self.parent.epochs!')
+            print('The validation loss has not decreased for ' + str(early_stopping) + 'epochs!')
             
             print('------------------------------------------------------')
 
@@ -384,7 +385,7 @@ class Training():
             if np.mean(valid_loss_data) < loss_value: #careful valid loss tot!!
                 loss_value = np.mean(valid_loss_data)
                 print('Models saved!')
-                save_checkpoint(self.parent.encoder, self.parent.f , self.parent.decoder, self.parent.optim, self.parent.scheduler, i, loss_value, self.parent.loss_coefficients['AR'] , before_next_window_change, how_many_datasets_creations-1, self.parent.autoregressive_step, time_of_AE, time_of_only_TF, self.parent.is_AE_frozen, self.parent.PATH_logs+'/checkpoint/check.pt')
+                save_checkpoint(self.parent.encoder, self.parent.f , self.parent.decoder, self.parent.optim, self.parent.scheduler, i, loss_value, self.parent.loss_coefficients['AR'] , before_next_window_change, how_many_datasets_creations-1, self.parent.autoregressive_step, time_of_AE, time_of_only_TF, self.parent.is_AE_frozen, self.parent.scaler, self.parent.PATH_logs+'/checkpoint/check.pt')
                 early_stopping = 0
                 #freeze AE if needed
                 if i > (self.parent.time_only_TF+ self.parent.time_of_AE) and self.parent.freeze_AE_after_a_while[0] and valid_l1_data < float(self.parent.freeze_AE_after_a_while[1]) and self.parent.time_windows[how_many_datasets_creations-1] >= int(self.parent.freeze_AE_after_a_while[2]):
