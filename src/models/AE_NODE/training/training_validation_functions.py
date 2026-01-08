@@ -4,6 +4,7 @@ import time
 import torch as tc
 from src.models.AE_NODE.training.data_functions import *
 from src.models.AE_NODE.training.method_functions import Training_Losses
+from torch.amp import GradScaler
 from torch.cuda.amp import autocast
 
 class Training():
@@ -22,9 +23,18 @@ class Training():
         loss =  tc.tensor(0.0, device = self.parent.device)
         count = 0.0
         regularization_loss =  tc.tensor(0.0, device = self.parent.device)
-        self.parent.encoder.train()
-        self.parent.f.train()
-        self.parent.decoder.train()
+        
+        
+        if not self.parent.is_AE_frozen:
+            self.parent.encoder.train()
+            self.parent.f.train()
+            self.parent.decoder.train()
+            
+        else:
+            self.parent.encoder.eval()
+            self.parent.f.train()
+            self.parent.decoder.eval()
+            
         for fields, boundary_conditions, dt, length_of_padding in self.parent.training_loader:
             self.parent.optim.zero_grad()
             with tc.amp.autocast('cuda', enabled=(self.parent.scaler is not None)):
@@ -39,8 +49,10 @@ class Training():
                     self.parent.scaler.scale(l1_mean+l1_latent+l2_TF+l2_AR+l3+regularization_latent).backward()
                     if self.parent.clipping[0]:
                         self.parent.scaler.unscale_(self.parent.optim)
-                        all_params = (list(self.parent.encoder.parameters()) + list(self.parent.f.parameters()) + list(self.parent.decoder.parameters()))
-                        tc.nn.utils.clip_grad_norm_(all_params, max_norm=self.parent.clipping[1])
+                        # Only clip parameters that require gradients
+                        trainable_params = [p for p in (list(self.parent.encoder.parameters()) + list(self.parent.f.parameters()) + list(self.parent.decoder.parameters())) if p.requires_grad]
+                        if trainable_params:  # Only clip if there are trainable params
+                            tc.nn.utils.clip_grad_norm_(trainable_params, max_norm=self.parent.clipping[1])
                     self.parent.scaler.step(self.parent.optim)
                     self.parent.scaler.update()
                     
@@ -48,8 +60,10 @@ class Training():
                     (l1_mean+l1_latent+l2_TF+l2_AR+l3+regularization_latent).backward()
                     
                     if self.parent.clipping[0]:
-                        all_params = (list(self.parent.encoder.parameters()) + list(self.parent.f.parameters()) + list(self.parent.decoder.parameters()))
-                        tc.nn.utils.clip_grad_norm_(all_params, max_norm=self.parent.clipping[1])
+                        # Only clip parameters that require gradients
+                        trainable_params = [p for p in (list(self.parent.encoder.parameters()) + list(self.parent.f.parameters()) + list(self.parent.decoder.parameters())) if p.requires_grad]
+                        if trainable_params:  # Only clip if there are trainable params
+                            tc.nn.utils.clip_grad_norm_(trainable_params, max_norm=self.parent.clipping[1])
                     
                     self.parent.optim.step()
                  
@@ -372,16 +386,57 @@ class Training():
                 print('Models saved!')
                 save_checkpoint(self.parent.encoder, self.parent.f , self.parent.decoder, self.parent.optim, self.parent.scheduler, i, loss_value, self.parent.loss_coefficients['AR'] , before_next_window_change, how_many_datasets_creations-1, self.parent.autoregressive_step, time_of_AE, time_of_only_TF, self.parent.is_AE_frozen, self.parent.PATH_logs+'/checkpoint/check.pt')
                 early_stopping = 0
+                #freeze AE if needed
                 if i > (self.parent.time_only_TF+ self.parent.time_of_AE) and self.parent.freeze_AE_after_a_while[0] and valid_l1_data < float(self.parent.freeze_AE_after_a_while[1]) and self.parent.time_windows[how_many_datasets_creations-1] >= int(self.parent.freeze_AE_after_a_while[2]):
                     if not self.parent.is_AE_frozen:
+                        # Freeze parameters
                         for param in self.parent.encoder.parameters():
                             param.requires_grad = False
-                            
                         for param in self.parent.decoder.parameters():
                             param.requires_grad = False
                         
                         self.parent.is_AE_frozen = True
-                        print('AE has been frozen!')
+                        
+                        #Rebuild optimizer with only trainable parameters
+                        current_lr = self.parent.optim.param_groups[0]['lr']
+                        
+                        # Get weight decay for f (NODE) from config
+                        f_weight_decay = 0.0
+                        if hasattr(self.parent, 'model_information'):
+                            f_weight_decay = self.parent.model_information.get('weight_decay', {}).get('dfnn', 0.0)
+                        elif hasattr(self.parent, 'config_training'):
+                            f_weight_decay = self.parent.config_training.get('weight_decay', {}).get('dfnn', 0.0)
+                        
+                        # Build new parameter groups with only trainable parameters
+                        params_to_optimize = [
+                            {'params': [p for p in self.parent.f.parameters() if p.requires_grad], 
+                            'weight_decay': f_weight_decay}
+                        ]
+                        
+                        # Create new optimizer
+                        old_optim = self.parent.optim
+                        self.parent.optim = tc.optim.Adam(params_to_optimize, lr=current_lr)
+                        del old_optim  # Free memory
+                        
+                        # Recreate scheduler with new optimizer
+                        if hasattr(self.parent, 'config_training'):
+                            gamma = self.parent.config_training.get('gamma_lr', 0.999)
+                        else:
+                            gamma = 0.999
+                        self.parent.scheduler = tc.optim.lr_scheduler.ExponentialLR(
+                            self.parent.optim, gamma)
+                        
+                        # Recreate scaler if using mixed precision
+                        if self.parent.mixed_precision and tc.cuda.is_available():
+                            self.parent.scaler = GradScaler('cuda')
+                        
+                        # Log the change
+                        total_params = sum(p.numel() for p in self.parent.f.parameters() if p.requires_grad)
+                        print('='*60)
+                        print('AE HAS BEEN FROZEN!')
+                        print(f'Trainable parameters remaining: {total_params:,}')
+                        print(f'New learning rate: {current_lr}')
+                        print('='*60)
                         
                 
             # check if it is needed to change the lenght of time series of the dataset.

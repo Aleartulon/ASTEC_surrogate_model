@@ -23,8 +23,22 @@ class Training_Losses():
             definitive_latent, latent_boundaries, l1, regularization_latent = self.auto_encoding_loss(fields, boundary_conditions, length_of_padding, loss_coeff, train)
             
         else:
+            # AE is frozen - only encode, skip reconstruction
             with tc.no_grad():
-                definitive_latent, latent_boundaries, l1, regularization_latent = self.auto_encoding_loss(fields, boundary_conditions, length_of_padding, loss_coeff, train)
+                definitive_latent, _, latent_boundaries, regularization_latent = self.parent.encoder(fields, self.parent.is_AE_frozen, boundary_conditions)
+            
+            if train:
+                l1 = [tc.tensor(0.0, device=self.parent.device),  # l1_mean
+                    tc.tensor(0.0, device=self.parent.device),  # l1_per_shape (will broadcast)
+                    tc.tensor(0.0, device=self.parent.device)]  # l1_latent
+            else:
+                l1 = [tc.tensor(0.0, device=self.parent.device),  # l1_mean
+                    tc.tensor(0.0, device=self.parent.device),  # l1_per_shape
+                    tc.tensor(0.0, device=self.parent.device),  # l1_mean_denormalized
+                    tc.tensor(0.0, device=self.parent.device),  # l1_mean_denormalized_per_variable
+                    tc.tensor(0.0, device=self.parent.device)]  # l1_latent
+            
+            regularization_latent = tc.tensor(0.0, device=self.parent.device)
 
         if self.parent.is_coupled[0] == True or (self.parent.is_coupled[0] == False and self.parent.is_coupled[1] == 'NODE'):
             l2_TF, l2_AR, l3, l_final = self.latent_dynamics_loss(fields, definitive_latent, latent_boundaries, length_of_padding, original_size, train, dt, loss_coeff)
