@@ -280,8 +280,8 @@ class Model_Test:
             #no need to normalize because data is already normalized in the testing
 
             #auto-encode
-            definitive_latent_vector, latent_in_per_shape, latent_boundaries_variables, _ = self.encoder(fields, boundary_conditions)
-            reconstructed_fields, _ = self.decoder(definitive_latent_vector)
+            definitive_latent_vector, latent_in_per_shape, latent_boundaries_variables, _ = self.encoder(fields, False, boundary_conditions)
+            reconstructed_fields, _ = self.decoder(definitive_latent_vector, False)
             
             #give back proper shape. Not necessary if always one trajectory per time is passed but better to be general
             for count, i in enumerate(reconstructed_fields):
@@ -318,14 +318,14 @@ class Model_Test:
             #no need to normalize because data is already normalized in the testing
             
             #encode full trajectory
-            definitive_latent_vectors, per_shape_latent_vectors , latent_boundaries_variables, _ = self.encoder(fields, boundary_conditions)
+            definitive_latent_vectors, per_shape_latent_vectors , latent_boundaries_variables, _ = self.encoder(fields, False, boundary_conditions)
             DT = DT.unsqueeze(-1)
             
             #advance in time each time step of one dt (teacher forcing)
             advanced_latent_vectors = self.training_losses.processor_First_Order(definitive_latent_vectors[:-1], DT[0][:-1], latent_boundaries_variables[:-1])
             
             #decode back the predicted latent vectors
-            reconstructed_fields, reconstructed_latent_vectors_per_field = self.decoder(advanced_latent_vectors)
+            reconstructed_fields, reconstructed_latent_vectors_per_field = self.decoder(advanced_latent_vectors, False)
             reconstructed_fields = [reconstructed_field.unsqueeze(0) for reconstructed_field in reconstructed_fields]
             reconstructed_fields = standard_and_inverse_normalization_field(reconstructed_fields, self.maxima_or_mean, self.minima_or_std, self.which_normalization, inverse = True)
             reconstructed_fields_per_trajectory_TF[trajectory] = reconstructed_fields
@@ -371,7 +371,7 @@ class Model_Test:
             
             #encode initial condition
             t0 = time.time()
-            definitive_latent_vector, per_shape_latent_vectors , latent_boundaries_variables, _ = self.encoder(fields, boundary_conditions)
+            definitive_latent_vector, per_shape_latent_vectors , latent_boundaries_variables, _ = self.encoder(fields, False, boundary_conditions)
             next_latent_vector = definitive_latent_vector[0:1]
             predicted_latents = tc.zeros((len(DT[0])-1, self.latent_dimension), device = self.device)
             
@@ -381,7 +381,7 @@ class Model_Test:
                 predicted_latents[count] = next_latent_vector
             
             #decode back the predicted latent vectors
-            reconstructed_fields, reconstructed_latent_vectors_per_field = self.decoder(predicted_latents)
+            reconstructed_fields, reconstructed_latent_vectors_per_field = self.decoder(predicted_latents, False)
             reconstructed_fields = [reconstructed_field.unsqueeze(0) for reconstructed_field in reconstructed_fields]
             reconstructed_fields = standard_and_inverse_normalization_field(reconstructed_fields, self.maxima_or_mean, self.minima_or_std, self.which_normalization, inverse = True)
             t1 = time.time()
@@ -422,11 +422,11 @@ class Model_Test:
         checkpoint = tc.load(self.path_to_model+'/checkpoint/check.pt', map_location=self.device, weights_only=False)
         # remove things added by compiler
         encoder_state_dict = {k.replace('_orig_mod.', ''): v 
-                            for k, v in checkpoint['encoder'].items()}
+                            for k, v in checkpoint['encoder_state_dict'].items()}
         f_state_dict = {k.replace('_orig_mod.', ''): v 
-                        for k, v in checkpoint['f'].items()}
+                        for k, v in checkpoint['f_state_dict'].items()}
         decoder_state_dict = {k.replace('_orig_mod.', ''): v 
-                            for k, v in checkpoint['decoder'].items()}
+                            for k, v in checkpoint['decoder_state_dict'].items()}
         
         self.encoder.load_state_dict(encoder_state_dict)
         self.f.load_state_dict(f_state_dict)

@@ -58,7 +58,7 @@ def save_checkpoint(encoder, f , decoder, optimizer, scheduler, epoch, loss_valu
             'time_of_AE': time_of_AE,
             'time_of_only_TF': time_of_only_TF,
             'is_AE_frozen' : is_AE_frozen,
-            'scaler_state_dict' : scaler.state_dict()
+            'scaler_state_dict' : scaler.state_dict() if scaler is not None else None
         }
     tc.save(checkpoint, filepath)
 
@@ -372,6 +372,13 @@ def initialize_model_to_last_checkpoint(encoder, f, decoder, device : tc.device,
     encoder.load_state_dict(checkpoint['encoder_state_dict'])
     f.load_state_dict(checkpoint['f_state_dict'])
     decoder.load_state_dict(checkpoint['decoder_state_dict'])
+    
+    # Restore frozen state if needed
+    if checkpoint.get('is_AE_frozen', False):
+        for param in encoder.parameters():
+            param.requires_grad = False
+        for param in decoder.parameters():
+            param.requires_grad = False
 
 def initialize_parameters(model_information, encoder, decoder, f, device):
     if not model_information['is_coupled'][0] and model_information['is_coupled'][1] == 'NODE':

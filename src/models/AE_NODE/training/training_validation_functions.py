@@ -372,7 +372,7 @@ class Training():
                 '\nvalid AR loss = ' + str(valid_l2_AR_data) + 
                 '\nRandom dt valid loss = ' + str(valid_l3_data) + 
                 '\nvalid regularization = ' + str(valid_regularization_data))
-            print('The validation loss has not decreased for ' + str(early_stopping) + 'epochs!')
+            print('The validation loss has not decreased for ' + str(early_stopping) + ' epochs!')
             
             print('------------------------------------------------------')
 
