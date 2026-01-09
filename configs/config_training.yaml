@@ -16,11 +16,11 @@ time_windows  : [10, 20, 1000]
 batch_sizes  : [128,128,32]
 waiting_epochs_before_new_dataset_creation  : [50,50,50]
 number_of_workers: 8
-checkpoint: false  # if true uses existing checkpoint
+checkpoint: true  # if true uses existing checkpoint
 device : 'cuda:1' #device where to train
 which_normalization: 'min_max' # min_max or mean_std
 mixed_precision: true
-compile: true 
+compile: false 
 
 #Data information if dynamic_dataset_generation_during_training is false
 data_training_file_dinamic: 'data_training_normalized_t_W_' #use when modifying dynamically during training the dataset

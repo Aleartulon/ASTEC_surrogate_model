@@ -41,7 +41,7 @@ def build_dataset(batch_size:int, time_window: int, data_training_path: str, dat
     
     return training_loader, validation_loader
   
-def save_checkpoint(encoder, f , decoder, optimizer, scheduler, epoch, loss_value, loss_coefficients_AR, before_next_window_change, how_many_datasets_creations, autoregressive_step, time_of_AE, time_of_only_TF,is_AE_frozen,scaler,filepath):
+def save_checkpoint(encoder, f , decoder, optimizer, scheduler, epoch, loss_value, loss_coefficients_AR, before_next_window_change, how_many_datasets_creations, autoregressive_step, time_of_AE, time_of_only_TF,is_AE_frozen,scaler, index_in_window,filepath):
   
     checkpoint = {
             'encoder_state_dict':encoder.state_dict(),
@@ -58,12 +58,13 @@ def save_checkpoint(encoder, f , decoder, optimizer, scheduler, epoch, loss_valu
             'time_of_AE': time_of_AE,
             'time_of_only_TF': time_of_only_TF,
             'is_AE_frozen' : is_AE_frozen,
-            'scaler_state_dict' : scaler.state_dict() if scaler is not None else None
+            'scaler_state_dict' : scaler.state_dict() if scaler is not None else None,
+            'index_in_window' : index_in_window
         }
     tc.save(checkpoint, filepath)
 
 
-def load_checkpoint(encoder, f, decoder, optim, scheduler, path, device, parent_instance):
+def load_checkpoint(encoder, f, decoder, optim, scheduler, path, device ,parent_instance):
     """
     Load checkpoint with proper handling of frozen AE state
     
@@ -173,6 +174,7 @@ def load_checkpoint(encoder, f, decoder, optim, scheduler, path, device, parent_
     autoregressive_step = checkpoint['autoregressive_step']
     time_of_AE = checkpoint['time_of_AE']
     time_of_only_TF = checkpoint['time_of_only_TF']
+    index_in_window = checkpoint['index_in_window']
     
     print(f"\nResuming from:")
     print(f"  Epoch: {first_epoch}")
@@ -180,7 +182,7 @@ def load_checkpoint(encoder, f, decoder, optim, scheduler, path, device, parent_
     print(f"  AE frozen: {is_AE_frozen}")
     print("="*70 + "\n")
     
-    return first_epoch, loss_value, loss_coefficients_AR, before_next_window, datasets_count, autoregressive_step, time_of_AE, time_of_only_TF, is_AE_frozen
+    return first_epoch, loss_value, loss_coefficients_AR, before_next_window, datasets_count, autoregressive_step, time_of_AE, time_of_only_TF, is_AE_frozen, index_in_window
 
 
 class ASTEC_Dataset(Dataset):
@@ -351,7 +353,7 @@ def get_maxima(target: tc.tensor):
         maxima = maxima[:, None,:]
     return maxima
     
-def dynamics_MSE(input: tc.tensor, target: tc.tensor, length_of_padding: tc.tensor = None):
+def dynamics_MSE(input: tc.tensor, target: tc.tensor, time_series_losses_weights:tc.tensor, AR:bool, length_of_padding: tc.tensor = None):
     device = input[0].device
     loss_no_reduction = nn.MSELoss(reduction='none')
     loss = nn.MSELoss()
@@ -360,11 +362,17 @@ def dynamics_MSE(input: tc.tensor, target: tc.tensor, length_of_padding: tc.tens
         element_loss = loss_no_reduction(input, target) 
         mask = create_padding_mask( size_of_tensor=input.size(), length_of_padding=length_of_padding, device = device).bool()
         masked_loss = element_loss[mask] #flattened vector of values not masked
+        if AR:
+            masked_loss = masked_loss.mean(-1) * time_series_losses_weights[None,:]
         return masked_loss.mean()
                 
     else:
-        mse = loss(input,target)
-        return mse
+        if not AR:
+            mse = loss(input,target)
+        else:
+            mse = loss_no_reduction(input,target)
+            mse = mse.mean(-1) * time_series_losses_weights[None,:]
+        return mse.mean()
     
 def initialize_model_to_last_checkpoint(encoder, f, decoder, device : tc.device, path_to_checkpoint:str ):
 

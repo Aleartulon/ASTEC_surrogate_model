@@ -32,6 +32,7 @@ class AE_NODE:
         if not self.is_coupled[0]:
             self.time_of_AE = 0
         self.autoregressive_step = model_information['autoregressive_step']
+        self.last_time_series_weigth_AR = model_information['last_time_series_weigth_AR']
         
         self.which_normalization = config_training['which_normalization']
         self.data_path = config_training['data_path']
@@ -44,6 +45,7 @@ class AE_NODE:
         self.early_stopping = config_training['early_stopping']
         self.number_of_workers = config_training['number_of_workers']
         self.all_on_gpu = config_training['all_on_gpu']
+        
         
 
         

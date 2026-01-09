@@ -135,9 +135,10 @@ class Training():
 
 
     def training(self):
+        
         if self.parent.checkpoint:
             maximum_loss_coefficient_AR = self.parent.loss_coefficients['AR'] # this line should be before calling load_checkpoint
-            first_epoch, loss_value, self.parent.loss_coefficients['AR'], before_next_window_change, how_many_datasets_creations, self.parent.autoregressive_step, time_of_AE, time_of_only_TF, self.parent.is_AE_frozen = load_checkpoint(
+            first_epoch, loss_value, self.parent.loss_coefficients['AR'], before_next_window_change, how_many_datasets_creations, self.parent.autoregressive_step, time_of_AE, time_of_only_TF, self.parent.is_AE_frozen, self.parent.index_in_window = load_checkpoint(
                 self.parent.encoder, 
                 self.parent.f, 
                 self.parent.decoder, 
@@ -147,7 +148,6 @@ class Training():
                 self.parent.device,
                 self.parent 
             )
-            
             early_stopping = 0 
             train_l1 = np.load(self.parent.PATH_logs + "/losses/train_l1.npy", allow_pickle=True)
             train_l1_per_shape = np.load(self.parent.PATH_logs + "/losses/train_l1_per_shape.npy", allow_pickle=True)
@@ -200,6 +200,7 @@ class Training():
             loss_value = 100
             early_stopping = 0 
             first_epoch = 0
+            self.parent.index_in_window = [False, 0]
 
             train_l1 = np.zeros(self.parent.epochs)
             train_l1_per_shape = np.zeros((self.parent.epochs, self.parent.number_of_different_domains))
@@ -236,7 +237,8 @@ class Training():
 
         print("------------------TRAINING STARTS------------------")
         # cycle over epochs
-
+        self.parent.exp_coefficient_time_series_losses_weights = np.inf
+        
         for i in np.arange(first_epoch, self.parent.epochs+1, 1):
             early_stopping += 1
             if early_stopping == self.parent.early_stopping:
@@ -262,6 +264,9 @@ class Training():
                 valid_l1_data, valid_l1_per_shape_data, valid_l1_unnorm_data, valid_l1_unnorm_per_variable_data, valid_l1_latent_data, valid_l2_TF_data, valid_l2_AR_data, valid_l3_data, valid_real_data, valid_real_per_variable_data, valid_regularization_data, valid_loss_data = self.valid_epoch([[1,1],1,1,1])
                 valid_loss_data = valid_l1_data + valid_l1_latent_data + valid_l2_TF_data + valid_l3_data + valid_regularization_data
             else:
+                if not self.parent.index_in_window[0]:
+                    self.parent.index_in_window[0] = True
+                    
                 if time_of_AE:
                     initialize_model_to_last_checkpoint(self.parent.encoder, self.parent.f, self.parent.decoder, self.parent.device, self.parent.PATH_logs+'/checkpoint/check.pt')
                     time_of_AE = False
@@ -338,8 +343,9 @@ class Training():
             print("Epoch: " +str(i)+', ' + str(time2-time1)+ ' s')
             print('Time of training:', before_validation - before_training)
             print('Time of validation:', time2 - before_validation)
-            print('Time window:', self.parent.time_windows[how_many_datasets_creations-1])
-            print('AE is frozen : ', self.parent.is_AE_frozen)
+            print(f'Time window: {self.parent.time_windows[how_many_datasets_creations-1]}, time index within window: {self.parent.index_in_window}')
+            print('AE is frozen: ', self.parent.is_AE_frozen)
+            print('Coefficient time series losses weights', self.parent.exp_coefficient_time_series_losses_weights)
             
             if self.parent.loss_coefficients['AR'] != 0.0 and self.parent.autoregressive_step['which_technique'] == 'TBPP_from_end':
                 print(" for TBPP: " +str(self.parent.autoregressive_step['TBPP_from_end_config'][0]))
@@ -375,7 +381,8 @@ class Training():
             print('The validation loss has not decreased for ' + str(early_stopping) + ' epochs!')
             
             print('------------------------------------------------------')
-
+            if self.parent.index_in_window[0]:
+                self.parent.index_in_window[1] +=1
             #check if training a noncoupled system and adjust accordingly the validatin losses to be checked for early stopping
             if not self.parent.is_coupled[0] and self.parent.is_coupled[1] == 'AE' and i >=self.parent.time_of_AE:
                 valid_loss_data = valid_l1_data + valid_regularization_data + valid_l1_latent_data
@@ -385,7 +392,9 @@ class Training():
             if np.mean(valid_loss_data) < loss_value: #careful valid loss tot!!
                 loss_value = np.mean(valid_loss_data)
                 print('Models saved!')
-                save_checkpoint(self.parent.encoder, self.parent.f , self.parent.decoder, self.parent.optim, self.parent.scheduler, i, loss_value, self.parent.loss_coefficients['AR'] , before_next_window_change, how_many_datasets_creations-1, self.parent.autoregressive_step, time_of_AE, time_of_only_TF, self.parent.is_AE_frozen, self.parent.scaler, self.parent.PATH_logs+'/checkpoint/check.pt')
+                save_checkpoint(self.parent.encoder, self.parent.f , self.parent.decoder, self.parent.optim, self.parent.scheduler, i, 
+                    loss_value, self.parent.loss_coefficients['AR'] , before_next_window_change, how_many_datasets_creations-1, self.parent.autoregressive_step, 
+                    time_of_AE, time_of_only_TF, self.parent.is_AE_frozen, self.parent.scaler, self.parent.index_in_window, self.parent.PATH_logs+'/checkpoint/check.pt')
                 early_stopping = 0
                 #freeze AE if needed
                 if i > (self.parent.time_only_TF+ self.parent.time_of_AE) and self.parent.freeze_AE_after_a_while[0] and valid_l1_data < float(self.parent.freeze_AE_after_a_while[1]) and self.parent.time_windows[how_many_datasets_creations-1] >= int(self.parent.freeze_AE_after_a_while[2]):
@@ -456,6 +465,7 @@ class Training():
                     os.remove(f"{self.parent.data_validation_path_dynamic}{str(self.parent.time_windows[how_many_datasets_creations-2])}{self.parent.indeces_validation_boundaries}.h5")
                     checkpoint = tc.load(self.parent.PATH_logs+'/checkpoint/check.pt', map_location=self.parent.device, weights_only=False)
                     loss_value = 100
+                    self.parent.index_in_window[-1] = 0
                     
                     #fetch the best model of previous iteration
                     if self.parent.reinitialize_model_at_each_dataset_reshape:
