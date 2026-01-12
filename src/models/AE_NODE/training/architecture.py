@@ -467,7 +467,11 @@ class F_Latent(nn.Module):
             
         else:
             raise ValueError("Wrong name of the type of parameter information")
-
+    
+        #define scale of output
+        if self.scaling_output_factor[0]:
+            self.scaling_output_factor[1] = nn.Parameter(tc.tensor(1.0))
+            
     def forward(self, x:tc.tensor, parameter:tc.tensor):
         
         if self.parameter_information == 'concatenation':
@@ -492,7 +496,7 @@ class F_Latent(nn.Module):
             if self.layer_norm_node[-1]:
                 x = self.layers_norm[-1](x)
             
-            return x * self.scaling_output_factor
+            return x * self.scaling_output_factor[1]
             
 
         elif self.parameter_information == 'FiLM':
@@ -527,4 +531,4 @@ class F_Latent(nn.Module):
             if self.layer_norm_node[-1]:
                 x = self.layers_norm[-1](x)
                 
-            return x * self.scaling_output_factor
+            return x * self.scaling_output_factor[1]
