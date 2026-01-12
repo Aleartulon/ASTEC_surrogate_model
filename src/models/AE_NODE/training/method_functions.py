@@ -186,10 +186,15 @@ class Training_Losses():
             return tc.ones(length_time_series, device = self.parent.device)
         
         #increase weight of last time series time step progressively during iteration within a certain window
-        weight_last_time_step = self.parent.index_in_window[-1] / length_time_series * self.parent.last_time_series_weigth_AR[1] + 1e-8
+        if self.parent.index_in_window[-1] > length_time_series:
+            weight_last_time_step = self.parent.last_time_series_weigth_AR[1] + 1e-8
+            self.parent.exp_coefficient_time_series_losses_weights = 0.0
+        else:
+            weight_last_time_step = self.parent.index_in_window[-1] / length_time_series * self.parent.last_time_series_weigth_AR[1] + 1e-8
+            self.parent.exp_coefficient_time_series_losses_weights = - np.log(weight_last_time_step)/(length_time_series-1)
         
         #get exp_coefficient based on index_in_window and last_time_series_weigth_AR decided a priori
-        self.parent.exp_coefficient_time_series_losses_weights = - np.log(weight_last_time_step)/(length_time_series-1)
+        
         if train:
             indeces = tc.arange(0,length_time_series,1)
             time_series_losses_weights = tc.exp(- indeces * self.parent.exp_coefficient_time_series_losses_weights

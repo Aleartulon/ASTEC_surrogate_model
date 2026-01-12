@@ -18,6 +18,8 @@ class AE_NODE:
         self.PATH_logs = config_training['PATH']
         self.checkpoint = config_training['checkpoint']
         self.mixed_precision = config_training['mixed_precision']
+        self.gamma_lr = config_training['gamma_lr']
+        self.learning_rate_frozen_AE = config_training['learning_rate_frozen_AE']
 
         self.loss_coefficients = model_information['loss_coefficients'] if model_information['is_coupled'][0] else model_information['loss_coefficients_not_coupled']
         self.time_only_TF = model_information['time_only_TF']
@@ -77,6 +79,9 @@ class AE_NODE:
         shutil.copy( self.data_path + '/rename_log.txt', self.PATH_logs + '/rename_log.txt')
         
         if len(self.batch_sizes) + len(self.waiting_epochs_before_new_dataset_creation) + len(self.time_windows) != len(self.time_windows) * 3:
+            print(f'Length batch_sizes: {len(self.batch_sizes)}')
+            print(f'Length waiting_epochs_before_new_dataset_creation: {len(self.waiting_epochs_before_new_dataset_creation)}')
+            print(f'Length time_windows: {len(self.time_windows)}')
             raise TypeError("Length of array of time_windows is not equal to length of array of batch_sizes or of waiting_epochs_before_new_dataset_creation")
         
         #check confi files are okay when training decoupled
@@ -143,7 +148,7 @@ class AE_NODE:
         self.optim = tc.optim.Adam(params_to_optimize, lr=config_training['learning_rate'])
         lambda1 = lambda i : i / self.time_of_lr_war_up
         self.pre_scheduler = tc.optim.lr_scheduler.LambdaLR(self.optim,lambda1)
-        self.scheduler = tc.optim.lr_scheduler.ExponentialLR(self.optim, config_training['gamma_lr'])
+        self.scheduler = tc.optim.lr_scheduler.ExponentialLR(self.optim, self.gamma_lr)
         
         self.RK = {k: tc.tensor([[self.safe_eval(val) for val in row] for row in v]) for k, v in model_information['RK'].items()}
         if tc.cuda.is_available() and self.mixed_precision:

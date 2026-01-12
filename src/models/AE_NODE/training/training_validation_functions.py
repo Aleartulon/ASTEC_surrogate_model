@@ -264,7 +264,7 @@ class Training():
                 valid_l1_data, valid_l1_per_shape_data, valid_l1_unnorm_data, valid_l1_unnorm_per_variable_data, valid_l1_latent_data, valid_l2_TF_data, valid_l2_AR_data, valid_l3_data, valid_real_data, valid_real_per_variable_data, valid_regularization_data, valid_loss_data = self.valid_epoch([[1,1],1,1,1])
                 valid_loss_data = valid_l1_data + valid_l1_latent_data + valid_l2_TF_data + valid_l3_data + valid_regularization_data
             else:
-                if not self.parent.index_in_window[0]:
+                if not self.parent.index_in_window[0] and self.parent.last_time_series_weigth_AR[0]:
                     self.parent.index_in_window[0] = True
                     
                 if time_of_AE:
@@ -425,14 +425,14 @@ class Training():
                         
                         # Create new optimizer
                         old_optim = self.parent.optim
-                        self.parent.optim = tc.optim.Adam(params_to_optimize, lr=current_lr)
+                        self.parent.optim = tc.optim.Adam(params_to_optimize, lr=self.parent.learning_rate_frozen_AE)
                         del old_optim  # Free memory
                         
                         # Recreate scheduler with new optimizer
                         if hasattr(self.parent, 'config_training'):
-                            gamma = self.parent.config_training.get('gamma_lr', 0.999)
+                            gamma = self.parent.config_training.get('gamma_lr', self.parent.gamma_lr)
                         else:
-                            gamma = 0.999
+                            gamma = self.parent.gamma_lr
                         self.parent.scheduler = tc.optim.lr_scheduler.ExponentialLR(
                             self.parent.optim, gamma)
                         
