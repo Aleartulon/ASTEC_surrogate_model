@@ -18,9 +18,9 @@ loss_coefficients_not_coupled: # coefficients that are multiplied to the loss fu
   lambda_regularization: 0.0 #coefficients in front of the regularization term for the latent vector
 
 k: 4 # stage of the Runge-Kutta solver for the latent dynamics
-time_of_AE: 50 # number of initial epochs where only the AutoEncoder is trained, i.e., loss_coeff_TF_AR_together = [1, 0, 0, 0]. 
+time_of_AE: 100 # number of initial epochs where only the AutoEncoder is trained, i.e., loss_coeff_TF_AR_together = [1, 0, 0, 0]. 
 time_of_lr_war_up: 10 #number of epochs of the linear warm-up of the learning rate
-time_only_TF : 10 #number of initial epochs after warm up where only TF and not AR approach is used
+time_only_TF : 20 #number of initial epochs after warm up where only TF and not AR approach is used
 clipping: [0, 1.5] #[if 1 clipping is applied to f, maximum norm allowed to gradients]
 last_time_series_weigth_AR : [true, 0.9999999999] #if true, AR loss is multiplied by weights to have the last time steps weigh less
 is_coupled : [true, 'NODE'] #if true the AutoEncoder (AE) is trained coupled with the NODE. if false, if 'AE' the AE is trained, if 'NODE' the NODE is trained.
@@ -129,13 +129,13 @@ n_FiLM_conditioning : 1 #number of FiLM layers (if FiLM is chosen instead of con
 n_neurons_f: 200 #number of neurons of each layer of f
 NODE: true
 scaling_output_factor: [true, 1.0] #if true, a learnable parameter is multiplied by the output, which is initialized with the second dimension. if false, the second dimension is the scalar that multiplies the output of f.
-layer_norm_node : [false, true, true, false, false, false]
+layer_norm_node : [false, false, false, false, false, false]
 
 #Global
 weight_decay:
 
   encoder: 0.0
-  dfnn: 0.000001
+  dfnn: 0.00000001
   decoder: 0.0
 
 # for latent progression
