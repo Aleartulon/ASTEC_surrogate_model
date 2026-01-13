@@ -470,7 +470,7 @@ class F_Latent(nn.Module):
     
         #define scale of output
         if self.scaling_output_factor[0]:
-            self.scaling_output_factor[1] = nn.Parameter(tc.tensor(1.0))
+            self.scaling_output_factor[1] = nn.Parameter(tc.tensor(self.scaling_output_factor[1]))
             
     def forward(self, x:tc.tensor, parameter:tc.tensor):
         

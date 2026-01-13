@@ -138,7 +138,7 @@ class Training():
         
         if self.parent.checkpoint:
             maximum_loss_coefficient_AR = self.parent.loss_coefficients['AR'] # this line should be before calling load_checkpoint
-            first_epoch, loss_value, self.parent.loss_coefficients['AR'], before_next_window_change, how_many_datasets_creations, self.parent.autoregressive_step, time_of_AE, time_of_only_TF, self.parent.is_AE_frozen, self.parent.index_in_window = load_checkpoint(
+            first_epoch, loss_value, self.parent.loss_coefficients['AR'], before_next_window_change, self.parent.how_many_datasets_creations, self.parent.autoregressive_step, time_of_AE, time_of_only_TF, self.parent.is_AE_frozen, self.parent.index_in_window = load_checkpoint(
                 self.parent.encoder, 
                 self.parent.f, 
                 self.parent.decoder, 
@@ -171,13 +171,13 @@ class Training():
             valid_regularization = np.load(self.parent.PATH_logs + "/losses/valid_regularization.npy", allow_pickle=True)
             valid_loss_tot = np.load(self.parent.PATH_logs + "/losses/valid_loss_tot.npy", allow_pickle=True)
             
-            self.parent.training_loader, self.parent.validation_loader = build_dataset(self.parent.batch_sizes[how_many_datasets_creations], self.parent.time_windows[how_many_datasets_creations],
+            self.parent.training_loader, self.parent.validation_loader = build_dataset(self.parent.batch_sizes[self.parent.how_many_datasets_creations], self.parent.time_windows[self.parent.how_many_datasets_creations],
                                                                                     self.parent.data_training_path_dynamic, self.parent.data_validation_path_dynamic, 
                                                                                     self.parent.number_of_workers, self.parent.data_path, self.parent.where_to_save_data, 
                                                                                     self.parent.which_normalization, self.parent.device, 
                                                                                     self.parent.config_training['indeces_training_boundaries'], self.parent.config_training['indeces_validation_boundaries'],
                                                                                     self.parent.all_on_gpu, self.parent.pin_memory, self.parent.indeces_training_boundaries, self.parent.indeces_validation_boundaries)
-            how_many_datasets_creations += 1
+            self.parent.how_many_datasets_creations += 1
             for fields, _, _, _ in self.parent.validation_loader:
                 self.parent.number_of_different_domains = len(fields)
                 break
@@ -227,7 +227,7 @@ class Training():
             maximum_loss_coefficient_AR = self.parent.loss_coefficients['AR']
             self.parent.loss_coefficients['AR'] = 0.0
             before_next_window_change = self.parent.waiting_epochs_before_new_dataset_creation[0]
-            how_many_datasets_creations = 1
+            self.parent.how_many_datasets_creations = 1
             time_of_AE = True
             time_of_only_TF = True
             
@@ -343,7 +343,7 @@ class Training():
             print("Epoch: " +str(i)+', ' + str(time2-time1)+ ' s')
             print('Time of training:', before_validation - before_training)
             print('Time of validation:', time2 - before_validation)
-            print(f'Time window: {self.parent.time_windows[how_many_datasets_creations-1]}, time index within window: {self.parent.index_in_window}')
+            print(f'Time window: {self.parent.time_windows[self.parent.how_many_datasets_creations-1]}, time index within window: {self.parent.index_in_window}')
             print('AE is frozen: ', self.parent.is_AE_frozen)
             print('Coefficient time series losses weights', self.parent.exp_coefficient_time_series_losses_weights)
             
@@ -393,11 +393,11 @@ class Training():
                 loss_value = np.mean(valid_loss_data)
                 print('Models saved!')
                 save_checkpoint(self.parent.encoder, self.parent.f , self.parent.decoder, self.parent.optim, self.parent.scheduler, i, 
-                    loss_value, self.parent.loss_coefficients['AR'] , before_next_window_change, how_many_datasets_creations-1, self.parent.autoregressive_step, 
+                    loss_value, self.parent.loss_coefficients['AR'] , before_next_window_change, self.parent.how_many_datasets_creations-1, self.parent.autoregressive_step, 
                     time_of_AE, time_of_only_TF, self.parent.is_AE_frozen, self.parent.scaler, self.parent.index_in_window, self.parent.PATH_logs+'/checkpoint/check.pt')
                 early_stopping = 0
                 #freeze AE if needed
-                if i > (self.parent.time_only_TF+ self.parent.time_of_AE) and self.parent.freeze_AE_after_a_while[0] and valid_l1_data < float(self.parent.freeze_AE_after_a_while[1]) and self.parent.time_windows[how_many_datasets_creations-1] >= int(self.parent.freeze_AE_after_a_while[2]):
+                if i > (self.parent.time_only_TF+ self.parent.time_of_AE) and self.parent.freeze_AE_after_a_while[0] and valid_l1_data < float(self.parent.freeze_AE_after_a_while[1]) and self.parent.time_windows[self.parent.how_many_datasets_creations-1] >= int(self.parent.freeze_AE_after_a_while[2]):
                     if not self.parent.is_AE_frozen:
                         # Freeze parameters
                         for param in self.parent.encoder.parameters():
@@ -450,19 +450,19 @@ class Training():
                         
                 
             # check if it is needed to change the lenght of time series of the dataset.
-            if self.parent.dynamic_dataset_generation_during_training and i > (np.max([self.parent.time_only_TF + self.parent.time_of_AE, self.parent.time_of_lr_war_up])) and how_many_datasets_creations < len(self.parent.time_windows):
+            if self.parent.dynamic_dataset_generation_during_training and i > (np.max([self.parent.time_only_TF + self.parent.time_of_AE, self.parent.time_of_lr_war_up])) and self.parent.how_many_datasets_creations < len(self.parent.time_windows):
                 
                 if before_next_window_change == 0:
-                    self.parent.training_loader, self.parent.validation_loader = build_dataset(self.parent.batch_sizes[how_many_datasets_creations], self.parent.time_windows[how_many_datasets_creations],
+                    self.parent.training_loader, self.parent.validation_loader = build_dataset(self.parent.batch_sizes[self.parent.how_many_datasets_creations], self.parent.time_windows[self.parent.how_many_datasets_creations],
                                                                                     self.parent.data_training_path_dynamic, self.parent.data_validation_path_dynamic, 
                                                                                     self.parent.number_of_workers, self.parent.data_path, self.parent.where_to_save_data, 
                                                                                     self.parent.which_normalization, self.parent.device, 
                                                                                     self.parent.config_training['indeces_training_boundaries'], self.parent.config_training['indeces_validation_boundaries'],
                                                                                     self.parent.all_on_gpu, self.parent.pin_memory, self.parent.indeces_training_boundaries, self.parent.indeces_validation_boundaries)
-                    before_next_window_change = self.parent.waiting_epochs_before_new_dataset_creation[how_many_datasets_creations]
-                    how_many_datasets_creations+=1
-                    os.remove(f"{self.parent.data_training_path_dynamic}{str(self.parent.time_windows[how_many_datasets_creations-2])}{self.parent.indeces_training_boundaries}.h5")
-                    os.remove(f"{self.parent.data_validation_path_dynamic}{str(self.parent.time_windows[how_many_datasets_creations-2])}{self.parent.indeces_validation_boundaries}.h5")
+                    before_next_window_change = self.parent.waiting_epochs_before_new_dataset_creation[self.parent.how_many_datasets_creations]
+                    self.parent.how_many_datasets_creations+=1
+                    os.remove(f"{self.parent.data_training_path_dynamic}{str(self.parent.time_windows[self.parent.how_many_datasets_creations-2])}{self.parent.indeces_training_boundaries}.h5")
+                    os.remove(f"{self.parent.data_validation_path_dynamic}{str(self.parent.time_windows[self.parent.how_many_datasets_creations-2])}{self.parent.indeces_validation_boundaries}.h5")
                     checkpoint = tc.load(self.parent.PATH_logs+'/checkpoint/check.pt', map_location=self.parent.device, weights_only=False)
                     loss_value = 100
                     self.parent.index_in_window[-1] = 0

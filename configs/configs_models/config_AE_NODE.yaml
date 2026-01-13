@@ -5,8 +5,8 @@ loss_coefficients: # coefficients that are multiplied to the loss function terms
   TF: 1
   AR: 1
   Random_DT: 1.0
-  AR_strength: 0.001
-  lambda_regularization: 0.001 #coefficients in front of the regularization term for the latent vector
+  AR_strength: 1.0
+  lambda_regularization: 0.0 #coefficients in front of the regularization term for the latent vector
 
 loss_coefficients_not_coupled: # coefficients that are multiplied to the loss function terms when the trainin of AE and NODE is decoupled, signaling the relative importance of each [AE, TF, AUTOREGRESSIVE, TIME_GENERALIZATION]
 
@@ -128,14 +128,14 @@ parameter_information: "concatenation" #how the parameter information is passed 
 n_FiLM_conditioning : 1 #number of FiLM layers (if FiLM is chosen instead of concatenation). FiLM = 1 only applies to the latent vector
 n_neurons_f: 200 #number of neurons of each layer of f
 NODE: true
-scaling_output_factor: [true, 0.0001] #if true, a learnable parameter is multiplied by the output. if false, the second dimension is the scalar that multiplies the output of f.
-layer_norm_node : [true, false, false, false, false, false]
+scaling_output_factor: [true, 1.0] #if true, a learnable parameter is multiplied by the output, which is initialized with the second dimension. if false, the second dimension is the scalar that multiplies the output of f.
+layer_norm_node : [false, true, true, false, false, false]
 
 #Global
 weight_decay:
 
   encoder: 0.0
-  dfnn: 0.0
+  dfnn: 0.000001
   decoder: 0.0
 
 # for latent progression

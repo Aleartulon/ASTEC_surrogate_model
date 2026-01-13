@@ -117,6 +117,10 @@ class Model_Test:
         self.decoder = Decoder(self.config_training, self.models_information)
         self.load_checkpoint_on_models()
         
+        # Check if the attribute exists and is a Parameter
+        if hasattr(self.f, 'scaling_output_factor') and isinstance(self.f.scaling_output_factor[1], nn.Parameter):
+            print(f"Learned scaling factor: {self.f.scaling_output_factor[1].item()}")
+        
         #get trajectories
         with h5py.File(self.path_to_test_data + self.name_test_file, 'r') as f:
             self.trajectories = list(f.keys())
