@@ -18,6 +18,8 @@ class AE_NODE:
         self.PATH_logs = config_training['PATH']
         self.checkpoint = config_training['checkpoint']
         self.mixed_precision = config_training['mixed_precision']
+        self.gamma_lr = config_training['gamma_lr']
+        self.learning_rate_frozen_AE = config_training['learning_rate_frozen_AE']
 
         self.loss_coefficients = model_information['loss_coefficients'] if model_information['is_coupled'][0] else model_information['loss_coefficients_not_coupled']
         self.time_only_TF = model_information['time_only_TF']
@@ -26,9 +28,13 @@ class AE_NODE:
         self.time_of_lr_war_up = model_information['time_of_lr_war_up']
         self.clipping = model_information['clipping']
         self.is_coupled = model_information['is_coupled']
+        self.compile = config_training['compile']
+        self.freeze_AE_after_a_while = model_information['freeze_AE_after_a_while']
+        self.is_AE_frozen = True if not self.is_coupled[0] and self.is_coupled[1] == 'NODE' else False
         if not self.is_coupled[0]:
             self.time_of_AE = 0
         self.autoregressive_step = model_information['autoregressive_step']
+        self.last_time_series_weigth_AR = model_information['last_time_series_weigth_AR']
         
         self.which_normalization = config_training['which_normalization']
         self.data_path = config_training['data_path']
@@ -41,6 +47,8 @@ class AE_NODE:
         self.early_stopping = config_training['early_stopping']
         self.number_of_workers = config_training['number_of_workers']
         self.all_on_gpu = config_training['all_on_gpu']
+        
+        
 
         
         if self.all_on_gpu:
@@ -71,6 +79,9 @@ class AE_NODE:
         shutil.copy( self.data_path + '/rename_log.txt', self.PATH_logs + '/rename_log.txt')
         
         if len(self.batch_sizes) + len(self.waiting_epochs_before_new_dataset_creation) + len(self.time_windows) != len(self.time_windows) * 3:
+            print(f'Length batch_sizes: {len(self.batch_sizes)}')
+            print(f'Length waiting_epochs_before_new_dataset_creation: {len(self.waiting_epochs_before_new_dataset_creation)}')
+            print(f'Length time_windows: {len(self.time_windows)}')
             raise TypeError("Length of array of time_windows is not equal to length of array of batch_sizes or of waiting_epochs_before_new_dataset_creation")
         
         #check confi files are okay when training decoupled
@@ -126,17 +137,18 @@ class AE_NODE:
         self.decoder.to(self.device)
         
         # In AE_NODE_model.py, replace your torch.compile section with:
-        if hasattr(tc, 'compile'):
-            self.encoder = tc.compile(self.encoder, mode='default')
-            self.decoder = tc.compile(self.decoder, mode='default')
-            self.f = tc.compile(self.f, mode='default')
-            print("Models compiled with torch.compile()")
+        if self.compile:
+            if hasattr(tc, 'compile'):
+                self.encoder = tc.compile(self.encoder, mode='default')
+                self.decoder = tc.compile(self.decoder, mode='default')
+                self.f = tc.compile(self.f, mode='default')
+                print("Models compiled with torch.compile()")
 
         #define optimizer, the pre scheduler for the warmup of the model and the scheduler
         self.optim = tc.optim.Adam(params_to_optimize, lr=config_training['learning_rate'])
         lambda1 = lambda i : i / self.time_of_lr_war_up
         self.pre_scheduler = tc.optim.lr_scheduler.LambdaLR(self.optim,lambda1)
-        self.scheduler = tc.optim.lr_scheduler.ExponentialLR(self.optim, config_training['gamma_lr'])
+        self.scheduler = tc.optim.lr_scheduler.ExponentialLR(self.optim, self.gamma_lr)
         
         self.RK = {k: tc.tensor([[self.safe_eval(val) for val in row] for row in v]) for k, v in model_information['RK'].items()}
         if tc.cuda.is_available() and self.mixed_precision:

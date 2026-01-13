@@ -5,6 +5,7 @@ import h5py
 from torch.utils.data import Dataset
 from torch import nn
 from torch.utils.data import DataLoader
+from torch.amp import GradScaler
 from src.models.AE_NODE.training.architecture import *
 from torch.utils.data import Dataset, DataLoader, get_worker_info
 import subprocess
@@ -40,42 +41,148 @@ def build_dataset(batch_size:int, time_window: int, data_training_path: str, dat
     
     return training_loader, validation_loader
   
-def save_checkpoint(encoder, f , decoder, optimizer, scheduler, epoch, loss_value, loss_coefficients_AR, before_next_window_change, how_many_datasets_creations, autoregressive_step, full_training_count,filepath):
+def save_checkpoint(encoder, f , decoder, optimizer, scheduler, epoch, loss_value, loss_coefficients_AR, before_next_window_change, how_many_datasets_creations, autoregressive_step, time_of_AE, time_of_only_TF,is_AE_frozen,scaler, index_in_window,filepath):
   
     checkpoint = {
-            'encoder':encoder.state_dict(),
-            'f':f.state_dict(),
-            'decoder':decoder.state_dict(),
-            'optimizer':optimizer.state_dict(),
-            'scheduler':scheduler.state_dict(),
+            'encoder_state_dict':encoder.state_dict(),
+            'f_state_dict':f.state_dict(),
+            'decoder_state_dict':decoder.state_dict(),
+            'optimizer_state_dict':optimizer.state_dict(),
+            'scheduler_state_dict':scheduler.state_dict(),
             'epoch' : epoch,
             'loss_value' : loss_value,
             'loss_coefficients_AR' : loss_coefficients_AR,
             'before_next_window_change' : before_next_window_change,
             'how_many_datasets_creations' : how_many_datasets_creations,
             'autoregressive_step': autoregressive_step,
-            'full_training_count': full_training_count,
+            'time_of_AE': time_of_AE,
+            'time_of_only_TF': time_of_only_TF,
+            'is_AE_frozen' : is_AE_frozen,
+            'scaler_state_dict' : scaler.state_dict() if scaler is not None else None,
+            'index_in_window' : index_in_window
         }
     tc.save(checkpoint, filepath)
 
 
-def load_checkpoint(encoder, f , decoder, optimizer, scheduler, filepath, device):
-
-    checkpoint = tc.load(filepath, map_location=device)
-    encoder.load_state_dict(checkpoint['encoder'])
-    f.load_state_dict(checkpoint['f'])
-    decoder.load_state_dict(checkpoint['decoder'])
-    optimizer.load_state_dict(checkpoint['optimizer'])
-    scheduler.load_state_dict(checkpoint['scheduler'])
-    epoch = checkpoint['epoch']
+def load_checkpoint(encoder, f, decoder, optim, scheduler, path, device ,parent_instance):
+    """
+    Load checkpoint with proper handling of frozen AE state
+    
+    Args:
+        parent_instance: The AE_NODE instance (needed to rebuild optimizer if frozen)
+    """
+    checkpoint = tc.load(path, map_location=device, weights_only=False)
+    print("\n" + "="*70)
+    print("LOADING CHECKPOINT")
+    print("="*70)
+    print(f"Checkpoint keys: {checkpoint.keys()}")
+    
+    # Load model states
+    encoder.load_state_dict(checkpoint['encoder_state_dict'])
+    f.load_state_dict(checkpoint['f_state_dict'])
+    decoder.load_state_dict(checkpoint['decoder_state_dict'])
+    
+    # Get frozen state
+    is_AE_frozen = checkpoint.get('is_AE_frozen', False)
+    
+    if is_AE_frozen:
+        print("\nCheckpoint has frozen AE - restoring frozen state...")
+        
+        # Freeze encoder and decoder parameters
+        for param in encoder.parameters():
+            param.requires_grad = False
+        for param in decoder.parameters():
+            param.requires_grad = False
+        
+        # Rebuild optimizer with only f parameters
+        f_weight_decay = 0.0
+        if hasattr(parent_instance, 'model_information'):
+            f_weight_decay = parent_instance.model_information.get('weight_decay', {}).get('dfnn', 0.0)
+        
+        params_to_optimize = [
+            {'params': [p for p in f.parameters() if p.requires_grad], 
+             'weight_decay': f_weight_decay}
+        ]
+        
+        # Get learning rate from checkpoint optimizer
+        checkpoint_lr = checkpoint['optimizer_state_dict']['param_groups'][0]['lr']
+        
+        # Create new optimizer with correct structure
+        new_optim = tc.optim.Adam(params_to_optimize, lr=checkpoint_lr)
+        
+        # Load optimizer state
+        try:
+            new_optim.load_state_dict(checkpoint['optimizer_state_dict'])
+            print("✓ Optimizer state loaded successfully")
+        except Exception as e:
+            print(f"⚠ Warning: Could not load optimizer state: {e}")
+            print("  Creating fresh optimizer with checkpoint learning rate")
+        
+        # ✅ FIX: Replace the optimizer in parent instance
+        parent_instance.optim = new_optim
+        
+        # ✅ FIX: Recreate scheduler with the new optimizer
+        gamma = parent_instance.config_training.get('gamma_lr', 0.999)
+        parent_instance.scheduler = tc.optim.lr_scheduler.ExponentialLR(parent_instance.optim, gamma)
+        
+        # Load scheduler state if possible
+        try:
+            parent_instance.scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
+            print("✓ Scheduler state loaded successfully")
+        except Exception as e:
+            print(f"⚠ Warning: Could not load scheduler state: {e}")
+        
+        # Recreate scaler if using mixed precision
+        if parent_instance.mixed_precision and tc.cuda.is_available():
+            from torch.amp import GradScaler
+            parent_instance.scaler = GradScaler('cuda')
+            print("✓ New GradScaler created")
+            # Load scaler state if saved
+            if 'scaler_state_dict' in checkpoint and checkpoint['scaler_state_dict'] is not None:
+                try:
+                    parent_instance.scaler.load_state_dict(checkpoint['scaler_state_dict'])
+                    print("✓ Scaler state loaded")
+                except Exception as e:
+                    print(f"⚠ Warning: Could not load scaler state: {e}")
+        
+        # Verify frozen state
+        encoder_trainable = sum(p.numel() for p in encoder.parameters() if p.requires_grad)
+        decoder_trainable = sum(p.numel() for p in decoder.parameters() if p.requires_grad)
+        f_trainable = sum(p.numel() for p in f.parameters() if p.requires_grad)
+        optim_params = sum(p.numel() for group in parent_instance.optim.param_groups for p in group['params'])
+        
+        print(f"\nFrozen state restored:")
+        print(f"  Encoder trainable: {encoder_trainable:,} (should be 0)")
+        print(f"  Decoder trainable: {decoder_trainable:,} (should be 0)")
+        print(f"  F trainable: {f_trainable:,}")
+        print(f"  Optimizer params: {optim_params:,} (should match F)")
+        print(f"  Match? {optim_params == f_trainable}")
+        
+    else:
+        # AE not frozen - normal loading
+        print("\nCheckpoint has unfrozen AE - normal loading...")
+        optim.load_state_dict(checkpoint['optimizer_state_dict'])
+        scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
+        print("✓ Optimizer and scheduler loaded normally")
+    
+    # Load other checkpoint data
+    first_epoch = checkpoint['epoch']
     loss_value = checkpoint['loss_value']
     loss_coefficients_AR = checkpoint['loss_coefficients_AR']
-    before_next_window_change = checkpoint['before_next_window_change']
-    how_many_datasets_creations = checkpoint['how_many_datasets_creations']
+    before_next_window = checkpoint['before_next_window_change']
+    datasets_count = checkpoint['how_many_datasets_creations']
     autoregressive_step = checkpoint['autoregressive_step']
-    full_training_count = checkpoint['full_training_count']
-        
-    return encoder, f , decoder, optimizer, scheduler , epoch, loss_value, loss_coefficients_AR, before_next_window_change, how_many_datasets_creations, autoregressive_step, full_training_count
+    time_of_AE = checkpoint['time_of_AE']
+    time_of_only_TF = checkpoint['time_of_only_TF']
+    index_in_window = checkpoint['index_in_window']
+    
+    print(f"\nResuming from:")
+    print(f"  Epoch: {first_epoch}")
+    print(f"  Loss value: {loss_value:.6f}")
+    print(f"  AE frozen: {is_AE_frozen}")
+    print("="*70 + "\n")
+    
+    return first_epoch, loss_value, loss_coefficients_AR, before_next_window, datasets_count, autoregressive_step, time_of_AE, time_of_only_TF, is_AE_frozen, index_in_window
 
 
 class ASTEC_Dataset(Dataset):
@@ -246,7 +353,7 @@ def get_maxima(target: tc.tensor):
         maxima = maxima[:, None,:]
     return maxima
     
-def dynamics_MSE(input: tc.tensor, target: tc.tensor, length_of_padding: tc.tensor = None):
+def dynamics_MSE(input: tc.tensor, target: tc.tensor, time_series_losses_weights:tc.tensor, AR:bool, length_of_padding: tc.tensor = None):
     device = input[0].device
     loss_no_reduction = nn.MSELoss(reduction='none')
     loss = nn.MSELoss()
@@ -255,25 +362,38 @@ def dynamics_MSE(input: tc.tensor, target: tc.tensor, length_of_padding: tc.tens
         element_loss = loss_no_reduction(input, target) 
         mask = create_padding_mask( size_of_tensor=input.size(), length_of_padding=length_of_padding, device = device).bool()
         masked_loss = element_loss[mask] #flattened vector of values not masked
+        if AR:
+            masked_loss = masked_loss.mean(-1) * time_series_losses_weights[None,:]
         return masked_loss.mean()
                 
     else:
-        mse = loss(input,target)
-        return mse
+        if not AR:
+            mse = loss(input,target)
+        else:
+            mse = loss_no_reduction(input,target)
+            mse = mse.mean(-1) * time_series_losses_weights[None,:]
+        return mse.mean()
     
 def initialize_model_to_last_checkpoint(encoder, f, decoder, device : tc.device, path_to_checkpoint:str ):
 
     checkpoint = tc.load(path_to_checkpoint, map_location=device, weights_only=False)
-    encoder.load_state_dict(checkpoint['encoder'])
-    f.load_state_dict(checkpoint['f'])
-    decoder.load_state_dict(checkpoint['decoder'])
+    encoder.load_state_dict(checkpoint['encoder_state_dict'])
+    f.load_state_dict(checkpoint['f_state_dict'])
+    decoder.load_state_dict(checkpoint['decoder_state_dict'])
+    
+    # Restore frozen state if needed
+    if checkpoint.get('is_AE_frozen', False):
+        for param in encoder.parameters():
+            param.requires_grad = False
+        for param in decoder.parameters():
+            param.requires_grad = False
 
 def initialize_parameters(model_information, encoder, decoder, f, device):
     if not model_information['is_coupled'][0] and model_information['is_coupled'][1] == 'NODE':
         checkpoint = tc.load(model_information['path_trained_AE']+'/checkpoint/check.pt', map_location=device, weights_only=False)
 
-        encoder.load_state_dict(checkpoint['encoder'])
-        decoder.load_state_dict(checkpoint['decoder'])
+        encoder.load_state_dict(checkpoint['encoder_state_dict'])
+        decoder.load_state_dict(checkpoint['decoder_state_dict'])
 
         for param in encoder.parameters():
             param.requires_grad = False

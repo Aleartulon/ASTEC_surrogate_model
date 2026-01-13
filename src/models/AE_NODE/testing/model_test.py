@@ -117,6 +117,10 @@ class Model_Test:
         self.decoder = Decoder(self.config_training, self.models_information)
         self.load_checkpoint_on_models()
         
+        # Check if the attribute exists and is a Parameter
+        if hasattr(self.f, 'scaling_output_factor') and isinstance(self.f.scaling_output_factor[1], nn.Parameter):
+            print(f"Learned scaling factor: {self.f.scaling_output_factor[1].item()}")
+        
         #get trajectories
         with h5py.File(self.path_to_test_data + self.name_test_file, 'r') as f:
             self.trajectories = list(f.keys())
@@ -280,8 +284,8 @@ class Model_Test:
             #no need to normalize because data is already normalized in the testing
 
             #auto-encode
-            definitive_latent_vector, latent_in_per_shape, latent_boundaries_variables, _ = self.encoder(fields, boundary_conditions)
-            reconstructed_fields, _ = self.decoder(definitive_latent_vector)
+            definitive_latent_vector, latent_in_per_shape, latent_boundaries_variables, _ = self.encoder(fields, False, boundary_conditions)
+            reconstructed_fields, _ = self.decoder(definitive_latent_vector, False)
             
             #give back proper shape. Not necessary if always one trajectory per time is passed but better to be general
             for count, i in enumerate(reconstructed_fields):
@@ -318,14 +322,14 @@ class Model_Test:
             #no need to normalize because data is already normalized in the testing
             
             #encode full trajectory
-            definitive_latent_vectors, per_shape_latent_vectors , latent_boundaries_variables, _ = self.encoder(fields, boundary_conditions)
+            definitive_latent_vectors, per_shape_latent_vectors , latent_boundaries_variables, _ = self.encoder(fields, False, boundary_conditions)
             DT = DT.unsqueeze(-1)
             
             #advance in time each time step of one dt (teacher forcing)
             advanced_latent_vectors = self.training_losses.processor_First_Order(definitive_latent_vectors[:-1], DT[0][:-1], latent_boundaries_variables[:-1])
             
             #decode back the predicted latent vectors
-            reconstructed_fields, reconstructed_latent_vectors_per_field = self.decoder(advanced_latent_vectors)
+            reconstructed_fields, reconstructed_latent_vectors_per_field = self.decoder(advanced_latent_vectors, False)
             reconstructed_fields = [reconstructed_field.unsqueeze(0) for reconstructed_field in reconstructed_fields]
             reconstructed_fields = standard_and_inverse_normalization_field(reconstructed_fields, self.maxima_or_mean, self.minima_or_std, self.which_normalization, inverse = True)
             reconstructed_fields_per_trajectory_TF[trajectory] = reconstructed_fields
@@ -371,7 +375,7 @@ class Model_Test:
             
             #encode initial condition
             t0 = time.time()
-            definitive_latent_vector, per_shape_latent_vectors , latent_boundaries_variables, _ = self.encoder(fields, boundary_conditions)
+            definitive_latent_vector, per_shape_latent_vectors , latent_boundaries_variables, _ = self.encoder(fields, False, boundary_conditions)
             next_latent_vector = definitive_latent_vector[0:1]
             predicted_latents = tc.zeros((len(DT[0])-1, self.latent_dimension), device = self.device)
             
@@ -381,7 +385,7 @@ class Model_Test:
                 predicted_latents[count] = next_latent_vector
             
             #decode back the predicted latent vectors
-            reconstructed_fields, reconstructed_latent_vectors_per_field = self.decoder(predicted_latents)
+            reconstructed_fields, reconstructed_latent_vectors_per_field = self.decoder(predicted_latents, False)
             reconstructed_fields = [reconstructed_field.unsqueeze(0) for reconstructed_field in reconstructed_fields]
             reconstructed_fields = standard_and_inverse_normalization_field(reconstructed_fields, self.maxima_or_mean, self.minima_or_std, self.which_normalization, inverse = True)
             t1 = time.time()
@@ -420,27 +424,31 @@ class Model_Test:
         
     def load_checkpoint_on_models(self):
         checkpoint = tc.load(self.path_to_model+'/checkpoint/check.pt', map_location=self.device, weights_only=False)
+        # remove things added by compiler
+        encoder_state_dict = {k.replace('_orig_mod.', ''): v 
+                            for k, v in checkpoint['encoder_state_dict'].items()}
+        f_state_dict = {k.replace('_orig_mod.', ''): v 
+                        for k, v in checkpoint['f_state_dict'].items()}
+        decoder_state_dict = {k.replace('_orig_mod.', ''): v 
+                            for k, v in checkpoint['decoder_state_dict'].items()}
         
-        self.encoder.load_state_dict(checkpoint['encoder'])
-        self.f.load_state_dict(checkpoint['f'])
-        self.decoder.load_state_dict(checkpoint['decoder'])
-
+        self.encoder.load_state_dict(encoder_state_dict)
+        self.f.load_state_dict(f_state_dict)
+        self.decoder.load_state_dict(decoder_state_dict)
+        
         total_params_enc = sum(p.numel() for p in self.encoder.parameters() if p.requires_grad)
         total_params_dec = sum(p.numel() for p in self.decoder.parameters() if p.requires_grad)
         total_params_f = sum(p.numel() for p in self.f.parameters() if p.requires_grad)
-
-        memory_in_mb = (total_params_enc+total_params_dec+total_params_f * 4) / (1024 ** 2)
+        memory_in_mb = (total_params_enc+total_params_dec+total_params_f) * 4 / (1024 ** 2)  # Fixed: added parentheses
         print(f"Model memory: {memory_in_mb:.2f} MB")
-
         print(f"Total number of parameters enc: {total_params_enc}")
         print(f"Total number of parameters dec : {total_params_dec}")
         print(f"Total number of parameters input f: {total_params_f}")
         print(f"Total number of parameters: {total_params_enc+total_params_dec+total_params_f}")
-
+        
         self.encoder.to(self.device)
         self.f.to(self.device)
         self.decoder.to(self.device)
-
         self.encoder.eval()
         self.f.eval()
         self.decoder.eval()

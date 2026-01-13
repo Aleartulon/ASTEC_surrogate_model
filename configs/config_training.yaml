@@ -1,28 +1,30 @@
 physics_model : '../../../../scratch/ROM_datasets_ale/ASTEC/saved_logs/' # this is the Path to a directory for the training on a given dataset
-description : 'dataset_1_153_192_396_398_500_quicker/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
+description : 'dataset_1_153_192_396_398_500_frozen_AE_directly_to_1000/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
 data_path : '../../../../scratch/ROM_datasets_ale/ASTEC/made_datasets/only_loca_min_max/' #path of training and validation data
 where_to_save_data : '../../../../scratch/ROM_datasets_ale/ASTEC/' #if dynamic_dataset_generation_during_training this is where data is saved, else it is where data for training is found
 model: 'AE_NODE'
-indeces_training_boundaries : [1,153,192,396, 398, 500]
+indeces_training_boundaries : [1, 153, 192, 396, 398, 500]
 indeces_validation_boundaries : [511, 582]
 reinitialize_model_at_each_dataset_reshape: true
 epochs: 10000 #maximum number of epochs
 learning_rate: 0.001 #initial learning rate
+learning_rate_frozen_AE : 0.001
 gamma_lr: 0.999 # gamma of  tc.optim.lr_scheduler.ExponentialLR()
-early_stopping: 500
+early_stopping: 250
 all_on_gpu: false
 dynamic_dataset_generation_during_training : true
-time_windows  :  [12, 22, 64, 42, 52, 62, 72, 82, 92, 102, 112, 122, 324, 142, 152, 322, 172, 182, 192, 202, 212, 222, 264, 242, 252, 262, 272, 282, 292, 302, 312, 642, 364, 342, 352, 362, 372, 382, 392, 402, 412, 422, 464, 442, 452, 462, 472, 482, 492, 502, 512, 522, 564, 542, 552, 562, 572, 582, 592, 602, 612, 622, 664, 1282, 652, 662, 672, 1282, 692, 702, 712, 722, 764, 742, 752, 762, 772, 782, 792, 802, 812, 822, 864, 842, 852, 862, 872, 882, 892, 902, 912, 922, 964, 942, 952, 962, 972, 982, 992, 1002]
-batch_sizes  :  [502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 502, 256, 256, 256, 256, 256, 256, 256, 256, 256, 256, 256, 256, 256, 256, 256, 256, 256, 256, 256, 256, 256, 256, 256, 256, 256, 256, 256, 256, 256, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32]
-waiting_epochs_before_new_dataset_creation  :  [50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50]
+time_windows  :  [13, 1000]
+batch_sizes  :  [256, 16]
+waiting_epochs_before_new_dataset_creation  :  [50, 1000]
 number_of_workers: 8
 checkpoint: false  # if true uses existing checkpoint
-device : 'cuda:2' #device where to train
+device : 'cuda:1' #device where to train
 which_normalization: 'min_max' # min_max or mean_std
 mixed_precision: true
+compile: true 
 
 #Data information if dynamic_dataset_generation_during_training is false
 data_training_file_dinamic: 'data_training_normalized_t_W_' #use when modifying dynamically during training the dataset
 data_validation_file_dinamic: 'data_validation_normalized_t_W_' #use when modifying dynamically during training the dataset
-data_training_file : 'data_training_normalized_t_W_10_1_153_192_396_398_500.h5' #use when using a fixed dataset during training 
+data_training_file : 'data_training_normalized_t_W_10_1_153_192_396_398_250.h5' #use when using a fixed dataset during training 
 data_validation_file : 'data_validation_normalized_t_W_10_511_582.h5' #use when using a fixed dataset during training 
