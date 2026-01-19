@@ -284,14 +284,12 @@ class Astec_Dataset():
     
         for i in dict:
             bc_arrays = [
-                dict[i]['primary_to_vessel'],
                 dict[i]['VDO'],
                 dict[i]['UPP_V001'],
-                dict[i]['vessel_to_primary']
             ]
             dict[i]['boundary_conditions_and_time'] = np.concatenate(bc_arrays, axis=-1)
             
-            for key in ['primary_to_vessel', 'vessel_to_primary', 'VDO', 'UPP_V001']:
+            for key in ['VDO', 'UPP_V001']:
                 dict[i].pop(key)
     
         return dict
@@ -362,4 +360,3 @@ class Astec_Dataset():
                 if np.isnan(f['other/private/'+ op][0]).any() or not np.isfinite(f['other/private/'+ op][0]).any():
                     raise TypeError(f"Operator action {op} in simulation {trajectory} is NaN")
         return operator_actions_dict
-                

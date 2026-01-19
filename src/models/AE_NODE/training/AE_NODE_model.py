@@ -48,9 +48,6 @@ class AE_NODE:
         self.number_of_workers = config_training['number_of_workers']
         self.all_on_gpu = config_training['all_on_gpu']
         
-        
-
-        
         if self.all_on_gpu:
             self.number_of_workers = 0
             self.pin_memory = False
@@ -146,7 +143,7 @@ class AE_NODE:
 
         #define optimizer, the pre scheduler for the warmup of the model and the scheduler
         self.optim = tc.optim.Adam(params_to_optimize, lr=config_training['learning_rate'])
-        lambda1 = lambda i : i / self.time_of_lr_war_up
+        lambda1 = lambda i : i / (self.time_of_lr_war_up+1)
         self.pre_scheduler = tc.optim.lr_scheduler.LambdaLR(self.optim,lambda1)
         self.scheduler = tc.optim.lr_scheduler.ExponentialLR(self.optim, self.gamma_lr)
         

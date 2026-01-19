@@ -128,7 +128,13 @@ def build_dictionary_of_variables():
                             'Q_fp_Y' : [],
                             'Q_fp_Yb' : [],
                             'Q_fp_Zn' : [],
-                            'Q_fp_Zr': []
+                            'Q_fp_Zr': [], 
+                            'Q_H20_connection_primary_to_vessel':[],
+                            'Q_steam_connection_primary_to_vessel':[], 
+                            'm_H20_connection_primary_to_vessel':[],
+                            'Q_H20_connection_vessel_to_primary':[],
+                            'Q_steam_connection_vessel_to_primary':[], 
+                            'm_H20_connection_vessel_to_primary':[] 
                         },
                         
                         'dictionary_of_input_variables_140' : {
@@ -136,19 +142,13 @@ def build_dictionary_of_variables():
                             'V_gas_face': [],
                             'V_liq_face': []
                 },
-                'vessel_to_primary':{
-                    'Q_H20_connection':[],'Q_steam_connection':[], 'm_H20_connection':[], 'dt':[] ,'time':[] #only place where time information is stored
-                },
                 'VDO':{ 'T_gas_primary_volume': [],'x_alfa_primary_volume':[],'P_steam_primary_volume': [],'P_saturation_primary_volume': [],'P_H2_primary_volume': [],'P_primary_volume': [],
                         'm_steam_primary_volume': [],'rho_liq_primary_volume':[], 'm_liq_primary_volume': [], 'T_sat_primary_volume': [],'x_steam_primary_volume': [],'T_liq_primary_volume': []
                     },
                 'UPP_V001':{ 'T_gas_primary_volume': [],'x_alfa_primary_volume':[],'P_steam_primary_volume': [],'P_saturation_primary_volume': [],'P_H2_primary_volume': [],'P_primary_volume': [],
-                        'm_steam_primary_volume': [],'rho_liq_primary_volume':[], 'm_liq_primary_volume': [], 'T_sat_primary_volume': [],'x_steam_primary_volume': [],'T_liq_primary_volume': []
-                    },
-                'primary_to_vessel':{
-                'Q_H20_connection':[],'Q_steam_connection':[], 'm_H20_connection':[]
-                }
-                                                  }
+                        'm_steam_primary_volume': [],'rho_liq_primary_volume':[], 'm_liq_primary_volume': [], 'T_sat_primary_volume': [],'x_steam_primary_volume': [],'T_liq_primary_volume': [], 'dt':[] ,'time':[]
+                    }
+                }                                           
     return dictionary_of_variables
 
 def fill_dictionary_of_variables(output_dict:dict, name:str, f:h5py._hl.files.File, index_stop:int, subsampling_index:int):
@@ -223,6 +223,16 @@ def fill_dictionary_of_variables(output_dict:dict, name:str, f:h5py._hl.files.Fi
     output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Zn'] = f['connection/fission/Q_fp_Zn'][0:index_stop][::subsampling_index]
     output_dict[name]['dictionary_of_input_variables_1']['Q_fp_Zr'] = f['connection/fission/Q_fp_Zr'][0:index_stop][::subsampling_index]
     
+    # PRIMARY TO VESSEL (inlet conditions)
+    output_dict[name]['dictionary_of_input_variables_1']['Q_H20_connection_primary_to_vessel'] = f['connection/general/Q_H20_connection'][:, 1][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_steam_connection_primary_to_vessel'] = f['connection/general/Q_steam_connection'][:, 1][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['m_H20_connection_primary_to_vessel'] = f['connection/general/m_H20_connection'][:, 1][0:index_stop][::subsampling_index]
+    
+    # VESSEL TO PRIMARY (outlet conditions)
+    output_dict[name]['dictionary_of_input_variables_1']['Q_H20_connection_vessel_to_primary'] = f['connection/general/Q_H20_connection'][:, 0][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['Q_steam_connection_vessel_to_primary'] = f['connection/general/Q_steam_connection'][:, 0][0:index_stop][::subsampling_index]
+    output_dict[name]['dictionary_of_input_variables_1']['m_H20_connection_vessel_to_primary'] = f['connection/general/m_H20_connection'][:, 0][0:index_stop][::subsampling_index]
+    
     # Component temperatures and states (shape: 49095 x 36)
     output_dict[name]['dictionary_of_input_variables_36']['T_comp_fuel']=f['vessel/general/T_comp_fuel'][0:index_stop][::subsampling_index]
     output_dict[name]['dictionary_of_input_variables_36']['T_comp_clad']=f['vessel/general/T_comp_clad'][0:index_stop][::subsampling_index]
@@ -264,22 +274,6 @@ def fill_dictionary_of_variables(output_dict:dict, name:str, f:h5py._hl.files.Fi
     output_dict[name]['dictionary_of_input_variables_140']['Q_m_liq_face']=f['vessel/face/Q_m_liq_face'][:index_stop, :][::subsampling_index, :]
     output_dict[name]['dictionary_of_input_variables_140']['V_gas_face']=f['vessel/face/V_gas_face'][:index_stop, :][::subsampling_index, :]
     output_dict[name]['dictionary_of_input_variables_140']['V_liq_face']=f['vessel/face/V_liq_face'][:index_stop, :][::subsampling_index, :]
-
-    
-    # PRIMARY TO VESSEL (inlet conditions)
-    primary_inlet_bc = {
-            'Q_H20_connection': f['connection/general/Q_H20_connection'][:, 1],
-            'Q_steam_connection': f['connection/general/Q_steam_connection'][:, 1],
-            'm_H20_connection': f['connection/general/m_H20_connection'][:, 1],
-        }
-    
-    # VESSEL TO PRIMARY (outlet conditions)
-    
-    primary_outlet_bc = {
-            'Q_H20_connection': f['connection/general/Q_H20_connection'][:, 0],
-            'Q_steam_connection': f['connection/general/Q_steam_connection'][:, 0],
-            'm_H20_connection': f['connection/general/m_H20_connection'][:, 0],
-        }
     
     # PROMARY VOLUME VDO
     VDO = {'T_gas_primary_volume': f['primary/volume/T_gas_primary_volume'][:,0],
@@ -311,10 +305,6 @@ def fill_dictionary_of_variables(output_dict:dict, name:str, f:h5py._hl.files.Fi
            }
     
     # === CREATE ORGANIZED BOUNDARY CONDITION DICTIONARY ===
-    for i in ['Q_H20_connection','Q_steam_connection', 'm_H20_connection']:
-        output_dict[name]['primary_to_vessel'][i]=np.array(primary_inlet_bc[i])[0:index_stop][::subsampling_index]
-        output_dict[name]['vessel_to_primary'][i]=np.array(primary_outlet_bc[i])[0:index_stop][::subsampling_index]
-        
     for i in ['T_gas_primary_volume','x_alfa_primary_volume', 'P_steam_primary_volume', 'P_saturation_primary_volume', 'P_H2_primary_volume','P_primary_volume', 'm_steam_primary_volume', 'rho_liq_primary_volume', 'm_liq_primary_volume', 'T_sat_primary_volume', 'x_steam_primary_volume', 'T_liq_primary_volume']:
         output_dict[name]['VDO'][i]=np.array(VDO[i])[0:index_stop][::subsampling_index]
         output_dict[name]['UPP_V001'][i]=np.array(UPP_V001[i])[0:index_stop][::subsampling_index]
@@ -324,8 +314,8 @@ def fill_dictionary_of_variables(output_dict:dict, name:str, f:h5py._hl.files.Fi
     DT = next_time_step - previous_time_step
     DT = np.concatenate([next_time_step - previous_time_step, [DT[-1]]])[::subsampling_index]
     
-    output_dict[name]['vessel_to_primary']['dt']=DT #used by AE_NODE
-    output_dict[name]['vessel_to_primary']['time']=f['dimensions/time_points'][0:index_stop][::subsampling_index]#used by ONLY_DECODER
+    output_dict[name]['UPP_V001']['dt']=DT #used by AE_NODE
+    output_dict[name]['UPP_V001']['time']=f['dimensions/time_points'][0:index_stop][::subsampling_index]#used by ONLY_DECODER
 
 def extract_input_output_bc_variables(path, index_simulation:str, subsampling_index:int):
     output_dict = {}
@@ -497,14 +487,13 @@ def normalize_fields(field: np.array, maximum_or_mean: dict, minimum_or_std: dic
     field = tc.tensor(field)
     size = field.size()
     field = field.to(device)
-    if size[-1] == 32:
-        
+    if size[-1] == 26:
         maximum_or_mean = maximum_or_mean['boundary_conditions_and_time'].to(device)
         minimum_or_std = minimum_or_std['boundary_conditions_and_time'].to(device)
         maximum_or_mean = maximum_or_mean[None,:]
         minimum_or_std = minimum_or_std[None,:]
         
-    elif size[-1] == 57:
+    elif size[-1] == 63:
         maximum_or_mean = maximum_or_mean['dictionary_of_input_variables_1'].to(device)
         minimum_or_std = minimum_or_std['dictionary_of_input_variables_1'].to(device)
         maximum_or_mean = maximum_or_mean[None,:]

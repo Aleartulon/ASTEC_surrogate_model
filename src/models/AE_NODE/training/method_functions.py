@@ -186,11 +186,11 @@ class Training_Losses():
             return tc.ones(length_time_series, device = self.parent.device)
         
         #increase weight of last time series time step progressively during iteration within a certain window
-        if self.parent.index_in_window[-1] > self.parent.time_windows[self.parent.how_many_datasets_creations-1]:
+        if self.parent.index_in_window[-1] >= self.parent.waiting_epochs_before_new_dataset_creation[self.parent.how_many_datasets_creations-1]:
             weight_last_time_step = self.parent.last_time_series_weigth_AR[1] + 1e-8
             self.parent.exp_coefficient_time_series_losses_weights = 0.0
         else:
-            weight_last_time_step = self.parent.index_in_window[-1] / self.parent.time_windows[self.parent.how_many_datasets_creations-1] * self.parent.last_time_series_weigth_AR[1] + 1e-8
+            weight_last_time_step = self.parent.index_in_window[-1] / self.parent.waiting_epochs_before_new_dataset_creation [self.parent.how_many_datasets_creations-1] * self.parent.last_time_series_weigth_AR[1] + 1e-8
             self.parent.exp_coefficient_time_series_losses_weights = - np.log(weight_last_time_step)/(length_time_series-1)
         
         #get exp_coefficient based on index_in_window and last_time_series_weigth_AR decided a priori

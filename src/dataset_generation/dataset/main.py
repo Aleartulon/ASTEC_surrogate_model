@@ -10,6 +10,7 @@ from src.dataset_generation.dataset.astec_class import Astec_Dataset
 
 def main():
     # Parse command-line arguments
+    print(f"PID process: {os.getpid()}")
     parser = argparse.ArgumentParser(description='Build ASTEC dataset')
     parser.add_argument('--testing', type=lambda x: x.lower() == 'true', default=None)
     parser.add_argument('--path_to_hdf5', type=str, default=None)
