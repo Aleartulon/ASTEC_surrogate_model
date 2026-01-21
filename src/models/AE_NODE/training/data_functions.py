@@ -134,7 +134,6 @@ def load_checkpoint(encoder, f, decoder, optim, scheduler, path, device ,parent_
         
         # Recreate scaler if using mixed precision
         if parent_instance.mixed_precision and tc.cuda.is_available():
-            from torch.amp import GradScaler
             parent_instance.scaler = GradScaler('cuda')
             print("✓ New GradScaler created")
             # Load scaler state if saved
@@ -252,7 +251,7 @@ def standard_and_inverse_normalization_field(x: list, maxima_or_mean: dict, mini
     
     for _, i in enumerate(x):
         
-        if i.size(-1) == 57 and len(i.size()) == 3:
+        if i.size(-1) == 63 and len(i.size()) == 3:
             maximum_or_mean = maxima_or_mean['dictionary_of_input_variables_1'][None,None,:]
             minimum_or_std = minima_or_std['dictionary_of_input_variables_1'][None,None,:]
 

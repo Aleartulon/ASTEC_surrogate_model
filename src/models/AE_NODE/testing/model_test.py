@@ -585,39 +585,61 @@ class Model_Test:
             plt.savefig(f'{self.directory_images_AE_NODE_latent_per_shape}/{trajectory}_{ylabel}.png', dpi=300, bbox_inches='tight')
         plt.close()
         
-    def plot_final_latent_space(self, trajectory, Time, definitive_latent_vector_per_trajectory_AE: dict , definitive_latent_vector_per_trajectory_AE_NODE_or_TF:dict, which_prediction:str, ylabel='final_latent_space', figsize=(5, 5), fontsize=16):
+    def plot_final_latent_space(self, trajectory, Time, definitive_latent_vector_per_trajectory_AE: dict, 
+                            definitive_latent_vector_per_trajectory_AE_NODE_or_TF:dict, 
+                            which_prediction:str, ylabel='final_latent_space', figsize=(5, 5), fontsize=16):
         if which_prediction == 'AE':
             index_time = 0
         elif which_prediction == 'AE_NODE' or which_prediction == 'TF':
             index_time = 1
         else:
             raise TypeError('Wrong type of prediction')
-            
+        
         plt.figure(figsize=figsize)
-        for dimension in range(definitive_latent_vector_per_trajectory_AE[trajectory].size(-1)):
-            color = plt.gca()._get_lines.get_next_color()
-            plt.plot(Time[trajectory][index_time:].cpu()[:]/ 3600.0, definitive_latent_vector_per_trajectory_AE[trajectory][:,dimension].cpu()[:], label='From Encoder, dimension: ' + str(dimension+1), linestyle='--', markersize=3, color=color)
-            if which_prediction == 'TF':
-                plt.plot(Time[trajectory][index_time:].cpu()[:]/ 3600.0, definitive_latent_vector_per_trajectory_AE_NODE_or_TF[trajectory][:,dimension].cpu()[:], label='From NODE, dimension: ' + str(dimension+1), marker='+', markersize=3, color=color)
-            elif which_prediction == 'AE_NODE':
-                plt.plot(Time[trajectory][index_time:].cpu()[:]/ 3600.0, definitive_latent_vector_per_trajectory_AE_NODE_or_TF[trajectory][:,dimension].cpu()[:], label='From NODE, dimension: ' + str(dimension+1), marker='+', markersize=3, color=color)
-
+        
+        # Generate unique colors using a colormap
+        n_dimensions = definitive_latent_vector_per_trajectory_AE[trajectory].size(-1)
+        
+        # Choose appropriate colormap based on number of dimensions
+        if n_dimensions <= 10:
+            colors = plt.cm.tab10(np.linspace(0, 1, n_dimensions))
+        elif n_dimensions <= 20:
+            colors = plt.cm.tab20(np.linspace(0, 1, n_dimensions))
+        else:
+            colors = plt.cm.hsv(np.linspace(0, 1, n_dimensions))
+        
+        for dimension in range(n_dimensions):
+            color = colors[dimension]
+            plt.plot(Time[trajectory][index_time:].cpu()[:] / 3600.0, 
+                    definitive_latent_vector_per_trajectory_AE[trajectory][:,dimension].cpu()[:], 
+                    label='From Encoder, dimension: ' + str(dimension+1), 
+                    linestyle='--', markersize=3, color=color)
             
+            if which_prediction == 'TF':
+                plt.plot(Time[trajectory][index_time:].cpu()[:] / 3600.0, 
+                        definitive_latent_vector_per_trajectory_AE_NODE_or_TF[trajectory][:,dimension].cpu()[:], 
+                        label='From NODE, dimension: ' + str(dimension+1), 
+                        marker='+', markersize=3, color=color)
+            elif which_prediction == 'AE_NODE':
+                plt.plot(Time[trajectory][index_time:].cpu()[:] / 3600.0, 
+                        definitive_latent_vector_per_trajectory_AE_NODE_or_TF[trajectory][:,dimension].cpu()[:], 
+                        label='From NODE, dimension: ' + str(dimension+1), 
+                        marker='+', markersize=3, color=color)
+        
         plt.xlabel('Time, h', fontsize=fontsize)
         plt.ylabel(ylabel, fontsize=fontsize)
         
         if which_prediction == 'AE':
-            plt.title(f'Trajectory number {trajectory}, {definitive_latent_vector_per_trajectory_AE[trajectory].size(-1)} dimensions', fontsize = fontsize)
+            plt.title(f'Trajectory number {trajectory}, {definitive_latent_vector_per_trajectory_AE[trajectory].size(-1)} dimensions', fontsize=fontsize)
             plt.savefig(f'{self.directory_images_AutoEncoding_final_latent}/{trajectory}_{ylabel}.png', dpi=300, bbox_inches='tight')
         elif which_prediction == 'TF':
-            plt.title(f'Trajectory number {trajectory}, {definitive_latent_vector_per_trajectory_AE[trajectory].size(-1)} dimensions, -- from Encoder, + from TF', fontsize = fontsize)
+            plt.title(f'Trajectory number {trajectory}, {definitive_latent_vector_per_trajectory_AE[trajectory].size(-1)} dimensions, -- from Encoder, + from TF', fontsize=fontsize)
             plt.savefig(f'{self.directory_images_TF_final_latent}/{trajectory}_{ylabel}.png', dpi=300, bbox_inches='tight')
         elif which_prediction == 'AE_NODE':
-            plt.title(f'Trajectory number {trajectory}, {definitive_latent_vector_per_trajectory_AE[trajectory].size(-1)} dimensions, -- from Encoder, + from AE-NODE', fontsize = fontsize)
+            plt.title(f'Trajectory number {trajectory}, {definitive_latent_vector_per_trajectory_AE[trajectory].size(-1)} dimensions, -- from Encoder, + from AE-NODE', fontsize=fontsize)
             plt.savefig(f'{self.directory_images_AE_NODE_final_latent}/{trajectory}_{ylabel}.png', dpi=300, bbox_inches='tight')
-            
-            
-        plt.close()
+    
+    plt.close()
             
     def generate_pictures_fields(self, trajectory_to_be_plotted:str, reconstructed_fields_per_trajectory:dict, denormalized_fields_per_trajectory:dict, Time:dict, which_prediction: str):
         
@@ -685,6 +707,14 @@ class Model_Test:
         self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 0, variable_index = 54 , field_name = 'Q_fp_Yb', ylabel = 'Q fp Yb', figsize=(5, 5), fontsize=16)
         self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 0, variable_index = 55 ,field_name = 'Q_fp_Zn', ylabel =  'Q fp Zn', figsize=(5, 5), fontsize=16)
         self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 0, variable_index = 56 , field_name = 'Q_fp_Zr', ylabel = 'Q fp Zr', figsize=(5, 5), fontsize=16)
+        
+        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 0, variable_index = 57 ,field_name = 'Q_H20_connection_primary_to_vessel', ylabel =  'Q H20 connection primary to vessel', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 0, variable_index = 58 , field_name = 'Q_steam_connection_primary_to_vessel', ylabel = 'Q steam connection primary to vessel', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 0, variable_index = 59 , field_name = 'm_H20_connection_primary_to_vessel', ylabel = 'm H20 connection primary to vessel', figsize=(5, 5), fontsize=16)
+        
+        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 0, variable_index = 60 ,field_name = 'Q_H20_connection_vessel_to_primary', ylabel =  'Q H20 connection vessel to primary', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 0, variable_index = 61 , field_name = 'Q_steam_connection_vessel_to_primary', ylabel = 'Q steam connection vessel to primary', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 0, variable_index = 62 , field_name = 'm_H20_connection_vessel_to_primary', ylabel = 'm H20 connection vessel to primary', figsize=(5, 5), fontsize=16)
         
         # generate figure of core 
         time_indeces = [0, int(len(Time[trajectory_to_be_plotted])*0.4), int(len(Time[trajectory_to_be_plotted])*0.8), -2]

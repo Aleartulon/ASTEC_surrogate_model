@@ -346,6 +346,7 @@ class Training():
             print(f'Time window: {self.parent.time_windows[self.parent.how_many_datasets_creations-1]}, time index within window: {self.parent.index_in_window}')
             print('AE is frozen: ', self.parent.is_AE_frozen)
             print('Coefficient time series losses weights', self.parent.exp_coefficient_time_series_losses_weights)
+            print('Learning rate: ',self.parent.optim.param_groups[0]['lr'])
             
             if self.parent.loss_coefficients['AR'] != 0.0 and self.parent.autoregressive_step['which_technique'] == 'TBPP_from_end':
                 print(" for TBPP: " +str(self.parent.autoregressive_step['TBPP_from_end_config'][0]))
@@ -408,7 +409,7 @@ class Training():
                         self.parent.is_AE_frozen = True
                         
                         #Rebuild optimizer with only trainable parameters
-                        current_lr = self.parent.optim.param_groups[0]['lr']
+                        current_lr = self.parent.learning_rate_frozen_AE[1] if self.parent.learning_rate_frozen_AE[0] else self.parent.optim.param_groups[0]['lr']
                         
                         # Get weight decay for f (NODE) from config
                         f_weight_decay = 0.0
@@ -425,7 +426,7 @@ class Training():
                         
                         # Create new optimizer
                         old_optim = self.parent.optim
-                        self.parent.optim = tc.optim.Adam(params_to_optimize, lr=self.parent.learning_rate_frozen_AE)
+                        self.parent.optim = tc.optim.Adam(params_to_optimize, lr=current_lr)
                         del old_optim  # Free memory
                         
                         # Recreate scheduler with new optimizer
