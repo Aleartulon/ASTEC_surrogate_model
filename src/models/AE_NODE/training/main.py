@@ -37,6 +37,7 @@ def main():
 
     # go to gpu if possible
     device = tc.device(config_training['device']) if tc.cuda.is_available() else tc.device("cpu")
+    tc.cuda.set_device(device)
     config_training['device'] = str(device)
     print(f'Selected device: {device}')
 
