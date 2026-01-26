@@ -53,7 +53,7 @@ class Training():
                 l_full_reconstruction_per_shape = l_full_reconstruction[1]
 
                 if self.parent.scaler is not None:
-                    self.parent.scaler.scale(l1_mean+l1_latent+l2_TF+l2_AR_latent+l3+regularization_latent).backward()
+                    self.parent.scaler.scale(l1_mean+l1_latent+l2_TF+l2_AR_latent+l3+regularization_latent+l_full_reconstruction_scalar).backward()
                     if self.parent.clipping[0]:
                         self.parent.scaler.unscale_(self.parent.optim)
                         # Only clip parameters that require gradients
