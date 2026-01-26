@@ -13,13 +13,17 @@ class Training():
         self.parent = ae_node_instance 
         self.losses = Training_Losses(ae_node_instance) 
             
-    def train_epoch(self, loss_coefficients):
+    def train_epoch(self):
         l1_loss = tc.tensor(0.0, device = self.parent.device)
         l1_loss_per_shape = tc.zeros(self.parent.number_of_different_domains, device = self.parent.device)
         l1_loss_latent =  tc.tensor(0.0, device = self.parent.device)
         l2_TF_loss =  tc.tensor(0.0, device = self.parent.device)
-        l2_AR_loss =  tc.tensor(0.0, device = self.parent.device)
+        l2_AR_latent_loss =  tc.tensor(0.0, device = self.parent.device)
+        l1_loss_per_shape = tc.zeros(self.parent.number_of_different_domains, device = self.parent.device)
         l3_loss =  tc.tensor(0.0, device = self.parent.device)
+        loss_full_reconstruction_scalar = tc.tensor(0.0, device = self.parent.device)
+        loss_full_reconstruction_per_shape = tc.zeros(self.parent.number_of_different_domains, device = self.parent.device)
+        loss_full_reconstruction_actual_per_shape = tc.zeros(self.parent.number_of_different_domains, device = self.parent.device)
         loss =  tc.tensor(0.0, device = self.parent.device)
         count = 0.0
         regularization_loss =  tc.tensor(0.0, device = self.parent.device)
@@ -39,14 +43,17 @@ class Training():
             self.parent.optim.zero_grad()
             with tc.amp.autocast('cuda', enabled=(self.parent.scaler is not None)):
                 
-                l1,l2_TF,l2_AR,l3, _,regularization_latent = self.losses.loss_sup_mixed(fields, boundary_conditions, dt, length_of_padding, loss_coefficients, True)
+                l1,l2_TF,l2_AR_latent,l3, l_full_reconstruction, regularization_latent = self.losses.loss_sup_mixed(fields, boundary_conditions, dt, length_of_padding,True, self.parent.loss_training)
                 
                 l1_mean = l1[0]
                 l1_mean_per_shape = l1[1]
                 l1_latent = l1[2]
+                
+                l_full_reconstruction_scalar = l_full_reconstruction[0]
+                l_full_reconstruction_per_shape = l_full_reconstruction[1]
 
                 if self.parent.scaler is not None:
-                    self.parent.scaler.scale(l1_mean+l1_latent+l2_TF+l2_AR+l3+regularization_latent).backward()
+                    self.parent.scaler.scale(l1_mean+l1_latent+l2_TF+l2_AR_latent+l3+regularization_latent).backward()
                     if self.parent.clipping[0]:
                         self.parent.scaler.unscale_(self.parent.optim)
                         # Only clip parameters that require gradients
@@ -57,7 +64,7 @@ class Training():
                     self.parent.scaler.update()
                     
                 else:
-                    (l1_mean+l1_latent+l2_TF+l2_AR+l3+regularization_latent).backward()
+                    (l1_mean+l1_latent+l2_TF+l2_AR_latent+l3+regularization_latent).backward()
                     
                     if self.parent.clipping[0]:
                         # Only clip parameters that require gradients
@@ -67,21 +74,24 @@ class Training():
                     
                     self.parent.optim.step()
                  
-                loss += (l1_mean +l1_latent+ l2_TF+l2_AR+l3).detach()
+                loss += (l1_mean +l1_latent+ l2_TF+l2_AR_latent+l3).detach()
                 l1_loss += (l1_mean).detach()
                 l1_loss_per_shape += (l1_mean_per_shape).detach()
                 l1_loss_latent += (l1_latent).detach()
                 l2_TF_loss += l2_TF.detach()
-                l2_AR_loss += l2_AR.detach()
+                l2_AR_latent_loss += l2_AR_latent.detach()
                 l3_loss += l3.detach()
+                loss_full_reconstruction_scalar += l_full_reconstruction_scalar.detach()
+                loss_full_reconstruction_per_shape += (l_full_reconstruction_per_shape* self.parent.loss_training["full_reconstruction"][1]).detach()
+                loss_full_reconstruction_actual_per_shape += l_full_reconstruction_per_shape.detach() 
                 
                 regularization_loss += regularization_latent.detach()
                 count += 1
 
-        return l1_loss.cpu().item()/count, l1_loss_per_shape.cpu().numpy()/count, l1_loss_latent.cpu().item()/count ,l2_TF_loss.cpu().item()/count, l2_AR_loss.cpu().item()/count ,l3_loss.cpu().item()/count, regularization_loss.cpu().item()/count, loss.cpu().item()/count
+        return l1_loss.cpu().item()/count, l1_loss_per_shape.cpu().numpy()/count, l1_loss_latent.cpu().item()/count, l2_TF_loss.cpu().item()/count, l2_AR_latent_loss.cpu().item()/count ,l3_loss.cpu().item()/count, loss_full_reconstruction_scalar.cpu().item()/count,loss_full_reconstruction_per_shape.cpu().numpy()/count,loss_full_reconstruction_actual_per_shape.cpu().numpy()/count,regularization_loss.cpu().item()/count, loss.cpu().item()/count
         
 
-    def valid_epoch(self, loss_coefficients):
+    def valid_epoch(self):
         
         l1_loss =  tc.tensor(0.0, device = self.parent.device)
         l1_loss_per_shape = tc.zeros(self.parent.number_of_different_domains, device = self.parent.device)
@@ -89,7 +99,7 @@ class Training():
         l1_loss_unnorm =  tc.tensor(0.0, device = self.parent.device)
         l1_loss_latent =  tc.tensor(0.0, device = self.parent.device)
         l2_TF_loss =  tc.tensor(0.0, device = self.parent.device)
-        l2_AR_loss =  tc.tensor(0.0, device = self.parent.device)
+        l2_AR_latent_loss =  tc.tensor(0.0, device = self.parent.device)
         l3_loss =  tc.tensor(0.0, device = self.parent.device)
         loss =  tc.tensor(0.0, device = self.parent.device)
         count = 0.0
@@ -106,18 +116,18 @@ class Training():
         with tc.no_grad():
             for fields, boundary_conditions, dt, length_of_padding in self.parent.validation_loader:
                 t0 = time.time()
-                l1,l2_TF,l2_AR,l3, l_final, regularization_latent  = self.losses.loss_sup_mixed(fields, boundary_conditions, dt, length_of_padding, loss_coefficients, False)
+                l1,l2_TF,l2_AR_latent,l3, l_full_reconstruction, regularization_latent  = self.losses.loss_sup_mixed(fields, boundary_conditions, dt, length_of_padding, False,  self.parent.loss_validation)
                 l1_mean = l1[0]
                 l1_mean_per_shape = l1[1]
                 l1_mean_denormalized = l1[2]
                 l1_mean_per_denormalized_per_variable = l1[3]
                 l1_latent = l1[4]
                 
-                l_real_mean = l_final[0]
-                l_real_per_shape = l_final[1]
+                l_real_mean = l_full_reconstruction[0]
+                l_real_per_shape = l_full_reconstruction[1]
                 
                 loss_real +=  l_real_mean.detach()
-                loss += (l1_mean + l1_latent+ l2_TF + l2_AR + l3 + l_real_mean).detach()
+                loss += (l1_mean + l1_latent+ l2_TF + l2_AR_latent + l3 + l_real_mean).detach()
                 loss_real_per_shape += (l_real_per_shape).detach()
                 l1_loss += (l1_mean ).detach()
                 l1_loss_per_shape += (l1_mean_per_shape).detach()
@@ -125,20 +135,21 @@ class Training():
                 l1_loss_unnorm_per_variable += (l1_mean_per_denormalized_per_variable).detach()
                 l1_loss_latent += (l1_latent).detach()
                 l2_TF_loss += l2_TF.detach()
-                l2_AR_loss += l2_AR.detach()
+                l2_AR_latent_loss += l2_AR_latent.detach()
                 l3_loss += l3.detach()
                 regularization_loss += regularization_latent.detach()
                 count += 1
                 t1 = time.time()
                 #print('validation: ', t1-t0)
-        return l1_loss.cpu().item()/count, l1_loss_per_shape.cpu().numpy()/count, l1_loss_unnorm.cpu().item()/count, l1_loss_unnorm_per_variable.cpu().numpy()/count, l1_loss_latent.cpu().item()/count, l2_TF_loss.cpu().item()/count, l2_AR_loss.cpu().item()/count , l3_loss.cpu().item()/count, loss_real.cpu().item()/count, loss_real_per_shape.cpu().numpy()/count, regularization_loss.cpu().item()/count , loss.cpu().item()/count
+        return l1_loss.cpu().item()/count, l1_loss_per_shape.cpu().numpy()/count, l1_loss_unnorm.cpu().item()/count, l1_loss_unnorm_per_variable.cpu().numpy()/count, l1_loss_latent.cpu().item()/count, l2_TF_loss.cpu().item()/count, l2_AR_latent_loss.cpu().item()/count , l3_loss.cpu().item()/count, loss_real.cpu().item()/count, loss_real_per_shape.cpu().numpy()/count, regularization_loss.cpu().item()/count , loss.cpu().item()/count
 
 
     def training(self):
         
         if self.parent.checkpoint:
-            maximum_loss_coefficient_AR = self.parent.loss_coefficients['AR'] # this line should be before calling load_checkpoint
-            first_epoch, loss_value, self.parent.loss_coefficients['AR'], before_next_window_change, self.parent.how_many_datasets_creations, self.parent.autoregressive_step, time_of_AE, time_of_only_TF, self.parent.is_AE_frozen, self.parent.index_in_window = load_checkpoint(
+            maximum_loss_coefficient_AR_latent = self.parent.loss_coefficients['AR_latent'] # this line should be before calling load_checkpoint
+            maximum_loss_coefficient_full_reconstruction = self.parent.loss_coefficients['full_reconstruction'][1]
+            first_epoch, loss_value, self.parent.loss_coefficients['AR_latent'], self.parent.loss_coefficients['full_reconstruction'], before_next_window_change, self.parent.how_many_datasets_creations, self.parent.autoregressive_step, time_of_AE, time_of_only_TF, self.parent.is_AE_frozen, self.parent.index_in_window = load_checkpoint(
                 self.parent.encoder, 
                 self.parent.f, 
                 self.parent.decoder, 
@@ -153,8 +164,11 @@ class Training():
             train_l1_per_shape = np.load(self.parent.PATH_logs + "/losses/train_l1_per_shape.npy", allow_pickle=True)
             train_l1_latent = np.load(self.parent.PATH_logs + "/losses/train_l1_latent.npy", allow_pickle=True)
             train_l2_TF = np.load(self.parent.PATH_logs + "/losses/train_l2_TF.npy", allow_pickle=True)
-            train_l2_AR = np.load(self.parent.PATH_logs + "/losses/train_l2_AR.npy", allow_pickle=True)
+            train_l2_AR_latent = np.load(self.parent.PATH_logs + "/losses/train_l2_AR_latent.npy", allow_pickle=True)
             train_l3 = np.load(self.parent.PATH_logs + "/losses/train_l3.npy", allow_pickle=True)
+            train_full_reconstruction_scalar = np.load(self.parent.PATH_logs + "/losses/train_full_reconstruction_scalar.npy", allow_pickle=True)
+            train_full_reconstruction_per_shape = np.load(self.parent.PATH_logs + "/losses/train_full_reconstruction_per_shape.npy", allow_pickle=True)
+            train_full_reconstruction_actual_per_shape = np.load(self.parent.PATH_logs + "/losses/train_full_reconstruction_actual_per_shape.npy", allow_pickle=True)
             train_regularization = np.load(self.parent.PATH_logs + "/losses/train_regularization.npy", allow_pickle=True)
             train_loss_tot = np.load(self.parent.PATH_logs + "/losses/train_loss_tot.npy", allow_pickle=True)
 
@@ -164,7 +178,7 @@ class Training():
             valid_l1_unnorm_per_variable = np.load(self.parent.PATH_logs + "/losses/valid_l1_unnorm_per_variable.npy", allow_pickle=True)
             valid_l1_latent = np.load(self.parent.PATH_logs + "/losses/valid_l1_latent.npy", allow_pickle=True)
             valid_l2_TF = np.load(self.parent.PATH_logs + "/losses/valid_l2_TF.npy", allow_pickle=True)
-            valid_l2_AR = np.load(self.parent.PATH_logs + "/losses/valid_l2_AR.npy", allow_pickle=True)
+            valid_l2_AR_latent = np.load(self.parent.PATH_logs + "/losses/valid_l2_AR_latent.npy", allow_pickle=True)
             valid_l3 = np.load(self.parent.PATH_logs + "/losses/valid_l3.npy", allow_pickle=True)
             valid_real = np.load(self.parent.PATH_logs + "/losses/valid_real.npy", allow_pickle=True)
             valid_real_per_variable = np.load(self.parent.PATH_logs + "/losses/valid_real_per_variable.npy", allow_pickle=True)
@@ -206,8 +220,11 @@ class Training():
             train_l1_per_shape = np.zeros((self.parent.epochs, self.parent.number_of_different_domains))
             train_l1_latent = np.zeros(self.parent.epochs)
             train_l2_TF = np.zeros(self.parent.epochs)
-            train_l2_AR = np.zeros(self.parent.epochs)
+            train_l2_AR_latent = np.zeros(self.parent.epochs)
             train_l3 = np.zeros(self.parent.epochs)
+            train_full_reconstruction_scalar = np.zeros(self.parent.epochs)
+            train_full_reconstruction_per_shape = np.zeros((self.parent.epochs, self.parent.number_of_different_domains))
+            train_full_reconstruction_actual_per_shape = np.zeros((self.parent.epochs, self.parent.number_of_different_domains))
             train_regularization = np.zeros(self.parent.epochs)
             train_loss_tot = np.zeros(self.parent.epochs)
 
@@ -217,15 +234,17 @@ class Training():
             valid_l1_unnorm_per_variable = np.zeros((self.parent.epochs, self.parent.number_of_different_domains))
             valid_l1_latent = np.zeros(self.parent.epochs)
             valid_l2_TF = np.zeros(self.parent.epochs)
-            valid_l2_AR = np.zeros(self.parent.epochs)
+            valid_l2_AR_latent = np.zeros(self.parent.epochs)
             valid_l3 = np.zeros(self.parent.epochs)
             valid_real = np.zeros(self.parent.epochs)
             valid_real_per_variable = np.zeros((self.parent.epochs, self.parent.number_of_different_domains))
             valid_regularization = np.zeros(self.parent.epochs)
             valid_loss_tot = np.zeros(self.parent.epochs)
             
-            maximum_loss_coefficient_AR = self.parent.loss_coefficients['AR']
-            self.parent.loss_coefficients['AR'] = 0.0
+            maximum_loss_coefficient_AR_latent = self.parent.loss_coefficients['AR_latent']
+            maximum_loss_coefficient_full_reconstruction = self.parent.loss_coefficients['full_reconstruction'][1]
+            self.parent.loss_coefficients['AR_latent'] = 0.0
+            self.parent.loss_coefficients['full_reconstruction'][1] = 0.0
             before_next_window_change = self.parent.waiting_epochs_before_new_dataset_creation[0]
             self.parent.how_many_datasets_creations = 1
             time_of_AE = True
@@ -237,7 +256,8 @@ class Training():
 
         print("------------------TRAINING STARTS------------------")
         # cycle over epochs
-        self.parent.exp_coefficient_time_series_losses_weights = np.inf
+        self.parent.exp_coefficient_time_series_losses_weights_AR_latent = np.inf
+        self.parent.exp_coefficient_time_series_losses_weights_AR_full_reconstruction = np.inf
         
         for i in np.arange(first_epoch, self.parent.epochs+1, 1):
             early_stopping += 1
@@ -248,9 +268,11 @@ class Training():
             time1 = time.time()
             if i < self.parent.time_of_AE: #use only AE
                 before_training = time.time()
-                train_l1_data, train_l1_per_shape_data, train_l1_latent_data , train_l2_TF_data, train_l2_AR_data, train_l3_data, train_regularization_data, train_loss_data = self.train_epoch([self.parent.loss_coefficients['AE'],0,0,0])
+                self.parent.loss_training = {'AE':self.parent.loss_coefficients['AE'], 'TF' : 0, 'AR_latent' :0, 'full_reconstruction':[self.parent.loss_coefficients['full_reconstruction'][0],0], 'Random_DT': 0}
+                self.parent.loss_validation = {'AE':[1,1], 'TF' : 1, 'AR_latent' :1, 'full_reconstruction':[True,1], 'Random_DT': 1 }
+                train_l1_data, train_l1_per_shape_data, train_l1_latent_data , train_l2_TF_data, train_l2_AR_latent_data, train_l3_data, train_full_reconstruction_scalar_data, train_full_reconstruction_per_shape_data, train_full_reconstruction_actual_per_shape_data, train_regularization_data, train_loss_data = self.train_epoch()
                 before_validation = time.time()
-                valid_l1_data, valid_l1_per_shape_data, valid_l1_unnorm_data, valid_l1_unnorm_per_variable_data, valid_l1_latent_data, valid_l2_TF_data, valid_l2_AR_data, valid_l3_data, valid_real_data, valid_real_per_variable_data, valid_regularization_data, valid_loss_data = self.valid_epoch([[1,1],1,1,1])
+                valid_l1_data, valid_l1_per_shape_data, valid_l1_unnorm_data, valid_l1_unnorm_per_shape_data, valid_l1_latent_data, valid_l2_TF_data, valid_l2_AR_latent_data, valid_l3_data, valid_real_data, valid_real_per_shape_data, valid_regularization_data, valid_loss_data = self.valid_epoch()
                 if self.parent.is_coupled[0]:
                     valid_loss_data = valid_l1_data
             elif i >=self.parent.time_of_AE and i < (self.parent.time_only_TF+ self.parent.time_of_AE): #use only TF
@@ -259,12 +281,14 @@ class Training():
                     loss_value = 100
                     time_of_AE = False
                 before_training = time.time()
-                train_l1_data, train_l1_per_shape_data, train_l1_latent_data, train_l2_TF_data, train_l2_AR_data, train_l3_data, train_regularization_data, train_loss_data = self.train_epoch([self.parent.loss_coefficients['AE'],self.parent.loss_coefficients['TF'],0, self.parent.loss_coefficients['Random_DT']])
+                self.parent.loss_training = {'AE':self.parent.loss_coefficients['AE'], 'TF' : self.parent.loss_coefficients['TF'], 'AR_latent' :0, 'full_reconstruction':[self.parent.loss_coefficients['full_reconstruction'][0],0], 'Random_DT': self.parent.loss_coefficients['Random_DT']}
+                self.parent.loss_validation = {'AE':[1,1], 'TF' : 1, 'AR_latent' :1, 'full_reconstruction':[True,1], 'Random_DT': 1 }
+                train_l1_data, train_l1_per_shape_data, train_l1_latent_data , train_l2_TF_data, train_l2_AR_latent_data, train_l3_data, train_full_reconstruction_scalar_data, train_full_reconstruction_per_shape_data, train_full_reconstruction_actual_per_shape_data, train_regularization_data, train_loss_data = self.train_epoch()
                 before_validation = time.time()
-                valid_l1_data, valid_l1_per_shape_data, valid_l1_unnorm_data, valid_l1_unnorm_per_variable_data, valid_l1_latent_data, valid_l2_TF_data, valid_l2_AR_data, valid_l3_data, valid_real_data, valid_real_per_variable_data, valid_regularization_data, valid_loss_data = self.valid_epoch([[1,1],1,1,1])
+                valid_l1_data, valid_l1_per_shape_data, valid_l1_unnorm_data, valid_l1_unnorm_per_shape_data, valid_l1_latent_data, valid_l2_TF_data, valid_l2_AR_latent_data, valid_l3_data, valid_real_data, valid_real_per_shape_data, valid_regularization_data, valid_loss_data = self.valid_epoch()
                 valid_loss_data = valid_l1_data + valid_l1_latent_data + valid_l2_TF_data + valid_l3_data + valid_regularization_data
             else:
-                if not self.parent.index_in_window[0] and self.parent.last_time_series_weigth_AR[0]:
+                if not self.parent.index_in_window[0] and (self.parent.last_time_series_weigth_AR_latent[0] or self.parent.last_time_series_weigth_AR_full_reconstruction[0]): #if one of the two is tre, either in latent or full space
                     self.parent.index_in_window[0] = True
                     
                 if time_of_AE:
@@ -277,17 +301,26 @@ class Training():
                     initialize_model_to_last_checkpoint(self.parent.encoder, self.parent.f, self.parent.decoder, self.parent.device, self.parent.PATH_logs+'/checkpoint/check.pt')
                     time_of_only_TF = False
                     loss_value = 100
-                    
-                if self.parent.loss_coefficients['AR'] >= maximum_loss_coefficient_AR:
-                    self.parent.loss_coefficients['AR'] = maximum_loss_coefficient_AR
+                
+                # check on AR_latent_strength  
+                if self.parent.loss_coefficients['AR_latent'] >= maximum_loss_coefficient_AR_latent:
+                    self.parent.loss_coefficients['AR_latent'] = maximum_loss_coefficient_AR_latent
                 else:
-                    self.parent.loss_coefficients['AR'] += self.parent.loss_coefficients['AR_strength']
+                    self.parent.loss_coefficients['AR_latent'] += self.parent.loss_coefficients['AR_latent_strength']
+                
+                # check on AR_latent in full space  
+                if self.parent.loss_coefficients['full_reconstruction'][1] >= maximum_loss_coefficient_full_reconstruction:
+                    self.parent.loss_coefficients['full_reconstruction'][1] = maximum_loss_coefficient_full_reconstruction
+                else:
+                    self.parent.loss_coefficients['full_reconstruction'][1] += self.parent.loss_coefficients['full_reconstruction_strength']
                     
                 before_training = time.time()
-                train_l1_data, train_l1_per_shape_data, train_l1_latent_data, train_l2_TF_data, train_l2_AR_data, train_l3_data, train_regularization_data, train_loss_data = self.train_epoch([self.parent.loss_coefficients['AE'],self.parent.loss_coefficients['TF'],self.parent.loss_coefficients['AR'],self.parent.loss_coefficients['Random_DT']])
+                self.parent.loss_training = {'AE':self.parent.loss_coefficients['AE'], 'TF' : self.parent.loss_coefficients['TF'], 'AR_latent' :self.parent.loss_coefficients['AR_latent'], 'full_reconstruction':self.parent.loss_coefficients['full_reconstruction'], 'Random_DT': self.parent.loss_coefficients['Random_DT']}
+                self.parent.loss_validation = {'AE':[1,1], 'TF' : 1, 'AR_latent' :1, 'full_reconstruction':[True,1], 'Random_DT': 1 }
+                train_l1_data, train_l1_per_shape_data, train_l1_latent_data , train_l2_TF_data, train_l2_AR_latent_data, train_l3_data, train_full_reconstruction_scalar_data, train_full_reconstruction_per_shape_data, train_full_reconstruction_actual_per_shape_data, train_regularization_data, train_loss_data = self.train_epoch()
                 before_validation = time.time()
                 
-                valid_l1_data, valid_l1_per_shape_data, valid_l1_unnorm_data, valid_l1_unnorm_per_variable_data, valid_l1_latent_data, valid_l2_TF_data, valid_l2_AR_data, valid_l3_data, valid_real_data, valid_real_per_variable_data, valid_regularization_data, valid_loss_data = self.valid_epoch([[1,1],1,1,1])
+                valid_l1_data, valid_l1_per_shape_data, valid_l1_unnorm_data, valid_l1_unnorm_per_shape_data, valid_l1_latent_data, valid_l2_TF_data, valid_l2_AR_latent_data, valid_l3_data, valid_real_data, valid_real_per_shape_data, valid_regularization_data, valid_loss_data = self.valid_epoch()
                 
             time2 = time.time()
             
@@ -299,21 +332,24 @@ class Training():
             train_l1_per_shape[i] = train_l1_per_shape_data
             train_l1_latent[i] = train_l1_latent_data
             train_l2_TF[i] = train_l2_TF_data
-            train_l2_AR[i] = train_l2_AR_data
+            train_l2_AR_latent[i] = train_l2_AR_latent_data
             train_l3[i] = train_l3_data
             train_regularization[i] = train_regularization_data
+            train_full_reconstruction_scalar[i] = train_full_reconstruction_scalar_data
+            train_full_reconstruction_per_shape[i] = train_full_reconstruction_per_shape_data
+            train_full_reconstruction_actual_per_shape[i] = train_full_reconstruction_actual_per_shape_data
             train_loss_tot[i] = train_loss_data
 
             valid_l1[i] = valid_l1_data
             valid_l1_per_shape[i] = valid_l1_per_shape_data
             valid_l1_unnorm[i] = valid_l1_unnorm_data
-            valid_l1_unnorm_per_variable[i] = valid_l1_unnorm_per_variable_data
+            valid_l1_unnorm_per_variable[i] = valid_l1_unnorm_per_shape_data
             valid_l1_latent[i] = valid_l1_latent_data
             valid_l2_TF[i] = valid_l2_TF_data
-            valid_l2_AR[i] = valid_l2_AR_data
+            valid_l2_AR_latent[i] = valid_l2_AR_latent_data
             valid_l3[i] = valid_l3_data
             valid_real[i] = valid_real_data
-            valid_real_per_variable[i] = valid_real_per_variable_data
+            valid_real_per_variable[i] = valid_real_per_shape_data
             valid_regularization[i] = valid_regularization_data
             valid_loss_tot[i] = valid_loss_data
 
@@ -321,9 +357,12 @@ class Training():
             np.save(self.parent.PATH_logs + "/losses/train_l1_per_shape.npy", train_l1_per_shape)
             np.save(self.parent.PATH_logs + "/losses/train_l1_latent.npy", train_l1_latent)
             np.save(self.parent.PATH_logs + "/losses/train_l2_TF.npy", train_l2_TF)
-            np.save(self.parent.PATH_logs + "/losses/train_l2_AR.npy", train_l2_AR)
+            np.save(self.parent.PATH_logs + "/losses/train_l2_AR_latent.npy", train_l2_AR_latent)
             np.save(self.parent.PATH_logs + "/losses/train_l3.npy", train_l3)
             np.save(self.parent.PATH_logs + "/losses/train_regularization.npy", train_regularization)
+            np.save(self.parent.PATH_logs + "/losses/train_full_reconstruction_scalar.npy", train_full_reconstruction_scalar)
+            np.save(self.parent.PATH_logs + "/losses/train_full_reconstruction_per_shape.npy", train_full_reconstruction_per_shape)
+            np.save(self.parent.PATH_logs + "/losses/train_full_reconstruction_actual_per_shape.npy", train_full_reconstruction_actual_per_shape)
             np.save(self.parent.PATH_logs + "/losses/train_loss_tot.npy", train_loss_tot)
 
             np.save(self.parent.PATH_logs + "/losses/valid_l1.npy", valid_l1)
@@ -332,7 +371,7 @@ class Training():
             np.save(self.parent.PATH_logs + "/losses/valid_l1_unnorm_per_variable.npy", valid_l1_unnorm_per_variable)
             np.save(self.parent.PATH_logs + "/losses/valid_l1_latent.npy", valid_l1_latent)
             np.save(self.parent.PATH_logs + "/losses/valid_l2_TF.npy", valid_l2_TF)
-            np.save(self.parent.PATH_logs + "/losses/valid_l2_AR.npy", valid_l2_AR)
+            np.save(self.parent.PATH_logs + "/losses/valid_l2_AR_latent.npy", valid_l2_AR_latent)
             np.save(self.parent.PATH_logs + "/losses/valid_l3.npy", valid_l3)
             np.save(self.parent.PATH_logs + "/losses/valid_real.npy", valid_real)
             np.save(self.parent.PATH_logs + "/losses/valid_real_per_variable.npy", valid_real_per_variable)
@@ -345,38 +384,36 @@ class Training():
             print('Time of validation:', time2 - before_validation)
             print(f'Time window: {self.parent.time_windows[self.parent.how_many_datasets_creations-1]}, time index within window: {self.parent.index_in_window}')
             print('AE is frozen: ', self.parent.is_AE_frozen)
-            print('Coefficient time series losses weights', self.parent.exp_coefficient_time_series_losses_weights)
+            print('Coefficient time series losses weights AR latent', self.parent.exp_coefficient_time_series_losses_weights_AR_latent)
+            print('Coefficient time series losses weights AR full reconstruction', self.parent.exp_coefficient_time_series_losses_weights_AR_full_reconstruction)
             print('Learning rate: ',self.parent.optim.param_groups[0]['lr'])
             
-            if self.parent.loss_coefficients['AR'] != 0.0 and self.parent.autoregressive_step['which_technique'] == 'TBPP_from_end':
-                print(" for TBPP: " +str(self.parent.autoregressive_step['TBPP_from_end_config'][0]))
-                
-            elif self.parent.loss_coefficients['AR'] != 0.0 and self.parent.autoregressive_step['which_technique'] == 'TBPP_from_start':
-                print(" for TBPP: " +str(self.parent.autoregressive_step['TBPP_from_start_config'][0]))
-            
-            elif self.parent.loss_coefficients['AR'] != 0.0:
-                print("Strength of autoregressive step: ", self.parent.loss_coefficients['AR'])
+            print("Strength of latent autoregressive step: ", self.parent.loss_coefficients['AR_latent'])
+            print("Strength of full reconstruction autoregressive step: ", self.parent.loss_coefficients['full_reconstruction'])
                 
             print('')
             print('Train_loss_data = ' + str(train_loss_data) + 
+                '\nFull reconstruction train loss scalar = ' + str(train_full_reconstruction_scalar_data) + 
+                '\nFull reconstruction train loss per shape = ' + str(train_full_reconstruction_per_shape_data) + 
+                '\nFull reconstruction train loss per shape actual = ' + str(train_full_reconstruction_actual_per_shape_data) + 
                 '\nAE train loss = ' + str(train_l1_data) + 
-                '\n AE train loss per variable' + str(train_l1_per_shape_data)+
+                '\n AE train loss per shape' + str(train_l1_per_shape_data)+
                 '\nAE train latent loss = ' + str(train_l1_latent_data) + 
                 '\nTF train loss = ' + str(train_l2_TF_data) + 
-                '\nAR train loss = ' + str(train_l2_AR_data) + 
+                '\nAR_latent train loss = ' + str(train_l2_AR_latent_data) + 
                 '\nRandom dt train loss = ' + str(train_l3_data) + 
                 '\nregularization loss = ' + str(train_regularization_data))
             print(' ')
             print('Valid_loss_data = ' + str(valid_loss_data) + 
-                '\nvalid Real loss = ' + str(valid_real_data) + 
-                '\nvalid Real per variable loss = ' + str(valid_real_per_variable_data) + 
+                '\nFull reconstruction valid loss scalar = ' + str(valid_real_data) + 
+                '\nFull reconstruction per shape loss = ' + str(valid_real_per_shape_data) + 
                 '\nAE valid loss = ' + str(valid_l1_data) + 
-                '\n AE valid loss per variable' + str(valid_l1_per_shape_data)+
+                '\n AE valid loss per shape' + str(valid_l1_per_shape_data)+
                 '\nAE valid latent loss = ' + str(valid_l1_latent_data) + 
                 '\nAE valid unnorm  = ' + str(valid_l1_unnorm_data) + 
-                '\nAE valid unnorm per variable  = ' + str(valid_l1_unnorm_per_variable_data) + 
+                '\nAE valid unnorm per shape  = ' + str(valid_l1_unnorm_per_shape_data) + 
                 '\nvalid TF loss = ' + str(valid_l2_TF_data) + 
-                '\nvalid AR loss = ' + str(valid_l2_AR_data) + 
+                '\nvalid AR_latent loss = ' + str(valid_l2_AR_latent_data) + 
                 '\nRandom dt valid loss = ' + str(valid_l3_data) + 
                 '\nvalid regularization = ' + str(valid_regularization_data))
             print('The validation loss has not decreased for ' + str(early_stopping) + ' epochs!')
@@ -388,13 +425,13 @@ class Training():
             if not self.parent.is_coupled[0] and self.parent.is_coupled[1] == 'AE' and i >=self.parent.time_of_AE:
                 valid_loss_data = valid_l1_data + valid_regularization_data + valid_l1_latent_data
             elif not self.parent.is_coupled[0] and self.parent.is_coupled[1] == 'NODE':
-                valid_loss_data = valid_real_data + valid_l2_TF_data + valid_l2_AR_data + valid_l3_data
+                valid_loss_data = valid_real_data + valid_l2_TF_data + valid_l2_AR_latent_data + valid_l3_data
 
             if np.mean(valid_loss_data) < loss_value: #careful valid loss tot!!
                 loss_value = np.mean(valid_loss_data)
                 print('Models saved!')
                 save_checkpoint(self.parent.encoder, self.parent.f , self.parent.decoder, self.parent.optim, self.parent.scheduler, i, 
-                    loss_value, self.parent.loss_coefficients['AR'] , before_next_window_change, self.parent.how_many_datasets_creations-1, self.parent.autoregressive_step, 
+                    loss_value, self.parent.loss_coefficients['AR_latent'],self.parent.loss_coefficients['full_reconstruction'], before_next_window_change, self.parent.how_many_datasets_creations-1, self.parent.autoregressive_step, 
                     time_of_AE, time_of_only_TF, self.parent.is_AE_frozen, self.parent.scaler, self.parent.index_in_window, self.parent.PATH_logs+'/checkpoint/check.pt')
                 early_stopping = 0
                 #freeze AE if needed
