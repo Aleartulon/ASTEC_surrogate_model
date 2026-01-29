@@ -64,7 +64,7 @@ class Training():
                     self.parent.scaler.update()
                     
                 else:
-                    (l1_mean+l1_latent+l2_TF+l2_AR_latent+l3+regularization_latent).backward()
+                    (l1_mean+l1_latent+l2_TF+l2_AR_latent+l3+regularization_latent+l_full_reconstruction_scalar).backward()
                     
                     if self.parent.clipping[0]:
                         # Only clip parameters that require gradients
@@ -74,7 +74,7 @@ class Training():
                     
                     self.parent.optim.step()
                  
-                loss += (l1_mean +l1_latent+ l2_TF+l2_AR_latent+l3).detach()
+                loss += (l1_mean +l1_latent+ l2_TF+l2_AR_latent+l3+l_full_reconstruction_scalar+regularization_latent).detach()
                 l1_loss += (l1_mean).detach()
                 l1_loss_per_shape += (l1_mean_per_shape).detach()
                 l1_loss_latent += (l1_latent).detach()
@@ -127,7 +127,7 @@ class Training():
                 l_real_per_shape = l_full_reconstruction[1]
                 
                 loss_real +=  l_real_mean.detach()
-                loss += (l1_mean + l1_latent+ l2_TF + l2_AR_latent + l3 + l_real_mean).detach()
+                loss += (l1_mean + l1_latent+ l2_TF + l2_AR_latent + l3 + l_real_mean+regularization_latent).detach()
                 loss_real_per_shape += (l_real_per_shape).detach()
                 l1_loss += (l1_mean ).detach()
                 l1_loss_per_shape += (l1_mean_per_shape).detach()

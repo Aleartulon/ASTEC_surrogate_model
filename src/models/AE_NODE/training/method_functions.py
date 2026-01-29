@@ -152,11 +152,11 @@ class Training_Losses():
             
             l2_AR_latent = dynamics_MSE(reconstructed_latent, true_latent[:,1:,:], time_series_losses_weights_AR_latent, True, F.relu((length_of_padding-1)))
             
-            if loss_dict['full_reconstruction'][0] and loss_dict['full_reconstruction'][0]!= 0:
+            if loss_dict['full_reconstruction'][0] and loss_dict['full_reconstruction'][1]!= 0:
                 l_full_reconstruction, l_full_reconstruction_per_variable = self.compute_full_reconstruction(reconstructed_latent, B,T, latent_dim, fields, length_of_padding, time_series_losses_weights_AR_full_reconstruction)
                 return l2_AR_latent * loss_dict['AR_latent'], (l_full_reconstruction, l_full_reconstruction_per_variable)
             
-            elif loss_dict['full_reconstruction'][0] and loss_dict['full_reconstruction'][0]== 0:
+            elif loss_dict['full_reconstruction'][0] and loss_dict['full_reconstruction'][1]== 0:
                 with tc.no_grad():
                     l_full_reconstruction, l_full_reconstruction_per_variable = self.compute_full_reconstruction(reconstructed_latent, B,T, latent_dim, fields, length_of_padding, time_series_losses_weights_AR_full_reconstruction)
                 return l2_AR_latent * loss_dict['AR_latent'], (l_full_reconstruction, l_full_reconstruction_per_variable)

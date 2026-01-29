@@ -43,8 +43,8 @@ class Encoder(nn.Module):
         #concatenate latent variables without latent_boundaries_variables
         latent_in_variables_separated = [latent_scalar_variables, latent_plenum_variables, latent_core_variables, latent_vessel_variables, latent_faces_variables, latent_boundaries_variables] #useful at testing
         latent_in_variables = tc.concatenate((latent_scalar_variables, latent_plenum_variables, latent_core_variables, latent_vessel_variables, latent_faces_variables), axis = -1)
-        regularization_latent = self.l1_latent_regularization(latent_in_variables, self.lambda_regularization, latent_boundaries_variables) #regularization latent space 
         definitive_latent = self.final_reduction(latent_in_variables) #final reduced vector of inner fields
+        regularization_latent = self.l1_latent_regularization(definitive_latent, self.lambda_regularization) #regularization latent space 
         
         if is_AE_frozen:
             definitive_latent = definitive_latent.detach()
@@ -57,14 +57,9 @@ class Encoder(nn.Module):
             
         return definitive_latent, latent_in_variables_separated, latent_boundaries_variables, regularization_latent
     
-    def l1_latent_regularization(self, latent_fields: tc.tensor, lambda_l1: float, latent_boundaries: tc.tensor = None):
-        
+    def l1_latent_regularization(self, latent_fields: tc.tensor, lambda_l1: float):
         if lambda_l1 != 0:
-            if latent_boundaries is not None:
-                l1_norm = (tc.mean(tc.abs(latent_fields)) + tc.mean(tc.abs(latent_boundaries)))/2
-            else:
-                l1_norm = tc.mean(tc.abs(latent_fields))
-                
+            l1_norm = tc.mean(tc.abs(latent_fields))
             return lambda_l1 * l1_norm
         else:
             return tc.tensor(0.0, device=latent_fields.device)
