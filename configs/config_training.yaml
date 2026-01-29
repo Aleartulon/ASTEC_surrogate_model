@@ -1,10 +1,10 @@
 physics_model : '../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/saved_logs/LOCA/' # this is the Path to a directory for the training on a given dataset
-description : 'LOCA_first_DB/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
-data_path : '../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/made_datasets/only_loca_min_max/' #path of training and validation data
-where_to_save_data : '../../../../scratch/ROM_datasets_ale/ASTEC/' #if dynamic_dataset_generation_during_training this is where data is saved, else it is where data for training is found
+description : 'also_full_reconstruction_0.001_derivative_2000/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
+data_path : '../../../../scratch//aalelonghi/ROM_datasets_ale/ASTEC/made_datasets/only_loca_min_max/' #path of training and validation data
+where_to_save_data : '../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/' #if dynamic_dataset_generation_during_training this is where data is saved, else it is where data for training is found
 model: 'AE_NODE'
-indeces_training_boundaries : [1,153,192,396, 398, 500]
-indeces_validation_boundaries : [511, 582]
+indeces_training_boundaries : [1,3] #[1,153,192,396, 398, 500]
+indeces_validation_boundaries : [1,3] #[511, 582]
 reinitialize_model_at_each_dataset_reshape: true
 epochs: 10000 #maximum number of epochs
 learning_rate: 0.001 #initial learning rate
@@ -13,9 +13,9 @@ gamma_lr: 0.999 # gamma of  tc.optim.lr_scheduler.ExponentialLR()
 early_stopping: 250
 all_on_gpu: false
 dynamic_dataset_generation_during_training : true
-time_windows  :  [12, 1002]
-batch_sizes  :  [256, 16]
-waiting_epochs_before_new_dataset_creation  :  [ 50, 50]
+time_windows  :  [12, 1002,2002]
+batch_sizes  :  [128, 16,8]
+waiting_epochs_before_new_dataset_creation  :  [50,100,200]
 number_of_workers: 8
 checkpoint: false  # if true uses existing checkpoint
 device : 'cuda' #device where to train

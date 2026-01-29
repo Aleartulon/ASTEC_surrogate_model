@@ -6,7 +6,7 @@ class Training_Losses():
     def __init__(self, ae_node_instance):
         self.parent = ae_node_instance
         
-    def loss_sup_mixed(self, fields:list, boundary_conditions:tc.tensor, dt:tc.tensor, length_of_padding: tc.tensor, loss_coeff:list, train: bool):
+    def loss_sup_mixed(self, fields:list, boundary_conditions:tc.tensor, dt:tc.tensor, length_of_padding: tc.tensor, train: bool, loss_dict):
         if not self.parent.all_on_gpu:
             for count, i in enumerate(fields):
                 fields[count] = i.to(self.parent.device)
@@ -20,7 +20,7 @@ class Training_Losses():
         #First loss: invertibility of autoencoder enc-dec-enc
         
         if not self.parent.is_AE_frozen:
-            definitive_latent, latent_boundaries, l1, regularization_latent = self.auto_encoding_loss(fields, boundary_conditions, length_of_padding, loss_coeff, train)
+            definitive_latent, latent_boundaries, l1, regularization_latent = self.auto_encoding_loss(fields, boundary_conditions, length_of_padding, train, loss_dict)
             
         else:
             # AE is frozen - only encode, skip reconstruction
@@ -41,19 +41,18 @@ class Training_Losses():
             regularization_latent = tc.tensor(0.0, device=self.parent.device)
 
         if self.parent.is_coupled[0] == True or (self.parent.is_coupled[0] == False and self.parent.is_coupled[1] == 'NODE'):
-            l2_TF, l2_AR, l3, l_final = self.latent_dynamics_loss(fields, definitive_latent, latent_boundaries, length_of_padding, original_size, train, dt, loss_coeff)
+            l2_TF, l2_AR_latent, l3, l_full_reconstruction = self.latent_dynamics_loss(fields, definitive_latent, latent_boundaries, length_of_padding, original_size, train, dt, loss_dict)
             
         elif (self.parent.is_coupled[0] == False and self.parent.is_coupled[1] == 'AE'):
             with tc.no_grad():
-                l2_TF, l2_AR, l3, l_final = self.latent_dynamics_loss(fields, definitive_latent, latent_boundaries, length_of_padding, original_size, train, dt, loss_coeff)
+                l2_TF, l2_AR_latent, l3, l_full_reconstruction = self.latent_dynamics_loss(fields, definitive_latent, latent_boundaries, length_of_padding, original_size, train, dt, loss_dict)
 
-        return l1, l2_TF, l2_AR, l3, l_final, regularization_latent
+        return l1, l2_TF, l2_AR_latent, l3, l_full_reconstruction, regularization_latent
 
-    def auto_encoding_loss(self, fields:list , boundaries:tc.tensor,length_of_padding:tc.tensor ,loss_coeff:list, train:bool):
+    def auto_encoding_loss(self, fields:list , boundaries:tc.tensor,length_of_padding:tc.tensor ,train:bool, loss_dict):
         
         definitive_latent, latent_per_shape , latent_boundaries, regularization_latent = self.parent.encoder(fields, self.parent.is_AE_frozen, boundaries)
         reconstructed_variables, reconstructed_latent_per_shape = self.parent.decoder(definitive_latent, self.parent.is_AE_frozen)
-        
         # separate the reconstruction of boundaries and fields
         for count, i in enumerate(reconstructed_variables):
             size = i.size()
@@ -64,21 +63,21 @@ class Training_Losses():
             latent_per_shape[count] = tc.reshape(latent_per_shape[count], (fields[0].size()[0],fields[0].size()[1],-1))
         
         if train:
-            l1_mean, l1_per_shape = auto_encoding_MSE(reconstructed_variables, fields, length_of_padding) #field reconstruction
-            l1_latent, _ = auto_encoding_MSE(reconstructed_latent_per_shape, latent_per_shape, length_of_padding)  #latent reconstruction per shape
-            l1 = [l1_mean * loss_coeff[0][0] , l1_per_shape*  loss_coeff[0][0] , l1_latent * loss_coeff[0][1]]
+            l1_mean, l1_per_shape = auto_encoding_MSE(reconstructed_variables, fields, time_series_losses_weights_AR_full_reconstruction = None, length_of_padding = length_of_padding) #field reconstruction
+            l1_latent, _ = auto_encoding_MSE(reconstructed_latent_per_shape, latent_per_shape,time_series_losses_weights_AR_full_reconstruction =  None, length_of_padding = length_of_padding)  #latent reconstruction per shape
+            l1 = [l1_mean * loss_dict['AE'][0] , l1_per_shape*  loss_dict['AE'][0] , l1_latent * loss_dict['AE'][1]]
         else:
-            l1_mean, l1_per_shape = auto_encoding_MSE(reconstructed_variables, fields, length_of_padding) 
-            l1_latent, _ = auto_encoding_MSE(reconstructed_latent_per_shape, latent_per_shape, length_of_padding)  #latent reconstruction per shape
+            l1_mean, l1_per_shape = auto_encoding_MSE(reconstructed_variables, fields, time_series_losses_weights_AR_full_reconstruction = None, length_of_padding = length_of_padding) 
+            l1_latent, _ = auto_encoding_MSE(reconstructed_latent_per_shape, latent_per_shape,time_series_losses_weights_AR_full_reconstruction =  None, length_of_padding = length_of_padding)  #latent reconstruction per shape
             #reconstructed_variables = standard_and_inverse_normalization_field(reconstructed_variables, self.parent.maxima_or_mean, self.parent.minima_or_std, self.parent.which_normalization, True)
             #fields = standard_and_inverse_normalization_field(fields, self.parent.maxima_or_mean, self.parent.minima_or_std, self.parent.which_normalization, True)
-            l1_mean_denormalized, l1_mean_denormalized_per_variable = auto_encoding_MSE(reconstructed_variables, fields, length_of_padding, is_denormalized_validation = False)
+            l1_mean_denormalized, l1_mean_denormalized_per_variable = auto_encoding_MSE(reconstructed_variables, fields,time_series_losses_weights_AR_full_reconstruction = None, length_of_padding = length_of_padding, is_denormalized_validation = False)
 
-            l1 = [l1_mean * loss_coeff[0][0], l1_per_shape * loss_coeff[0][0], l1_mean_denormalized * loss_coeff[0][0], l1_mean_denormalized_per_variable * loss_coeff[0][0], l1_latent * loss_coeff[0][1]]
+            l1 = [l1_mean * loss_dict['AE'][0], l1_per_shape * loss_dict['AE'][0], l1_mean_denormalized * loss_dict['AE'][0], l1_mean_denormalized_per_variable * loss_dict['AE'][0], l1_latent * loss_dict['AE'][1]]
             
         return definitive_latent, latent_boundaries, l1, regularization_latent
 
-    def latent_dynamics_loss(self, fields:list, definitive_latent:tc.tensor, latent_boundaries:tc.tensor, length_of_padding:tc.tensor, original_size:tuple, train:bool, dt:tc.tensor, loss_coeff:list):
+    def latent_dynamics_loss(self, fields:list, definitive_latent:tc.tensor, latent_boundaries:tc.tensor, length_of_padding:tc.tensor, original_size:tuple, train:bool, dt:tc.tensor, loss_dict):
         number_batches = original_size[0]
         number_of_time_steps = original_size[1]
         latent_dim = definitive_latent.size()[-1]
@@ -91,33 +90,33 @@ class Training_Losses():
         latent_boundaries = tc.reshape(latent_boundaries,(number_batches, number_of_time_steps , latent_boundaries.size(-1)))
         latent_boundaries = latent_boundaries[:,0:-1,:].reshape(number_batches * (number_of_time_steps-1) , latent_boundaries.size(-1))
         
-        if loss_coeff[1] <= 0:
+        if loss_dict['TF'] <= 0:
             l2_TF = tc.tensor(0.0)
         else:
             e2_latent_TF = self.processor_First_Order(input_processor, dt, latent_boundaries)
             e2_latent_TF = e2_latent_TF.reshape(number_batches, (number_of_time_steps-1), latent_dim)
-            l2_TF = dynamics_MSE(e2_latent_TF, definitive_latent[:, 1:, :], None , False, F.relu((length_of_padding-1))) * loss_coeff[1]
+            l2_TF = dynamics_MSE(e2_latent_TF, definitive_latent[:, 1:, :], None , False, F.relu((length_of_padding-1))) * loss_dict['TF']
         
-        if loss_coeff[3] <= 0:
+        if loss_dict['Random_DT'] <= 0:
             l3 = tc.tensor(0.0)
         else:
             random_dt = tc.rand(number_batches*(number_of_time_steps-1),1, device=self.parent.device) * dt
             e2_middle_latent = self.processor_First_Order( input_processor,random_dt, latent_boundaries)
             e2_final = self.processor_First_Order(e2_middle_latent, dt-random_dt, latent_boundaries)
             e2_final = e2_final.reshape(number_batches, (number_of_time_steps-1), latent_dim)
-            l3 = dynamics_MSE(e2_final, definitive_latent[:, 1:, :], None, False, F.relu((length_of_padding-1))) * loss_coeff[3]
+            l3 = dynamics_MSE(e2_final, definitive_latent[:, 1:, :], None, False, F.relu((length_of_padding-1))) * loss_dict['Random_DT']
 
-        if loss_coeff[2] <= 0:
+        if loss_dict['AR_latent'] <= 0.0 and loss_dict['full_reconstruction'][1] <= 0.0:
             with tc.no_grad():
-                l2_AR = tc.tensor(0.0)
-                l_final = tc.tensor(0.0)
+                l2_AR_latent = tc.tensor(0.0)
+                l_full_reconstruction = (tc.tensor(0.0,device=self.parent.device), tc.zeros(self.parent.number_of_different_domains, device = self.parent.device))
         else:
-            l2_AR, l_final = self.advance_from_ic(fields, definitive_latent, tc.reshape(dt,(number_batches,number_of_time_steps-1)).unsqueeze(-1), latent_boundaries.reshape(number_batches , (number_of_time_steps-1) , latent_boundaries.size(-1)), length_of_padding, loss_coeff[2], train)
+            l2_AR_latent, l_full_reconstruction = self.advance_from_ic(fields, definitive_latent, tc.reshape(dt,(number_batches,number_of_time_steps-1)).unsqueeze(-1), latent_boundaries.reshape(number_batches , (number_of_time_steps-1) , latent_boundaries.size(-1)), length_of_padding, train, loss_dict)
             
-        return l2_TF, l2_AR, l3, l_final
+        return l2_TF, l2_AR_latent, l3, l_full_reconstruction
              
 
-    def advance_from_ic(self, fields:list, true_latent:tc.tensor, dt:tc.tensor, latent_boundaries:tc.tensor, length_of_padding: tc.tensor, AR_loss_strength:float, train:bool):
+    def advance_from_ic(self, fields:list, true_latent:tc.tensor, dt:tc.tensor, latent_boundaries:tc.tensor, length_of_padding: tc.tensor, train:bool, loss_dict:dict):
         which_technique = self.parent.autoregressive_step['which_technique']
         number_of_time_steps = fields[0].size(1)
         initial_condition = [tensor[:, 0:1, ...] for tensor in fields]
@@ -125,20 +124,24 @@ class Training_Losses():
         T = number_of_time_steps - 1
         latent_dim = true_latent.size(-1)
         
-        if not (self.parent.is_coupled[0]) and (self.parent.is_coupled[1] == 'AE') and train:
-            return tc.tensor(0.0), tc.tensor(0.0)
-        
-        elif not (self.parent.is_coupled[0]) and (self.parent.is_coupled[1] == 'AE') and not train:
-            return tc.tensor(0.0), (tc.tensor(0.0),tc.tensor(0.0))
+        if not (self.parent.is_coupled[0]) and (self.parent.is_coupled[1] == 'AE'):
+            return tc.tensor(0.0), (tc.tensor(0.0), tc.zeros(self.parent.number_of_different_domains, device = self.parent.device))
             
         if which_technique == 'fully_autoregressive' or (not train):  #Encode initial condition and evolve in latent. Always done at validation to compute the actual final loss autoregressively
-            if (not train):
+            if loss_dict['full_reconstruction'][0]:
                 #fields = standard_and_inverse_normalization_field(fields, self.parent.maxima_or_mean, self.parent.minima_or_std, self.parent.which_normalization, True)
                 fields = [tensor[:, 1:, ...] for tensor in fields]
                 
             reconstructed_latent = tc.zeros_like(true_latent)[:,1:,:]
-            time_series_losses_weights = self.get_time_series_losses_weights( T, AR_loss_strength, train)
+            exp_coefficient_time_series_losses_weights_AR_latent, time_series_losses_weights_AR_latent = self.get_time_series_losses_weights( T, loss_dict['AR_latent'], train, self.parent.last_time_series_weigth_AR_latent)
+            exp_coefficient_time_series_losses_weights_AR_full_reconstruction, time_series_losses_weights_AR_full_reconstruction = self.get_time_series_losses_weights( T, loss_dict['full_reconstruction'][1], train, self.parent.last_time_series_weigth_AR_full_reconstruction)
             
+            if exp_coefficient_time_series_losses_weights_AR_latent is not None:
+                self.parent.exp_coefficient_time_series_losses_weights_AR_latent = exp_coefficient_time_series_losses_weights_AR_latent
+                
+            if exp_coefficient_time_series_losses_weights_AR_full_reconstruction is not None:
+                self.parent.exp_coefficient_time_series_losses_weights_AR_full_reconstruction = exp_coefficient_time_series_losses_weights_AR_full_reconstruction
+                
             with tc.no_grad():
                 next_latent, _, _ , _ = self.parent.encoder(initial_condition, self.parent.is_AE_frozen)
             
@@ -147,19 +150,31 @@ class Training_Losses():
                 next_latent = self.processor_First_Order(next_latent, dt[:,count,:], latent_boundaries[:,count,:])
                 reconstructed_latent[:,count,:] = next_latent
             
-            l2_AR = dynamics_MSE(reconstructed_latent, true_latent[:,1:,:], time_series_losses_weights, True, F.relu((length_of_padding-1)))
+            l2_AR_latent = dynamics_MSE(reconstructed_latent, true_latent[:,1:,:], time_series_losses_weights_AR_latent, True, F.relu((length_of_padding-1)))
             
-            if (not train):
-                reconstructed_latent = reconstructed_latent.reshape(B * T, latent_dim)
-                output_decoder, _ = self.parent.decoder(reconstructed_latent, self.parent.is_AE_frozen)
- 
-                output_decoder = [tensor.reshape((B, T) + tensor.size()[1:]) for tensor in output_decoder]
-                #output_decoder = standard_and_inverse_normalization_field(output_decoder, self.parent.maxima_or_mean, self.parent.minima_or_std, self.parent.which_normalization, True)
-                l_final, l_final_per_variable = auto_encoding_MSE(output_decoder, fields, F.relu((length_of_padding-1)), is_denormalized_validation = False) 
-                
-                return l2_AR * AR_loss_strength, (l_final, l_final_per_variable)
+            if loss_dict['full_reconstruction'][0] and loss_dict['full_reconstruction'][1]!= 0:
+                l_full_reconstruction, l_full_reconstruction_per_variable = self.compute_full_reconstruction(reconstructed_latent, B,T, latent_dim, fields, length_of_padding, time_series_losses_weights_AR_full_reconstruction)
+                return l2_AR_latent * loss_dict['AR_latent'], (l_full_reconstruction, l_full_reconstruction_per_variable)
             
-            return l2_AR * AR_loss_strength, tc.tensor(0.0)
+            elif loss_dict['full_reconstruction'][0] and loss_dict['full_reconstruction'][1]== 0:
+                with tc.no_grad():
+                    l_full_reconstruction, l_full_reconstruction_per_variable = self.compute_full_reconstruction(reconstructed_latent, B,T, latent_dim, fields, length_of_padding, time_series_losses_weights_AR_full_reconstruction)
+                return l2_AR_latent * loss_dict['AR_latent'], (l_full_reconstruction, l_full_reconstruction_per_variable)
+            
+            elif not loss_dict['full_reconstruction'][0]:
+                return l2_AR_latent * loss_dict['AR_latent'], (tc.tensor(0.0), tc.zeros(self.parent.number_of_different_domains, device = self.parent.device))
+            else:
+                raise TypeError("Something wrong")
+        
+    def compute_full_reconstruction(self, reconstructed_latent:tc.tensor, B:int,T:int, latent_dim:int, fields:tc.tensor, length_of_padding:tc.tensor, time_series_losses_weights_AR_full_reconstruction:tc.tensor):
+        reconstructed_latent = reconstructed_latent.reshape(B * T, latent_dim)
+        output_decoder, _ = self.parent.decoder(reconstructed_latent, self.parent.is_AE_frozen)
+
+        output_decoder = [tensor.reshape((B, T) + tensor.size()[1:]) for tensor in output_decoder]
+        #output_decoder = standard_and_inverse_normalization_field(output_decoder, self.parent.maxima_or_mean, self.parent.minima_or_std, self.parent.which_normalization, True)xw
+        l_full_reconstruction, l_full_reconstruction_per_variable = auto_encoding_MSE(output_decoder, fields, time_series_losses_weights_AR_full_reconstruction, F.relu((length_of_padding-1)), is_denormalized_validation = False) 
+        
+        return l_full_reconstruction, l_full_reconstruction_per_variable
             
     def processor_First_Order(self, definitive_latent:tc.tensor, dt:tc.tensor, latent_boudaries:tc.tensor):
 
@@ -181,25 +196,25 @@ class Training_Losses():
         e2 = definitive_latent + final_sum * dt
         return e2
     
-    def get_time_series_losses_weights(self, length_time_series:int, maximum_weight:float, train:bool):
-        if not self.parent.last_time_series_weigth_AR[0]:
-            return tc.ones(length_time_series, device = self.parent.device)
+    def get_time_series_losses_weights(self, length_time_series:int, maximum_weight:float, compute:bool, last_time_series_weight:list):
+        if not last_time_series_weight[0]:
+            return None,None
         
         #increase weight of last time series time step progressively during iteration within a certain window
         if self.parent.index_in_window[-1] >= self.parent.waiting_epochs_before_new_dataset_creation[self.parent.how_many_datasets_creations-1]:
-            weight_last_time_step = self.parent.last_time_series_weigth_AR[1] + 1e-8
-            self.parent.exp_coefficient_time_series_losses_weights = 0.0
+            weight_last_time_step = last_time_series_weight[1] + 1e-8
+            exp_coefficient_time_series_losses_weights = 0.0
         else:
-            weight_last_time_step = self.parent.index_in_window[-1] / self.parent.waiting_epochs_before_new_dataset_creation [self.parent.how_many_datasets_creations-1] * self.parent.last_time_series_weigth_AR[1] + 1e-8
-            self.parent.exp_coefficient_time_series_losses_weights = - np.log(weight_last_time_step)/(length_time_series-1)
+            weight_last_time_step = self.parent.index_in_window[-1] / self.parent.waiting_epochs_before_new_dataset_creation[self.parent.how_many_datasets_creations-1] * last_time_series_weight[1] + 1e-8
+            exp_coefficient_time_series_losses_weights = - np.log(weight_last_time_step)/(length_time_series-1)
         
-        #get exp_coefficient based on index_in_window and last_time_series_weigth_AR decided a priori
+        #get exp_coefficient based on index_in_window and last_time_series_weigth_AR_latent decided a priori
         
-        if train:
+        if compute:
             indeces = tc.arange(0,length_time_series,1)
-            time_series_losses_weights = tc.exp(- indeces * self.parent.exp_coefficient_time_series_losses_weights
+            time_series_losses_weights = tc.exp(- indeces * exp_coefficient_time_series_losses_weights
                                                 ) * maximum_weight
             time_series_losses_weights = time_series_losses_weights.to(self.parent.device)
-            return time_series_losses_weights
+            return exp_coefficient_time_series_losses_weights, time_series_losses_weights
         else:
-            return tc.ones(length_time_series, device = self.parent.device)
+            return None,None

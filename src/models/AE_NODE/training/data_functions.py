@@ -41,7 +41,7 @@ def build_dataset(batch_size:int, time_window: int, data_training_path: str, dat
     
     return training_loader, validation_loader
   
-def save_checkpoint(encoder, f , decoder, optimizer, scheduler, epoch, loss_value, loss_coefficients_AR, before_next_window_change, how_many_datasets_creations, autoregressive_step, time_of_AE, time_of_only_TF,is_AE_frozen,scaler, index_in_window,filepath):
+def save_checkpoint(encoder, f , decoder, optimizer, scheduler, epoch, loss_value, loss_coefficients_AR_latent, loss_coefficients_full_reconstruction, before_next_window_change, how_many_datasets_creations, autoregressive_step, time_of_AE, time_of_only_TF,is_AE_frozen,scaler, index_in_window,filepath):
   
     checkpoint = {
             'encoder_state_dict':encoder.state_dict(),
@@ -51,7 +51,8 @@ def save_checkpoint(encoder, f , decoder, optimizer, scheduler, epoch, loss_valu
             'scheduler_state_dict':scheduler.state_dict(),
             'epoch' : epoch,
             'loss_value' : loss_value,
-            'loss_coefficients_AR' : loss_coefficients_AR,
+            'loss_coefficients_AR_latent' : loss_coefficients_AR_latent,
+            'loss_coefficients_full_reconstruction' : loss_coefficients_full_reconstruction,
             'before_next_window_change' : before_next_window_change,
             'how_many_datasets_creations' : how_many_datasets_creations,
             'autoregressive_step': autoregressive_step,
@@ -167,7 +168,8 @@ def load_checkpoint(encoder, f, decoder, optim, scheduler, path, device ,parent_
     # Load other checkpoint data
     first_epoch = checkpoint['epoch']
     loss_value = checkpoint['loss_value']
-    loss_coefficients_AR = checkpoint['loss_coefficients_AR']
+    loss_coefficients_AR_latent = checkpoint['loss_coefficients_AR_latent']
+    loss_coefficients_full_reconstruction = checkpoint['loss_coefficients_full_reconstruction']
     before_next_window = checkpoint['before_next_window_change']
     datasets_count = checkpoint['how_many_datasets_creations']
     autoregressive_step = checkpoint['autoregressive_step']
@@ -181,7 +183,7 @@ def load_checkpoint(encoder, f, decoder, optim, scheduler, path, device ,parent_
     print(f"  AE frozen: {is_AE_frozen}")
     print("="*70 + "\n")
     
-    return first_epoch, loss_value, loss_coefficients_AR, before_next_window, datasets_count, autoregressive_step, time_of_AE, time_of_only_TF, is_AE_frozen, index_in_window
+    return first_epoch, loss_value, loss_coefficients_AR_latent, loss_coefficients_full_reconstruction, before_next_window, datasets_count, autoregressive_step, time_of_AE, time_of_only_TF, is_AE_frozen, index_in_window
 
 
 class ASTEC_Dataset(Dataset):
@@ -307,7 +309,7 @@ def create_padding_mask(size_of_tensor: list, length_of_padding: tc.tensor, devi
         return mask
 
 
-def auto_encoding_MSE(input: list, target: list, length_of_padding: tc.tensor = None, is_denormalized_validation = False):
+def auto_encoding_MSE(input: list, target: list, time_series_losses_weights_AR_full_reconstruction:tc.tensor=None, length_of_padding: tc.tensor = None, is_denormalized_validation = False):
     device = input[0].device
     loss_no_reduction = nn.MSELoss(reduction='none')
     epsilon = 1e-8
@@ -319,7 +321,12 @@ def auto_encoding_MSE(input: list, target: list, length_of_padding: tc.tensor = 
         
     if (length_of_padding is not None) and tc.any(length_of_padding != 0.0):
         for count, i in enumerate(input): 
-            element_loss = loss_no_reduction(i, target[count]) 
+            element_loss = loss_no_reduction(i, target[count])
+            if time_series_losses_weights_AR_full_reconstruction is not None:
+                weights = time_series_losses_weights_AR_full_reconstruction
+                index_tuple = (None, slice(None)) + (None,) * (len(element_loss.size()) - 2)
+                weights = weights[index_tuple]
+                element_loss = element_loss * weights
             mask = create_padding_mask( size_of_tensor=i.size(), length_of_padding=length_of_padding, device = device).bool()
             if is_denormalized_validation:
                 normalization = get_maxima(target[count])
@@ -334,6 +341,11 @@ def auto_encoding_MSE(input: list, target: list, length_of_padding: tc.tensor = 
     else:
         for count, i in enumerate(input):
             not_reduced_mse = loss_no_reduction(i,target[count])
+            if time_series_losses_weights_AR_full_reconstruction is not None:
+                weights = time_series_losses_weights_AR_full_reconstruction
+                index_tuple = (None, slice(None)) + (None,) * (len(not_reduced_mse.size()) - 2)
+                weights = weights[index_tuple]
+                not_reduced_mse = not_reduced_mse * weights
             if is_denormalized_validation:
                 normalization = get_maxima(target[count])
                 not_reduced_mse = not_reduced_mse**0.5 / (normalization + epsilon)
@@ -362,7 +374,8 @@ def dynamics_MSE(input: tc.tensor, target: tc.tensor, time_series_losses_weights
         mask = create_padding_mask( size_of_tensor=input.size(), length_of_padding=length_of_padding, device = device).bool()
         masked_loss = element_loss[mask] #flattened vector of values not masked
         if AR:
-            masked_loss = masked_loss.mean(-1) * time_series_losses_weights[None,:]
+            if time_series_losses_weights is not None:
+                masked_loss = masked_loss.mean(-1) * time_series_losses_weights[None,:]
         return masked_loss.mean()
                 
     else:
@@ -370,7 +383,8 @@ def dynamics_MSE(input: tc.tensor, target: tc.tensor, time_series_losses_weights
             mse = loss(input,target)
         else:
             mse = loss_no_reduction(input,target)
-            mse = mse.mean(-1) * time_series_losses_weights[None,:]
+            if time_series_losses_weights is not None:
+                mse = mse.mean(-1) * time_series_losses_weights[None,:]
         return mse.mean()
     
 def initialize_model_to_last_checkpoint(encoder, f, decoder, device : tc.device, path_to_checkpoint:str ):

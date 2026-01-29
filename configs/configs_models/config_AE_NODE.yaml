@@ -2,30 +2,35 @@
 
 loss_coefficients: # coefficients that are multiplied to the loss function terms, signaling the relative importance of each [AE, TF, AUTOREGRESSIVE, TIME_GENERALIZATION]
   AE: [1,1] #first one is for the field reconstruction, second one for the latent reconstruction per shape
-  TF: 1.0
-  AR: 1
+  TF: 1
+  AR_latent: 1
+  full_reconstruction: [true, 1]
   Random_DT: 1.0
-  AR_strength: 0.0001
-  lambda_regularization: 0.001 #coefficients in front of the regularization term for the latent vector
+  AR_latent_strength: 1.0
+  full_reconstruction_strength: 1.0
+  lambda_regularization: 0.0001 #coefficients in front of the regularization term for the latent vector
 
 loss_coefficients_not_coupled: # coefficients that are multiplied to the loss function terms when the trainin of AE and NODE is decoupled, signaling the relative importance of each [AE, TF, AUTOREGRESSIVE, TIME_GENERALIZATION]
 
   AE: [0,0] #first one is for the field reconstruction, second one for the latent reconstruction per shape
-  TF: 1
-  AR: 1
-  Random_DT: 0.0
-  AR_strength: 0.0001
+  TF: 1.0
+  AR_latent: 1.0
+  full_reconstruction: [false, 1.0]
+  Random_DT: 1.0
+  AR_latent_strength: 1.0
+  full_reconstruction_strength: 1.0
   lambda_regularization: 0.0 #coefficients in front of the regularization term for the latent vector
 
 k: 4 # stage of the Runge-Kutta solver for the latent dynamics
 time_of_AE: 50 # number of initial epochs where only the AutoEncoder is trained, i.e., loss_coeff_TF_AR_together = [1, 0, 0, 0]. 
 time_of_lr_war_up: 10 #number of epochs of the linear warm-up of the learning rate
-time_only_TF : 0 #number of initial epochs after warm up where only TF and not AR approach is used
+time_only_TF : 10 #number of initial epochs after warm up where only TF and not AR approach is used
 clipping: [0, 1.5] #[if 1 clipping is applied to f, maximum norm allowed to gradients]
-last_time_series_weigth_AR : [false, 0.9999999999] #if true, AR loss is multiplied by weights to have the last time steps weigh less
+last_time_series_weigth_AR_latent : [false, 0.9999999999] #if true, AR loss is multiplied by weights to have the last time steps weigh less
+last_time_series_weigth_AR_full_reconstruction : [false, 0.9999999999] #if true, AR loss is multiplied by weights to have the last time steps weigh less
 is_coupled : [true, 'NODE'] #if the AutoEncoder (AE) is trained coupled with the NODE. if false, if 'AE' the AE is trained, if 'NODE' the NODE is trained.
 freeze_AE_after_a_while : [false, 0.0023, 200] # if true, AE layers are frozen during training once they reach a good enough accuracy (second entry) and window is larger than (third entry)
-path_trained_AE : '../../../../../../../scratch/ROM_datasets_ale/ASTEC/saved_logs/AE_NODE/Models/try/' #if is_coupled : [false, 'NODE'], provide the path to the models weights of the AE
+path_trained_AE : '../../../../../../../scratch/ROM_datasets_ale/ASTEC/saved_logs/LOCA/AE_NODE/Models/try/' #if is_coupled : [false, 'NODE'], provide the path to the models weights of the AE
 
 autoregressive_step:
   which_technique: 'fully_autoregressive' # this can be 'TBPP_from_end', 'TBPP_from_start', 'fully_autoregressive'
