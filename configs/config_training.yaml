@@ -1,6 +1,6 @@
-physics_model : '../../../../scratch/ROM_datasets_ale/ASTEC/saved_logs/LOCA/' # this is the Path to a directory for the training on a given dataset
-description : 'LOCA_first/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
-data_path : '../../../../scratch/ROM_datasets_ale/ASTEC/made_datasets/only_loca_min_max/' #path of training and validation data
+physics_model : '../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/saved_logs/LOCA/' # this is the Path to a directory for the training on a given dataset
+description : 'LOCA_first_DB/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
+data_path : '../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/made_datasets/only_loca_min_max/' #path of training and validation data
 where_to_save_data : '../../../../scratch/ROM_datasets_ale/ASTEC/' #if dynamic_dataset_generation_during_training this is where data is saved, else it is where data for training is found
 model: 'AE_NODE'
 indeces_training_boundaries : [1,153,192,396, 398, 500]
