@@ -44,8 +44,8 @@ auto_encoding:
 
     list_of_neurons_decoder: [50,60,70]
     last_activation_decoder: false
-    layer_norm_encoder : [true, true, true, false, false]
-    layer_norm_decoder : [true, true, true, false, false]
+    layer_norm_encoder : [true, false, false, false, false]
+    layer_norm_decoder : [true, false, false, false, false]
 
   #Auto-Encoder plenum
   auto_encoder_plenum:
@@ -56,8 +56,8 @@ auto_encoding:
 
     list_of_neurons_decoder: [50,50,50]
     last_activation_decoder: false
-    layer_norm_encoder : [true, true, true, false, false]
-    layer_norm_decoder : [true, true, true, false, false]
+    layer_norm_encoder : [true, false, false, false, false]
+    layer_norm_decoder : [true, false, false, false, false]
 
   #Auto-Encoder boundaries
   auto_encoder_boundaries:
@@ -80,8 +80,8 @@ auto_encoding:
     filters_decoder: [64,32,16,8] #number of middle of the decoder. First one is filters_encoder[-1] and last one is input_dimension_encoder[-2]
     strides_decoder: [[1,1],[2,1],[2,1],[1,1],[1,1],[1,1]] #strides of the decoder
     last_activation_decoder: false
-    group_norm_encoder : [true, true, false, false]
-    group_norm_decoder : [true,true,true,true,true,false, false]
+    group_norm_encoder : [true, false, false, false]
+    group_norm_decoder : [true,false,false,false,false,false, false]
 
   #Auto-Encoder vessel
   auto_encoder_vessel:
@@ -96,8 +96,8 @@ auto_encoding:
     filters_decoder: [64,32, 20, 18] #number of filters of the Decoder
     strides_decoder: [[1,1],[2,1],[2,1],[1,1],[1,1],[1,1]] #strides of the Decoder
     last_activation_decoder: false
-    group_norm_encoder : [true, true, false, false]
-    group_norm_decoder : [true,true,true,false,true,false, false]
+    group_norm_encoder : [true, false, false, false]
+    group_norm_decoder : [true,false,false,false,false,false, false]
 
   #Auto-Encoder faces
   auto_encoder_faces:
@@ -112,28 +112,28 @@ auto_encoding:
     filters_decoder: [64,32,16,8] #number of filters of the Encoder
     strides_decoder: [[1,1],[2,2],[2,1],[1,1],[1,1],[1,1]] #strides of the Encoder
     last_activation_decoder: false
-    group_norm_encoder : [true, true, false, false]
-    group_norm_decoder : [true,true,true,true,true,false, false]
+    group_norm_encoder : [true, false, false, false]
+    group_norm_decoder : [true,false,false,false,false,false, false]
 
   # Final_reduction
   final_reduction_and_initial_increase:
-    output_dimension_encoder: 6 # THIS IS THE ACTUAL FINAL REDUCED DIMENSION
+    output_dimension_encoder: 10 # THIS IS THE ACTUAL FINAL REDUCED DIMENSION
 
     list_of_neurons_encoder: [70,50,30]
     last_activation_encoder: false
 
     list_of_neurons_decoder: [30,50,70]
     last_activation_decoder: false
-    layer_norm_encoder : [true, true, true, false, false]
-    layer_norm_decoder : [true,true,true, false, false]
+    layer_norm_encoder : [true, false, false, false, false]
+    layer_norm_decoder : [true,false,false, false, false]
 
 #NODE
-number_of_layers_f: 2 #number of hidden Dense layers which build up the function f
+number_of_layers_f: 4 #number of hidden Dense layers which build up the function f
 parameter_information: "concatenation" #how the parameter information is passed to f. either 'concatenation' or 'FiLM'
 n_FiLM_conditioning : 1 #number of FiLM layers (if FiLM is chosen instead of concatenation). FiLM = 1 only applies to the latent vector
 n_neurons_f: 200 #number of neurons of each layer of f
 NODE: true
-scaling_output_factor: [true, 0.001] #if true, a learnable parameter is multiplied by the output, which is initialized with the second dimension. if false, the second dimension is the scalar that multiplies the output of f.
+scaling_output_factor: [true, 0.01] #if true, a learnable parameter is multiplied by the output, which is initialized with the second dimension. if false, the second dimension is the scalar that multiplies the output of f.
 layer_norm_node : [true, false, false, false, false, false]
 
 #Global

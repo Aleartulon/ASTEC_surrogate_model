@@ -190,7 +190,7 @@ class Training():
                                                                                     self.parent.number_of_workers, self.parent.data_path, self.parent.where_to_save_data, 
                                                                                     self.parent.which_normalization, self.parent.device, 
                                                                                     self.parent.config_training['indeces_training_boundaries'], self.parent.config_training['indeces_validation_boundaries'],
-                                                                                    self.parent.all_on_gpu, self.parent.pin_memory, self.parent.indeces_training_boundaries, self.parent.indeces_validation_boundaries)
+                                                                                    self.parent.all_on_gpu, self.parent.pin_memory, self.parent.indeces_training_boundaries, self.parent.indeces_validation_boundaries,self.parent.preload_to_ram)
             self.parent.how_many_datasets_creations += 1
             for fields, _, _, _ in self.parent.validation_loader:
                 self.parent.number_of_different_domains = len(fields)
@@ -496,7 +496,7 @@ class Training():
                                                                                     self.parent.number_of_workers, self.parent.data_path, self.parent.where_to_save_data, 
                                                                                     self.parent.which_normalization, self.parent.device, 
                                                                                     self.parent.config_training['indeces_training_boundaries'], self.parent.config_training['indeces_validation_boundaries'],
-                                                                                    self.parent.all_on_gpu, self.parent.pin_memory, self.parent.indeces_training_boundaries, self.parent.indeces_validation_boundaries)
+                                                                                    self.parent.all_on_gpu, self.parent.pin_memory, self.parent.indeces_training_boundaries, self.parent.indeces_validation_boundaries, self.parent.preload_to_ram)
                     before_next_window_change = self.parent.waiting_epochs_before_new_dataset_creation[self.parent.how_many_datasets_creations]
                     self.parent.how_many_datasets_creations+=1
                     os.remove(f"{self.parent.data_training_path_dynamic}{str(self.parent.time_windows[self.parent.how_many_datasets_creations-2])}{self.parent.indeces_training_boundaries}.h5")
