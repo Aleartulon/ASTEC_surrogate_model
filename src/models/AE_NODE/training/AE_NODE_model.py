@@ -48,6 +48,7 @@ class AE_NODE:
         self.early_stopping = config_training['early_stopping']
         self.number_of_workers = config_training['number_of_workers']
         self.all_on_gpu = config_training['all_on_gpu']
+        self.preload_to_ram = config_training['preload_to_ram']
         
         if self.all_on_gpu:
             self.number_of_workers = 0
@@ -95,7 +96,7 @@ class AE_NODE:
                 self.training_loader, self.validation_loader = build_dataset(self.batch_sizes[0], self.time_windows[0], self.data_training_path_dynamic, self.data_validation_path_dynamic, 
                                                                             self.number_of_workers, self.data_path, self.where_to_save_data, self.which_normalization, 
                                                                             self.device, config_training['indeces_training_boundaries'], config_training['indeces_validation_boundaries'], 
-                                                                            self.all_on_gpu, self.pin_memory, self.indeces_training_boundaries, self.indeces_validation_boundaries)
+                                                                            self.all_on_gpu, self.pin_memory, self.indeces_training_boundaries, self.indeces_validation_boundaries, self.preload_to_ram)
             else:
                 dataset_training = ASTEC_Dataset(self.data_training_path, self.all_on_gpu, self.device)
                 self.training_loader = DataLoader(dataset_training, batch_size = self.batch_sizes[0], num_workers = self.number_of_workers, shuffle=True,drop_last=False,pin_memory=self.pin_memory, prefetch_factor=2 if self.number_of_workers > 0 else None)
