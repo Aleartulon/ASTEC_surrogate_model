@@ -6,8 +6,8 @@ loss_coefficients: # coefficients that are multiplied to the loss function terms
   AR_latent: 1
   full_reconstruction: [true, 1]
   Random_DT: 1.0
-  AR_latent_strength: 1.0
-  full_reconstruction_strength: 1.0
+  AR_latent_strength: 0.001
+  full_reconstruction_strength: 0.001
   lambda_regularization: 0.0001 #coefficients in front of the regularization term for the latent vector
 
 loss_coefficients_not_coupled: # coefficients that are multiplied to the loss function terms when the trainin of AE and NODE is decoupled, signaling the relative importance of each [AE, TF, AUTOREGRESSIVE, TIME_GENERALIZATION]
@@ -117,7 +117,7 @@ auto_encoding:
 
   # Final_reduction
   final_reduction_and_initial_increase:
-    output_dimension_encoder: 6 # THIS IS THE ACTUAL FINAL REDUCED DIMENSION
+    output_dimension_encoder: 20 # THIS IS THE ACTUAL FINAL REDUCED DIMENSION
 
     list_of_neurons_encoder: [70,50,30]
     last_activation_encoder: false
@@ -133,7 +133,7 @@ parameter_information: "concatenation" #how the parameter information is passed 
 n_FiLM_conditioning : 1 #number of FiLM layers (if FiLM is chosen instead of concatenation). FiLM = 1 only applies to the latent vector
 n_neurons_f: 200 #number of neurons of each layer of f
 NODE: true
-scaling_output_factor: [true, 0.001] #if true, a learnable parameter is multiplied by the output, which is initialized with the second dimension. if false, the second dimension is the scalar that multiplies the output of f.
+scaling_output_factor: [true, 1.0] #if true, a learnable parameter is multiplied by the output, which is initialized with the second dimension. if false, the second dimension is the scalar that multiplies the output of f.
 layer_norm_node : [true, false, false, false, false, false]
 
 #Global

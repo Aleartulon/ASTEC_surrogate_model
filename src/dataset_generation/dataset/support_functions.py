@@ -331,7 +331,8 @@ def extract_input_output_bc_variables(path, index_simulation:str, subsampling_in
         else:
             index_stop = check_index_stop_for_not_vessel_rupture_simulations(f)
         print('index_stop:', index_stop)
-        time_of_simulations.append(f['dimensions/time_points'][:][0:index_stop][::subsampling_index])   
+        time_of_simulations.append(f['dimensions/time_points'][:][0:index_stop][::subsampling_index]) 
+        print('Length simulation:',len(f['dimensions/time_points'][:][0:index_stop][::subsampling_index]))  
         print('Last time step present: ', time_of_simulations[0][-1])
         output_dict[index_simulation] = build_dictionary_of_variables()
         fill_dictionary_of_variables(output_dict, index_simulation, f, index_stop, subsampling_index)
@@ -361,7 +362,7 @@ def extract_time_of_simulation(path, index_simulation:str, subsampling_index:int
             index_stop = np.where(f['dimensions/time_points'][:] >= vessel_rupture_time)[0][0]
             index_stop = len(f['dimensions/time_points'][0:index_stop])
         else:
-            index_stop = len(f['dimensions/time_points'][:])
+            index_stop = check_index_stop_for_not_vessel_rupture_simulations(f)
         time_of_simulations = f['dimensions/time_points'][:][0:index_stop][::subsampling_index]
 
     return time_of_simulations
