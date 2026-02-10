@@ -25,6 +25,7 @@ class AE_NODE:
         self.time_only_TF = model_information['time_only_TF']
         self.k = model_information['k']
         self.which_solver = model_information['which_solver']
+        self.substep_RK4 = model_information['substep_RK4']
         self.time_of_AE = model_information['time_of_AE']
         self.time_of_lr_war_up = model_information['time_of_lr_war_up']
         self.clipping = model_information['clipping']

@@ -15,14 +15,14 @@ all_on_gpu: false
 preload_to_ram : false
 dynamic_dataset_generation_during_training : true
 time_windows  :  [11, 1000, 1001] #note that first one is for the AE
-batch_sizes  :  [128, 1, 1] #note that first one is for the AE
+batch_sizes  :  [128, 16, 1] #note that first one is for the AE
 waiting_epochs_before_new_dataset_creation  :  [false, 50,100] #note that first one is for the AE
 number_of_workers: 8
 checkpoint: false  # if true uses existing checkpoint
 device : 'cuda:0' #device where to train
 which_normalization: 'min_max' # min_max or mean_std
 mixed_precision: true
-compile: true 
+compile: false
 
 #Data information if dynamic_dataset_generation_during_training is false
 data_training_file_dinamic: 'data_training_normalized_t_W_' #use when modifying dynamically during training the dataset

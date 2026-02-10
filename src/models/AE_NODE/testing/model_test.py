@@ -381,7 +381,13 @@ class Model_Test:
             predicted_latents = tc.zeros((len(DT[0])-1, self.latent_dimension), device = self.device)
             
             #process in time until the end (how can I know what is the end?)
+            printing = False
+            t0 = time.time()
             for count, dt in enumerate(DT[0][:-1]): #last one is fake, you need one less
+                if count > len(DT[0]/2) and not printing:
+                    printing = True
+                    t1 = time.time()
+                    print(f'More than half of trajectory {trajectory} done, it took {(t1-t0)/60} minutes')
                 next_latent_vector = self.training_losses.processor(next_latent_vector, dt.unsqueeze(0).unsqueeze(0), latent_boundaries_variables[count:count+1], self.which_processor)
                 predicted_latents[count] = next_latent_vector
             

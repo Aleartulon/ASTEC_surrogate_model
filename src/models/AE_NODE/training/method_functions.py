@@ -233,9 +233,17 @@ class Training_Losses():
         
     def my_solver(self, state_vector:tc.tensor, conditioning_parameters:tc.tensor, dt:tc.tensor):
         # self.parent.k = 1 is Euler
+        sub_dt = dt/self.parent.substep_RK4
+        predicted_latent = state_vector
+        for i in range(self.parent.substep_RK4):
+            predicted_latent = self.my_RK4(predicted_latent, conditioning_parameters, sub_dt)
+        
+        return predicted_latent
+    
+    def my_RK4(self, state_vector:tc.tensor, conditioning_parameters:tc.tensor, dt : tc.tensor):
         b = tc.zeros((self.parent.k, state_vector.size(0), state_vector.size(1)) , device= self.parent.device)
         b[0, :,:] = self.parent.f(None, state_vector, conditioning_parameters)
-        final_sum = self.parent.f(None, state_vector, conditioning_parameters)*self.parent.RK[str(self.parent.k)][-1][1]
+        final_sum = b[0, :,:]*self.parent.RK[str(self.parent.k)][-1][1]
 
         for i in range(self.parent.k-1):
             s = tc.zeros_like(state_vector, device = self.parent.device)
@@ -248,8 +256,9 @@ class Training_Losses():
 
             final_sum += b_new.squeeze(0) * self.parent.RK[str(self.parent.k)][-1][i+2]
         predicted_latent = state_vector + final_sum * dt
+        
         return predicted_latent
-    
+        
     def from_dt_to_T(self, dt):
         zero = tc.zeros(1, device=self.parent.device)
         return tc.cat([zero, tc.cumsum(dt[:,0].detach(), dim=0)])
