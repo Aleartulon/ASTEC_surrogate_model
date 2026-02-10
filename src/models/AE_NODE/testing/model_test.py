@@ -382,7 +382,7 @@ class Model_Test:
             
             #process in time until the end (how can I know what is the end?)
             for count, dt in enumerate(DT[0][:-1]): #last one is fake, you need one less
-                next_latent_vector = self.training_losses.processor(next_latent_vector, dt.unsqueeze(0), latent_boundaries_variables[count:count+1], self.which_processor)
+                next_latent_vector = self.training_losses.processor(next_latent_vector, dt.unsqueeze(0).unsqueeze(0), latent_boundaries_variables[count:count+1], self.which_processor)
                 predicted_latents[count] = next_latent_vector
             
             #decode back the predicted latent vectors
