@@ -23,12 +23,13 @@ def fill_in_dictionaries_autoencoder_step(trajectory:str, reconstructed_fields_p
     return 0
 
 class TrainingConfig:
-    def __init__(self, training_config:dict, f: F_Latent, device:tc.device):
+    def __init__(self, training_config:dict, f: F_Latent, device:tc.device, substep_RK4:int):
         # Required for processor_First_Order
         self.k = training_config['k']  # RK order (1 for Euler method)
         self.device = device
         self.f = f  # The dynamics function f(latent, boundaries)
         self.RK = {k: tc.tensor([[safe_eval(val) for val in row] for row in v]) for k, v in training_config['RK'].items()}
+        self.substep_RK4 = substep_RK4
         
 def safe_eval( val):
     if isinstance(val, str):
@@ -137,14 +138,14 @@ def RMSE(input:tc.tensor, target:tc.tensor, per_time_step: bool = False):
     target = target.double().squeeze(0)
     loss = nn.MSELoss(reduction='none')
     array_of_errors = []
-    e = loss(input, target) ** 0.5
+    e = loss(input, target) 
     where_to_contract = tuple(np.arange(2,len(input.size()),1))
     if len(input.size())>2:
-        e = e.mean(dim = where_to_contract)
+        e = e.mean(dim = where_to_contract)** 0.5
     if per_time_step:
         array_of_errors.append(e)
     else:
-        e = e.mean(0)
+        e = e.mean(0)** 0.5
         array_of_errors.append(e)
     return array_of_errors
 

@@ -512,8 +512,9 @@ class Training():
                                                                                     self.parent.all_on_gpu, self.parent.pin_memory, self.parent.indeces_training_boundaries, self.parent.indeces_validation_boundaries, self.parent.preload_to_ram)
         self.parent.before_next_window_change = self.parent.waiting_epochs_before_new_dataset_creation[self.parent.how_many_datasets_creations]
         self.parent.how_many_datasets_creations+=1
-        os.remove(f"{self.parent.data_training_path_dynamic}{str(self.parent.time_windows[self.parent.how_many_datasets_creations-2])}{self.parent.indeces_training_boundaries}.h5")
-        os.remove(f"{self.parent.data_validation_path_dynamic}{str(self.parent.time_windows[self.parent.how_many_datasets_creations-2])}{self.parent.indeces_validation_boundaries}.h5")
+        if str(self.parent.time_windows[self.parent.how_many_datasets_creations-2]) != str(self.parent.time_windows[self.parent.how_many_datasets_creations-1]):
+            os.remove(f"{self.parent.data_training_path_dynamic}{str(self.parent.time_windows[self.parent.how_many_datasets_creations-2])}{self.parent.indeces_training_boundaries}.h5")
+            os.remove(f"{self.parent.data_validation_path_dynamic}{str(self.parent.time_windows[self.parent.how_many_datasets_creations-2])}{self.parent.indeces_validation_boundaries}.h5")
         
         #fetch the best model of previous iteration
         if self.parent.reinitialize_model_at_each_dataset_reshape:

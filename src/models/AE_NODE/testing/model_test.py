@@ -51,6 +51,7 @@ class Model_Test:
         
         self.directory_images_Operator_Actions = self.directory_images + '/Operator_Actions'
         self.which_processor = information['which_processor']
+        self.substep_RK4 = information['substep_RK4']
         
         #build necessary directories to save images
         os.makedirs(self.directory_images, exist_ok=True)
@@ -125,7 +126,7 @@ class Model_Test:
         #get trajectories
         with h5py.File(self.path_to_test_data + self.name_test_file, 'r') as f:
             self.trajectories = list(f.keys())
-        config_processor = TrainingConfig(self.models_information, self.f, self.device )
+        config_processor = TrainingConfig(self.models_information, self.f, self.device, self.substep_RK4 )
         self.training_losses = Training_Losses(config_processor)
         
     def build_directories(self, name:str, AE:bool = False):

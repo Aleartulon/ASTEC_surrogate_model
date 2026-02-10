@@ -309,13 +309,13 @@ def fill_dictionary_of_variables(output_dict:dict, name:str, f:h5py._hl.files.Fi
         output_dict[name]['VDO'][i]=np.array(VDO[i])[0:index_stop][::subsampling_index]
         output_dict[name]['UPP_V001'][i]=np.array(UPP_V001[i])[0:index_stop][::subsampling_index]
         
-    next_time_step = f['dimensions/time_points'][1:index_stop]
-    previous_time_step = f['dimensions/time_points'][0:index_stop-1]
+    Time = f['dimensions/time_points'][:index_stop][::subsampling_index]
+    next_time_step = Time[1:]
+    previous_time_step = Time[:-1]
     DT = next_time_step - previous_time_step
-    DT = np.concatenate([next_time_step - previous_time_step, [DT[-1]]])[::subsampling_index]
-    
-    output_dict[name]['UPP_V001']['dt']=DT #used by AE_NODE
-    output_dict[name]['UPP_V001']['time']=f['dimensions/time_points'][0:index_stop][::subsampling_index]#used by ONLY_DECODER
+    DT = np.concatenate([next_time_step - previous_time_step, [DT[-1]]])
+    output_dict[name]['UPP_V001']['dt']= DT #used by AE_NODE
+    output_dict[name]['UPP_V001']['time']= Time #used by ONLY_DECODER
 
 def extract_input_output_bc_variables(path, index_simulation:str, subsampling_index:int):
     output_dict = {}
