@@ -1,7 +1,7 @@
 path_to_test_data : '../../../../../../../scratch/ROM_datasets_ale/ASTEC/made_datasets/only_loca_min_max/'
 name_test_file: 'data_testing_583_602.h5'
-path_to_model: '../../../../../../../scratch/ROM_datasets_ale/ASTEC/saved_logs/LOCA/AE_NODE/Models/full_dataset_also_full_reconstruction_0.1_derivative_20_latent/'
-device: 'cuda:1'
+path_to_model: '../../../../../../../scratch/ROM_datasets_ale/ASTEC/saved_logs/LOCA/AE_NODE/Models/full_dataset_also_full_reconstruction_directly_to_2000/'
+device: 'cuda:0'
 trajectories_to_be_plotted : [598]
 autoencoding_figures : true
 autoencoding_latent_figures : true

@@ -1,5 +1,5 @@
 physics_model : '../../../../scratch/ROM_datasets_ale/ASTEC/saved_logs/LOCA/' # this is the Path to a directory for the training on a given dataset
-description : 'full_dataset_also_full_reconstruction_0.1_derivative_20_latent/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
+description : 'full_dataset_NO_full_1000/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
 data_path : '../../../../scratch/ROM_datasets_ale/ASTEC/made_datasets/only_loca_min_max/' #path of training and validation data
 where_to_save_data : '../../../../scratch/ROM_datasets_ale/ASTEC/' #if dynamic_dataset_generation_during_training this is where data is saved, else it is where data for training is found
 model: 'AE_NODE'
@@ -7,7 +7,7 @@ indeces_training_boundaries : [1,153,192,396, 398, 500]
 indeces_validation_boundaries : [511, 582]
 reinitialize_model_at_each_dataset_reshape: true
 epochs: 10000 #maximum number of epochs
-learning_rate: 0.00095 #initial learning rate
+learning_rate: 0.001 #initial learning rate
 learning_rate_frozen_AE : [false, 0.001] #if true, once AE is frozen the lr is set to second dimension. if false, it is not changed
 gamma_lr: 0.999 # gamma of  tc.optim.lr_scheduler.ExponentialLR()
 early_stopping: 250
@@ -17,9 +17,9 @@ dynamic_dataset_generation_during_training : true
 time_windows  :  [11, 1001]
 batch_sizes  :  [256, 50]
 waiting_epochs_before_new_dataset_creation  :  [50,100]
-number_of_workers: 16
+number_of_workers: 8
 checkpoint: false  # if true uses existing checkpoint
-device : 'cuda:0' #device where to train
+device : 'cuda:1' #device where to train
 which_normalization: 'min_max' # min_max or mean_std
 mixed_precision: true
 compile: true 
