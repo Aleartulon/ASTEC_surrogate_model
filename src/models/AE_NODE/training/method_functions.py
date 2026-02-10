@@ -1,6 +1,7 @@
 from src.models.AE_NODE.training.data_functions import *
 import time 
 import torch.nn.functional as F
+from torchdiffeq import odeint
 
 class Training_Losses():
     def __init__(self, ae_node_instance):
@@ -93,7 +94,7 @@ class Training_Losses():
         if loss_dict['TF'] <= 0:
             l2_TF = tc.tensor(0.0)
         else:
-            e2_latent_TF = self.processor_First_Order(input_processor, dt, latent_boundaries)
+            e2_latent_TF = self.processor(input_processor, dt, latent_boundaries, 'mine')
             e2_latent_TF = e2_latent_TF.reshape(number_batches, (number_of_time_steps-1), latent_dim)
             l2_TF = dynamics_MSE(e2_latent_TF, definitive_latent[:, 1:, :], None , False, F.relu((length_of_padding-1))) * loss_dict['TF']
         
@@ -101,8 +102,8 @@ class Training_Losses():
             l3 = tc.tensor(0.0)
         else:
             random_dt = tc.rand(number_batches*(number_of_time_steps-1),1, device=self.parent.device) * dt
-            e2_middle_latent = self.processor_First_Order( input_processor,random_dt, latent_boundaries)
-            e2_final = self.processor_First_Order(e2_middle_latent, dt-random_dt, latent_boundaries)
+            e2_middle_latent = self.processor( input_processor,random_dt, latent_boundaries, 'mine')
+            e2_final = self.processor(e2_middle_latent, dt-random_dt, latent_boundaries, 'mine')
             e2_final = e2_final.reshape(number_batches, (number_of_time_steps-1), latent_dim)
             l3 = dynamics_MSE(e2_final, definitive_latent[:, 1:, :], None, False, F.relu((length_of_padding-1))) * loss_dict['Random_DT']
 
@@ -132,7 +133,6 @@ class Training_Losses():
                 #fields = standard_and_inverse_normalization_field(fields, self.parent.maxima_or_mean, self.parent.minima_or_std, self.parent.which_normalization, True)
                 fields = [tensor[:, 1:, ...] for tensor in fields]
                 
-            reconstructed_latent = tc.zeros_like(true_latent)[:,1:,:]
             exp_coefficient_time_series_losses_weights_AR_latent, time_series_losses_weights_AR_latent = self.get_time_series_losses_weights( T, loss_dict['AR_latent'], train, self.parent.last_time_series_weigth_AR_latent)
             exp_coefficient_time_series_losses_weights_AR_full_reconstruction, time_series_losses_weights_AR_full_reconstruction = self.get_time_series_losses_weights( T, loss_dict['full_reconstruction'][1], train, self.parent.last_time_series_weigth_AR_full_reconstruction)
             
@@ -145,9 +145,9 @@ class Training_Losses():
             with tc.no_grad():
                 next_latent, _, _ , _ = self.parent.encoder(initial_condition, self.parent.is_AE_frozen)
             
+            reconstructed_latent = tc.zeros_like(true_latent)[:,1:,:]
             for count in range(number_of_time_steps-1):
-                
-                next_latent = self.processor_First_Order(next_latent, dt[:,count,:], latent_boundaries[:,count,:])
+                next_latent = self.processor(next_latent, dt[:,count,:], latent_boundaries[:,count,:], self.parent.which_solver[0])
                 reconstructed_latent[:,count,:] = next_latent
             
             l2_AR_latent = dynamics_MSE(reconstructed_latent, true_latent[:,1:,:], time_series_losses_weights_AR_latent, True, F.relu((length_of_padding-1)))
@@ -176,25 +176,37 @@ class Training_Losses():
         
         return l_full_reconstruction, l_full_reconstruction_per_variable
             
-    def processor_First_Order(self, definitive_latent:tc.tensor, dt:tc.tensor, latent_boudaries:tc.tensor):
-
-        # self.parent.k = 1 is Euler
-        b = tc.zeros((self.parent.k, definitive_latent.size(0), definitive_latent.size(1)) , device= self.parent.device)
-        b[0, :,:] = self.parent.f(definitive_latent, latent_boudaries)
-        final_sum = self.parent.f(definitive_latent, latent_boudaries)*self.parent.RK[str(self.parent.k)][-1][1]
-
-        for i in range(self.parent.k-1):
-            s = tc.zeros_like(definitive_latent, device = self.parent.device)
-
-            for j in range(i+1):
-                s +=  b[j] * self.parent.RK[str(self.parent.k)][i+1][j+1]
-
-            b_new = self.parent.f(definitive_latent + dt * s, latent_boudaries).unsqueeze(0).to(self.parent.device)
-            b[i+1,:,:] = b_new
-
-            final_sum += b_new.squeeze(0) * self.parent.RK[str(self.parent.k)][-1][i+2]
-        e2 = definitive_latent + final_sum * dt
-        return e2
+    def processor(self, definitive_latent:tc.tensor, dt:tc.tensor, latent_boundaries:tc.tensor, which_solver:str):
+        
+        def f_with_boundaries(t, x):
+            out = self.parent.f(t, x, latent_boundaries)
+            return out
+        
+        if which_solver == 'mine':
+            return self.my_solver(definitive_latent, latent_boundaries, dt)
+        
+        # common to all odeint-based solvers
+        if dt.squeeze().item() == 0.0: #padded step
+            return definitive_latent
+        T = self.from_dt_to_T(dt)
+        
+        if which_solver == 'dopri5':
+            T = self.from_dt_to_T(dt)
+            # cast to float32 for numerical stability of adaptive solver
+            predicted_latent = odeint(
+                lambda t, x: f_with_boundaries(t, x.float()).half(),
+                definitive_latent.float(), 
+                T.float(), 
+                method='dopri5'
+            )
+            return predicted_latent[1:].squeeze(0).half()  # cast back to float16
+        
+        elif which_solver == 'rk4':
+            predicted_latent = odeint(f_with_boundaries, definitive_latent, T, method='rk4')
+        else:
+            raise TypeError('Wrong solver name')
+    
+        return predicted_latent[1:].squeeze(0)
     
     def get_time_series_losses_weights(self, length_time_series:int, maximum_weight:float, compute:bool, last_time_series_weight:list):
         if not last_time_series_weight[0]:
@@ -218,3 +230,28 @@ class Training_Losses():
             return exp_coefficient_time_series_losses_weights, time_series_losses_weights
         else:
             return None,None
+        
+    def my_solver(self, state_vector:tc.tensor, conditioning_parameters:tc.tensor, dt:tc.tensor):
+        # self.parent.k = 1 is Euler
+        b = tc.zeros((self.parent.k, state_vector.size(0), state_vector.size(1)) , device= self.parent.device)
+        b[0, :,:] = self.parent.f(None, state_vector, conditioning_parameters)
+        final_sum = self.parent.f(None, state_vector, conditioning_parameters)*self.parent.RK[str(self.parent.k)][-1][1]
+
+        for i in range(self.parent.k-1):
+            s = tc.zeros_like(state_vector, device = self.parent.device)
+
+            for j in range(i+1):
+                s +=  b[j] * self.parent.RK[str(self.parent.k)][i+1][j+1]
+
+            b_new = self.parent.f(None, state_vector + dt * s, conditioning_parameters).unsqueeze(0).to(self.parent.device)
+            b[i+1,:,:] = b_new
+
+            final_sum += b_new.squeeze(0) * self.parent.RK[str(self.parent.k)][-1][i+2]
+        predicted_latent = state_vector + final_sum * dt
+        return predicted_latent
+    
+    def from_dt_to_T(self, dt):
+        zero = tc.zeros(1, device=self.parent.device)
+        return tc.cat([zero, tc.cumsum(dt[:,0].detach(), dim=0)])
+
+        

@@ -22,7 +22,7 @@ loss_coefficients_not_coupled: # coefficients that are multiplied to the loss fu
   lambda_regularization: 0.0 #coefficients in front of the regularization term for the latent vector
 
 k: 4 # stage of the Runge-Kutta solver for the latent dynamics
-time_of_AE: 50 # number of initial epochs where only the AutoEncoder is trained, i.e., loss_coeff_TF_AR_together = [1, 0, 0, 0]. 
+time_of_AE: 100 # number of initial epochs where only the AutoEncoder is trained, i.e., loss_coeff_TF_AR_together = [1, 0, 0, 0]. 
 time_of_lr_war_up: 10 #number of epochs of the linear warm-up of the learning rate
 time_only_TF : 10 #number of initial epochs after warm up where only TF and not AR approach is used
 clipping: [0, 1.5] #[if 1 clipping is applied to f, maximum norm allowed to gradients]
@@ -132,8 +132,8 @@ number_of_layers_f: 4 #number of hidden Dense layers which build up the function
 parameter_information: "concatenation" #how the parameter information is passed to f. either 'concatenation' or 'FiLM'
 n_FiLM_conditioning : 1 #number of FiLM layers (if FiLM is chosen instead of concatenation). FiLM = 1 only applies to the latent vector
 n_neurons_f: 200 #number of neurons of each layer of f
-NODE: true
-scaling_output_factor: [true, 0.001] #if true, a learnable parameter is multiplied by the output, which is initialized with the second dimension. if false, the second dimension is the scalar that multiplies the output of f.
+which_solver: ['dopri5',true] # 'dopri5' to use adaptive RK of order 4-5. 'mine' uses mine. if true, it means it is adaptive
+scaling_output_factor: [true, 1.0] #if true, a learnable parameter is multiplied by the output, which is initialized with the second dimension. if false, the second dimension is the scalar that multiplies the output of f.
 layer_norm_node : [true, false, false, false, false, false]
 
 #Global
