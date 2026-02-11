@@ -18,7 +18,7 @@ time_windows  :  [10, 10, 1000] #note that first one is for the AE
 batch_sizes  :  [64, 16,16] #note that first one is for the AE
 waiting_epochs_before_new_dataset_creation  :  [false, 50,50] #note that first one is for the AE
 number_of_workers: 8
-checkpoint: false  # if true uses existing checkpoint
+checkpoint: true  # if true uses existing checkpoint
 device : 'cuda:2' #device where to train
 which_normalization: 'min_max' # min_max or mean_std
 mixed_precision: true
