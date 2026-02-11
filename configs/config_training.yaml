@@ -1,5 +1,5 @@
 physics_model : '../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/saved_logs/LOCA/' # this is the Path to a directory for the training on a given dataset
-description : 'also_full_reconstruction_0.01_derivative/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
+description : 'LOCA_directly_to_2000/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
 data_path : '../../../../scratch//aalelonghi/ROM_datasets_ale/ASTEC/made_datasets/only_loca_min_max/' #path of training and validation data
 where_to_save_data : '../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/' #if dynamic_dataset_generation_during_training this is where data is saved, else it is where data for training is found
 model: 'AE_NODE'
@@ -12,10 +12,10 @@ learning_rate_frozen_AE : [false, 0.001] #if true, once AE is frozen the lr is s
 gamma_lr: 0.999 # gamma of  tc.optim.lr_scheduler.ExponentialLR()
 early_stopping: 250
 all_on_gpu: false
-preload_to_ram : true
+preload_to_ram : false
 dynamic_dataset_generation_during_training : true
-time_windows  :  [10, 1000]
-batch_sizes  :  [512, 128]
+time_windows  :  [12, 2000]
+batch_sizes  :  [256, 25]
 waiting_epochs_before_new_dataset_creation  :  [50,50]
 number_of_workers: 8
 checkpoint: false  # if true uses existing checkpoint

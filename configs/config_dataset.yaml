@@ -12,4 +12,4 @@ subsampling_testing : [1 , 1] # subsamplings of trajectories in testing dataset
 device : 'cuda:2'
 save_dictionary_per_time_lengths : false
 which_normalization : 'min_max' #min_max or mean_std
-testing: false
+testing: true

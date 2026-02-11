@@ -244,8 +244,7 @@ class ASTEC_Dataset(Dataset):
                 self.size = self.dict_vars_1.shape[0]
             
             print(f"Dataset loaded to GPU in {time.time()-start:.1f}s ({self.size} samples)")
-        
-        else:
+        else: #load on RAM everything
             import time
             start = time.time()
             print(f"Pre-loading entire dataset to RAM...")

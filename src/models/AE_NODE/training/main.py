@@ -19,6 +19,16 @@ def main():
 
     config_training = load_config('configs/config_training.yaml')
     model_information = load_config('configs/configs_models/' + 'config_'+config_training['model'] + '.yaml')
+    
+    # Override where_to_save_data with local node SSD if available
+    local_data = os.environ.get('LOCAL_DATA_PATH', None)
+    if local_data:
+        print(f"\n{'='*60}")
+        print(f"Overriding where_to_save_data with local SSD: {local_data}")
+        print(f"Previously: {config_training['where_to_save_data']}")
+        config_training['where_to_save_data'] = local_data + '/'
+        print(f"Now: {config_training['where_to_save_data']}")
+        print(f"{'='*60}\n")
 
     #define directories and get data
 
