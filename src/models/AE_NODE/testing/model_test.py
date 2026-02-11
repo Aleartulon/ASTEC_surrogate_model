@@ -50,6 +50,8 @@ class Model_Test:
         self.directory_images_AE_NODE_errors_latent_per_shape = self.directory_images + 'AE_NODE/errors_reconstruction_latent_per_shape'
         
         self.directory_images_Operator_Actions = self.directory_images + '/Operator_Actions'
+        self.which_processor = information['which_processor']
+        self.substep_RK4 = information['substep_RK4']
         
         #build necessary directories to save images
         os.makedirs(self.directory_images, exist_ok=True)
@@ -124,8 +126,8 @@ class Model_Test:
         #get trajectories
         with h5py.File(self.path_to_test_data + self.name_test_file, 'r') as f:
             self.trajectories = list(f.keys())
-        config_processor_First_Order = TrainingConfig(self.models_information, self.f, self.device )
-        self.training_losses = Training_Losses(config_processor_First_Order)
+        config_processor = TrainingConfig(self.models_information, self.f, self.device, self.substep_RK4 )
+        self.training_losses = Training_Losses(config_processor)
         
     def build_directories(self, name:str, AE:bool = False):
         os.makedirs(self.directory_images+'/' + name, exist_ok=True)
@@ -326,7 +328,7 @@ class Model_Test:
             DT = DT.unsqueeze(-1)
             
             #advance in time each time step of one dt (teacher forcing)
-            advanced_latent_vectors = self.training_losses.processor_First_Order(definitive_latent_vectors[:-1], DT[0][:-1], latent_boundaries_variables[:-1])
+            advanced_latent_vectors = self.training_losses.processor(definitive_latent_vectors[:-1], DT[0][:-1], latent_boundaries_variables[:-1], 'mine')
             
             #decode back the predicted latent vectors
             reconstructed_fields, reconstructed_latent_vectors_per_field = self.decoder(advanced_latent_vectors, False)
@@ -380,8 +382,14 @@ class Model_Test:
             predicted_latents = tc.zeros((len(DT[0])-1, self.latent_dimension), device = self.device)
             
             #process in time until the end (how can I know what is the end?)
+            printing = False
+            t0 = time.time()
             for count, dt in enumerate(DT[0][:-1]): #last one is fake, you need one less
-                next_latent_vector = self.training_losses.processor_First_Order(next_latent_vector, dt, latent_boundaries_variables[count:count+1])
+                if count > len(DT[0]/2) and not printing:
+                    printing = True
+                    t1 = time.time()
+                    print(f'More than half of trajectory {trajectory} done, it took {(t1-t0)/60} minutes')
+                next_latent_vector = self.training_losses.processor(next_latent_vector, dt.unsqueeze(0).unsqueeze(0), latent_boundaries_variables[count:count+1], self.which_processor)
                 predicted_latents[count] = next_latent_vector
             
             #decode back the predicted latent vectors

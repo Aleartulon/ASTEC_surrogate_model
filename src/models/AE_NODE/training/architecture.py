@@ -467,7 +467,7 @@ class F_Latent(nn.Module):
         if self.scaling_output_factor[0]:
             self.scaling_output_factor[1] = nn.Parameter(tc.tensor(self.scaling_output_factor[1]))
             
-    def forward(self, x:tc.tensor, parameter:tc.tensor):
+    def forward(self, t:tc.tensor, x:tc.tensor, parameter:tc.tensor):
         
         if self.parameter_information == 'concatenation':
             if self.param_dim > 0:

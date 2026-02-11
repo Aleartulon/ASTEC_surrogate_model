@@ -1,5 +1,5 @@
 physics_model : '../../../../scratch/ROM_datasets_ale/ASTEC/saved_logs/LOCA/' # this is the Path to a directory for the training on a given dataset
-description : 'also_full_reconstruction_0.001_derivative_2000/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
+description : 'try_ODE_solver_smoothed/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
 data_path : '../../../../scratch/ROM_datasets_ale/ASTEC/made_datasets/only_loca_min_max/' #path of training and validation data
 where_to_save_data : '../../../../scratch/ROM_datasets_ale/ASTEC/' #if dynamic_dataset_generation_during_training this is where data is saved, else it is where data for training is found
 model: 'AE_NODE'
@@ -12,16 +12,17 @@ learning_rate_frozen_AE : [false, 0.001] #if true, once AE is frozen the lr is s
 gamma_lr: 0.999 # gamma of  tc.optim.lr_scheduler.ExponentialLR()
 early_stopping: 250
 all_on_gpu: false
+preload_to_ram : false
 dynamic_dataset_generation_during_training : true
-time_windows  :  [12, 1002,2002]
-batch_sizes  :  [128, 16,8]
-waiting_epochs_before_new_dataset_creation  :  [50,100,200]
+time_windows  :  [10, 10, 1000] #note that first one is for the AE
+batch_sizes  :  [64, 16,16] #note that first one is for the AE
+waiting_epochs_before_new_dataset_creation  :  [false, 50,50] #note that first one is for the AE
 number_of_workers: 8
-checkpoint: false  # if true uses existing checkpoint
-device : 'cuda:1' #device where to train
+checkpoint: true  # if true uses existing checkpoint
+device : 'cuda:2' #device where to train
 which_normalization: 'min_max' # min_max or mean_std
 mixed_precision: true
-compile: true 
+compile: true
 
 #Data information if dynamic_dataset_generation_during_training is false
 data_training_file_dinamic: 'data_training_normalized_t_W_' #use when modifying dynamically during training the dataset

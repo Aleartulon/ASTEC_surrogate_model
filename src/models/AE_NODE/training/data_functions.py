@@ -13,11 +13,14 @@ import subprocess
 def build_dataset(batch_size:int, time_window: int, data_training_path: str, data_validation_path:str, 
                   number_of_workers:int, path_to_data: str, where_to_save:str , 
                   which_normalization:str, device :tc.device, training_boundaries:list, 
-                  validation_boundaries:list, all_on_gpu:bool, pin_memory: bool, indeces_training_boundaries:str, indeces_validation_boundaries:str):
+                  validation_boundaries:list, all_on_gpu:bool, pin_memory: bool, 
+                  indeces_training_boundaries:str, indeces_validation_boundaries:str,
+                  preload_to_ram:bool):  # Add this parameter
     
     training_path = f"{data_training_path}{str(time_window)}{indeces_training_boundaries}.h5"
     validation_path = f"{data_validation_path}{str(time_window)}{indeces_validation_boundaries}.h5"
-    #build dataset made out of 'time_window' chunks
+    
+    # Build dataset made out of 'time_window' chunks
     subprocess.run(['python', '-m', 'src.dataset_generation.sliced_dataset.main', 
                 '--t_W', str(time_window), 
                 '--path_to_dataset', path_to_data, 
@@ -26,22 +29,14 @@ def build_dataset(batch_size:int, time_window: int, data_training_path: str, dat
                 '--indeces_training_boundaries', ' ,'.join(map(str, training_boundaries)),
                 '--indeces_validation_boundaries', ' ,'.join(map(str, validation_boundaries))])
     tc.cuda.empty_cache()
-    # build dataset and dataloader
-    dataset_training = ASTEC_Dataset(training_path, all_on_gpu, device)
-    dataset_validation = ASTEC_Dataset(validation_path, all_on_gpu, device)
-    length_dataset = dataset_training.size
-    if batch_size > length_dataset:
-        batch_size = max(1, length_dataset // 10)
-    print('-------------------------------------------')
-    print('Length dataset: ', length_dataset)
-    print('Batch size: ', batch_size)
-    print('-------------------------------------------')
-    training_loader = DataLoader(dataset_training, batch_size = batch_size, num_workers = number_of_workers, shuffle=True,drop_last=False,pin_memory=pin_memory, prefetch_factor=4 if number_of_workers > 0 else None, persistent_workers=True if number_of_workers > 0 else False)
-    validation_loader = DataLoader(dataset_validation, batch_size = batch_size, num_workers = number_of_workers, shuffle=True,drop_last=False,pin_memory=pin_memory, prefetch_factor=2 if number_of_workers > 0 else None, persistent_workers=True if number_of_workers > 0 else False)
+    
+    # Build dataset and dataloader with preload option
+    
+    training_loader, validation_loader = make_data_loader(training_path, all_on_gpu, device, batch_size, number_of_workers, pin_memory, validation_path, preload_to_ram)
     
     return training_loader, validation_loader
   
-def save_checkpoint(encoder, f , decoder, optimizer, scheduler, epoch, loss_value, loss_coefficients_AR_latent, loss_coefficients_full_reconstruction, before_next_window_change, how_many_datasets_creations, autoregressive_step, time_of_AE, time_of_only_TF,is_AE_frozen,scaler, index_in_window,filepath):
+def save_checkpoint(encoder, f , decoder, optimizer, scheduler, epoch, loss_value, loss_coefficients_AR_latent, loss_coefficients_full_reconstruction, before_next_window_change, how_many_datasets_creations, autoregressive_step, time_of_AE, time_of_only_TF,is_AE_frozen,scaler, index_in_window,changed_data_loaders_for_adaptive,filepath):
   
     checkpoint = {
             'encoder_state_dict':encoder.state_dict(),
@@ -60,7 +55,8 @@ def save_checkpoint(encoder, f , decoder, optimizer, scheduler, epoch, loss_valu
             'time_of_only_TF': time_of_only_TF,
             'is_AE_frozen' : is_AE_frozen,
             'scaler_state_dict' : scaler.state_dict() if scaler is not None else None,
-            'index_in_window' : index_in_window
+            'index_in_window' : index_in_window,
+            'changed_data_loaders_for_adaptive' : changed_data_loaders_for_adaptive
         }
     tc.save(checkpoint, filepath)
 
@@ -176,6 +172,7 @@ def load_checkpoint(encoder, f, decoder, optim, scheduler, path, device ,parent_
     time_of_AE = checkpoint['time_of_AE']
     time_of_only_TF = checkpoint['time_of_only_TF']
     index_in_window = checkpoint['index_in_window']
+    changed_data_loaders_for_adaptive = checkpoint['changed_data_loaders_for_adaptive']
     
     print(f"\nResuming from:")
     print(f"  Epoch: {first_epoch}")
@@ -183,18 +180,38 @@ def load_checkpoint(encoder, f, decoder, optim, scheduler, path, device ,parent_
     print(f"  AE frozen: {is_AE_frozen}")
     print("="*70 + "\n")
     
-    return first_epoch, loss_value, loss_coefficients_AR_latent, loss_coefficients_full_reconstruction, before_next_window, datasets_count, autoregressive_step, time_of_AE, time_of_only_TF, is_AE_frozen, index_in_window
+    return first_epoch, loss_value, loss_coefficients_AR_latent, loss_coefficients_full_reconstruction, before_next_window, datasets_count, autoregressive_step, time_of_AE, time_of_only_TF, is_AE_frozen, index_in_window, changed_data_loaders_for_adaptive
 
 
 class ASTEC_Dataset(Dataset):
-    def __init__(self, path:str, all_on_gpu:bool, device:tc.device):
+    def __init__(self, path: str, all_on_gpu: bool, device: tc.device, preload_to_ram: bool = True):
+        """
+        Dataset class for ASTEC data
+        
+        Args:
+            path: Path to HDF5 file
+            all_on_gpu: Whether to load data directly to GPU (takes precedence over preload_to_ram)
+            device: torch device
+            preload_to_ram: If True and all_on_gpu is False, load entire dataset to RAM at initialization
+        """
         self.path = path
         self.all_on_gpu = all_on_gpu
-        if not all_on_gpu:
+        self.device = device
+        
+        # Decision logic:
+        # - If all_on_gpu=True: load to GPU (original behavior)
+        # - If all_on_gpu=False and preload_to_ram=True: load to RAM (new behavior)
+        # - If all_on_gpu=False and preload_to_ram=False: read from disk on-demand (original behavior)
+        
+        if not all_on_gpu and not preload_to_ram:
             with h5py.File(self.path, 'r') as f:
                 self.size = f['dictionary_of_input_variables_1'].shape[0]
-        else:
-            # Load all data into GPU memory at initialization
+        
+        elif all_on_gpu:
+            import time
+            start = time.time()
+            print(f"Loading entire dataset to GPU...")
+            
             with h5py.File(path, 'r') as f:
                 self.dict_vars_1 = tc.from_numpy(f['dictionary_of_input_variables_1'][:]).float().to(device)
                 self.dict_vars_36 = tc.from_numpy(f['dictionary_of_input_variables_36'][:]).float().to(device)
@@ -204,17 +221,59 @@ class ASTEC_Dataset(Dataset):
                 
                 bc_data = tc.from_numpy(f['boundary_conditions_and_time'][:]).float().to(device)
                 self.boundary_conditions = bc_data[:, :, :-2]
-                self.time = bc_data[:, :, -2]
+                self.dt = bc_data[:, :, -2]
                 
                 self.length_of_padding = tc.from_numpy(f['length_of_padding'][:]).float().to(device)
                 
                 self.size = self.dict_vars_1.shape[0]
             
+            print(f"Dataset loaded to GPU in {time.time()-start:.1f}s ({self.size} samples)")
+        
+        else:
+            import time
+            start = time.time()
+            print(f"Pre-loading entire dataset to RAM...")
+            
+            with h5py.File(path, 'r') as f:
+                self.dict_vars_1 = tc.from_numpy(f['dictionary_of_input_variables_1'][:]).float()
+                self.dict_vars_36 = tc.from_numpy(f['dictionary_of_input_variables_36'][:]).float()
+                self.dict_vars_76 = tc.from_numpy(f['dictionary_of_input_variables_76'][:]).float()
+                self.lower_plenum = tc.from_numpy(f['lower_plenum'][:]).float()
+                self.dict_vars_140 = tc.from_numpy(f['dictionary_of_input_variables_140'][:]).float()
+                
+                bc_data = tc.from_numpy(f['boundary_conditions_and_time'][:]).float()
+                self.boundary_conditions = bc_data[:, :, :-2]
+                self.dt = bc_data[:, :, -2]
+                
+                self.length_of_padding = tc.from_numpy(f['length_of_padding'][:]).float()
+                
+                self.size = self.dict_vars_1.shape[0]
+            
+            elapsed = time.time() - start
+            # Calculate memory usage
+            total_memory = sum([
+                self.dict_vars_1.element_size() * self.dict_vars_1.nelement(),
+                self.dict_vars_36.element_size() * self.dict_vars_36.nelement(),
+                self.dict_vars_76.element_size() * self.dict_vars_76.nelement(),
+                self.lower_plenum.element_size() * self.lower_plenum.nelement(),
+                self.dict_vars_140.element_size() * self.dict_vars_140.nelement(),
+                self.boundary_conditions.element_size() * self.boundary_conditions.nelement(),
+                self.dt.element_size() * self.dt.nelement(),
+                self.length_of_padding.element_size() * self.length_of_padding.nelement(),
+            ])
+            print(f"Dataset loaded to RAM in {elapsed:.1f}s ({self.size} samples, {total_memory / (1024**3):.2f} GB)")
     
     def __getitem__(self, idx):
-        if not self.all_on_gpu:
-            # Each worker opens its own file handle on first access
-            # Use thread/process-local storage
+        if hasattr(self, 'dict_vars_1'):
+            return ([self.dict_vars_1[idx], 
+                     self.dict_vars_36[idx], 
+                     self.dict_vars_76[idx], 
+                     self.lower_plenum[idx], 
+                     self.dict_vars_140[idx]], 
+                    self.boundary_conditions[idx], 
+                    self.dt[idx], 
+                    self.length_of_padding[idx])
+        else:
             if not hasattr(self, '_file_handle'):
                 self._file_handle = h5py.File(self.path, 'r')
             
@@ -228,22 +287,13 @@ class ASTEC_Dataset(Dataset):
             
             bc_data = f['boundary_conditions_and_time'][idx]
             boundary_conditions = tc.from_numpy(bc_data[:, :-2]).float()
-            time = tc.from_numpy(bc_data[:, -2]).float()
+            dt = tc.from_numpy(bc_data[:, -2]).float()
             
             length_of_padding = tc.from_numpy(f['length_of_padding'][idx]).float()
             
             return [dictionary_of_input_variables_1, dictionary_of_input_variables_36, 
                     dictionary_of_input_variables_76, lower_plenum, 
-                    dictionary_of_input_variables_140], boundary_conditions, time, length_of_padding
-        else:
-            return ([self.dict_vars_1[idx], 
-                 self.dict_vars_36[idx], 
-                 self.dict_vars_76[idx], 
-                 self.lower_plenum[idx], 
-                 self.dict_vars_140[idx]], 
-                self.boundary_conditions[idx], 
-                self.time[idx], 
-                self.length_of_padding[idx])
+                    dictionary_of_input_variables_140], boundary_conditions, dt, length_of_padding
     
     def __len__(self):
         return self.size
@@ -433,3 +483,22 @@ def initialize_parameters(model_information, encoder, decoder, f, device):
         {'params': decoder.parameters(), 'weight_decay': model_information['weight_decay']['decoder']}
     ]
     return params_to_optimize
+
+
+def make_data_loader(data_training_path:str, all_on_gpu:bool, device:tc.device, batch_size:int, number_of_workers:int, pin_memory:bool, data_validation_path:str, preload_to_ram:bool):
+    dataset_training = ASTEC_Dataset(data_training_path, all_on_gpu, device, preload_to_ram=preload_to_ram)
+    training_loader = DataLoader(dataset_training, batch_size = batch_size, num_workers = number_of_workers, shuffle=True,drop_last=False,pin_memory=pin_memory, prefetch_factor=4 if number_of_workers > 0 else None)
+    
+    length_dataset = dataset_training.size
+    if batch_size > length_dataset:
+        batch_size = max(1, length_dataset // 10)
+    
+    print('-------------------------------------------')
+    print('Length dataset: ', length_dataset)
+    print('Batch size: ', batch_size)
+    print('-------------------------------------------')
+            
+    dataset_validation = ASTEC_Dataset(data_validation_path, all_on_gpu, device, preload_to_ram=preload_to_ram)
+    validation_loader = DataLoader(dataset_validation, batch_size = batch_size, num_workers = number_of_workers, shuffle=True,drop_last=False,pin_memory=pin_memory, prefetch_factor=2 if number_of_workers > 0 else None)
+    
+    return training_loader, validation_loader
