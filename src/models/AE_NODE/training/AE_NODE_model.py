@@ -24,6 +24,8 @@ class AE_NODE:
         self.loss_coefficients = model_information['loss_coefficients'] if model_information['is_coupled'][0] else model_information['loss_coefficients_not_coupled']
         self.time_only_TF = model_information['time_only_TF']
         self.k = model_information['k']
+        self.which_solver = model_information['which_solver']
+        self.substep_RK4 = model_information['substep_RK4']
         self.time_of_AE = model_information['time_of_AE']
         self.time_of_lr_war_up = model_information['time_of_lr_war_up']
         self.clipping = model_information['clipping']
@@ -45,6 +47,8 @@ class AE_NODE:
         self.data_training_path_dynamic = config_training['where_to_save_data'] + '/' + config_training['data_training_file_dinamic']
         self.data_validation_path_dynamic = config_training['where_to_save_data'] + '/' + config_training['data_validation_file_dinamic']
         self.batch_sizes = config_training['batch_sizes']
+        if self.which_solver[1] and np.any(np.array(self.batch_sizes)[1:] != 1):
+            raise TypeError('Batches must be 1 when using adaptive solver')
         self.early_stopping = config_training['early_stopping']
         self.number_of_workers = config_training['number_of_workers']
         self.all_on_gpu = config_training['all_on_gpu']
@@ -98,11 +102,7 @@ class AE_NODE:
                                                                             self.device, config_training['indeces_training_boundaries'], config_training['indeces_validation_boundaries'], 
                                                                             self.all_on_gpu, self.pin_memory, self.indeces_training_boundaries, self.indeces_validation_boundaries, self.preload_to_ram)
             else:
-                dataset_training = ASTEC_Dataset(self.data_training_path, self.all_on_gpu, self.device)
-                self.training_loader = DataLoader(dataset_training, batch_size = self.batch_sizes[0], num_workers = self.number_of_workers, shuffle=True,drop_last=False,pin_memory=self.pin_memory, prefetch_factor=2 if self.number_of_workers > 0 else None)
-            
-                dataset_validation = ASTEC_Dataset(self.data_validation_path, self.all_on_gpu, self.device)
-                self.validation_loader = DataLoader(dataset_validation, batch_size = self.batch_sizes[0], num_workers = self.number_of_workers, shuffle=True,drop_last=False,pin_memory=self.pin_memory)
+                self.training_loader, self.validation_loader = make_data_loader(self.data_training_path, self.all_on_gpu, self.device, self.batch_sizes[0], self.number_of_workers, self.pin_memory, self.data_validation_path, self.preload_to_ram)
         #get normalization information
         with open(f"{config_training['data_path']}/maxima_or_mean{self.indeces_training_boundaries}.pkl", 'rb') as f:
             self.maxima_or_mean = pickle.load(f)

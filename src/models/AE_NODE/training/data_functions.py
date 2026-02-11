@@ -31,30 +31,12 @@ def build_dataset(batch_size:int, time_window: int, data_training_path: str, dat
     tc.cuda.empty_cache()
     
     # Build dataset and dataloader with preload option
-    dataset_training = ASTEC_Dataset(training_path, all_on_gpu, device, preload_to_ram=preload_to_ram)
-    dataset_validation = ASTEC_Dataset(validation_path, all_on_gpu, device, preload_to_ram=preload_to_ram)
     
-    length_dataset = dataset_training.size
-    if batch_size > length_dataset:
-        batch_size = max(1, length_dataset // 10)
-    
-    print('-------------------------------------------')
-    print('Length dataset: ', length_dataset)
-    print('Batch size: ', batch_size)
-    print('-------------------------------------------')
-    
-    training_loader = DataLoader(dataset_training, batch_size=batch_size, num_workers=number_of_workers, 
-                                 shuffle=True, drop_last=False, pin_memory=pin_memory, 
-                                 prefetch_factor=4 if number_of_workers > 0 else None, 
-                                 persistent_workers=True if number_of_workers > 0 else False)
-    validation_loader = DataLoader(dataset_validation, batch_size=batch_size, num_workers=number_of_workers, 
-                                   shuffle=True, drop_last=False, pin_memory=pin_memory, 
-                                   prefetch_factor=2 if number_of_workers > 0 else None, 
-                                   persistent_workers=True if number_of_workers > 0 else False)
+    training_loader, validation_loader = make_data_loader(training_path, all_on_gpu, device, batch_size, number_of_workers, pin_memory, validation_path, preload_to_ram)
     
     return training_loader, validation_loader
   
-def save_checkpoint(encoder, f , decoder, optimizer, scheduler, epoch, loss_value, loss_coefficients_AR_latent, loss_coefficients_full_reconstruction, before_next_window_change, how_many_datasets_creations, autoregressive_step, time_of_AE, time_of_only_TF,is_AE_frozen,scaler, index_in_window,filepath):
+def save_checkpoint(encoder, f , decoder, optimizer, scheduler, epoch, loss_value, loss_coefficients_AR_latent, loss_coefficients_full_reconstruction, before_next_window_change, how_many_datasets_creations, autoregressive_step, time_of_AE, time_of_only_TF,is_AE_frozen,scaler, index_in_window,changed_data_loaders_for_adaptive,filepath):
   
     checkpoint = {
             'encoder_state_dict':encoder.state_dict(),
@@ -73,7 +55,8 @@ def save_checkpoint(encoder, f , decoder, optimizer, scheduler, epoch, loss_valu
             'time_of_only_TF': time_of_only_TF,
             'is_AE_frozen' : is_AE_frozen,
             'scaler_state_dict' : scaler.state_dict() if scaler is not None else None,
-            'index_in_window' : index_in_window
+            'index_in_window' : index_in_window,
+            'changed_data_loaders_for_adaptive' : changed_data_loaders_for_adaptive
         }
     tc.save(checkpoint, filepath)
 
@@ -189,6 +172,7 @@ def load_checkpoint(encoder, f, decoder, optim, scheduler, path, device ,parent_
     time_of_AE = checkpoint['time_of_AE']
     time_of_only_TF = checkpoint['time_of_only_TF']
     index_in_window = checkpoint['index_in_window']
+    changed_data_loaders_for_adaptive = checkpoint['changed_data_loaders_for_adaptive']
     
     print(f"\nResuming from:")
     print(f"  Epoch: {first_epoch}")
@@ -196,7 +180,7 @@ def load_checkpoint(encoder, f, decoder, optim, scheduler, path, device ,parent_
     print(f"  AE frozen: {is_AE_frozen}")
     print("="*70 + "\n")
     
-    return first_epoch, loss_value, loss_coefficients_AR_latent, loss_coefficients_full_reconstruction, before_next_window, datasets_count, autoregressive_step, time_of_AE, time_of_only_TF, is_AE_frozen, index_in_window
+    return first_epoch, loss_value, loss_coefficients_AR_latent, loss_coefficients_full_reconstruction, before_next_window, datasets_count, autoregressive_step, time_of_AE, time_of_only_TF, is_AE_frozen, index_in_window, changed_data_loaders_for_adaptive
 
 
 class ASTEC_Dataset(Dataset):
@@ -244,7 +228,8 @@ class ASTEC_Dataset(Dataset):
                 self.size = self.dict_vars_1.shape[0]
             
             print(f"Dataset loaded to GPU in {time.time()-start:.1f}s ({self.size} samples)")
-        else: #load on RAM everything
+        
+        else:
             import time
             start = time.time()
             print(f"Pre-loading entire dataset to RAM...")
@@ -498,3 +483,22 @@ def initialize_parameters(model_information, encoder, decoder, f, device):
         {'params': decoder.parameters(), 'weight_decay': model_information['weight_decay']['decoder']}
     ]
     return params_to_optimize
+
+
+def make_data_loader(data_training_path:str, all_on_gpu:bool, device:tc.device, batch_size:int, number_of_workers:int, pin_memory:bool, data_validation_path:str, preload_to_ram:bool):
+    dataset_training = ASTEC_Dataset(data_training_path, all_on_gpu, device, preload_to_ram=preload_to_ram)
+    training_loader = DataLoader(dataset_training, batch_size = batch_size, num_workers = number_of_workers, shuffle=True,drop_last=False,pin_memory=pin_memory, prefetch_factor=4 if number_of_workers > 0 else None)
+    
+    length_dataset = dataset_training.size
+    if batch_size > length_dataset:
+        batch_size = max(1, length_dataset // 10)
+    
+    print('-------------------------------------------')
+    print('Length dataset: ', length_dataset)
+    print('Batch size: ', batch_size)
+    print('-------------------------------------------')
+            
+    dataset_validation = ASTEC_Dataset(data_validation_path, all_on_gpu, device, preload_to_ram=preload_to_ram)
+    validation_loader = DataLoader(dataset_validation, batch_size = batch_size, num_workers = number_of_workers, shuffle=True,drop_last=False,pin_memory=pin_memory, prefetch_factor=2 if number_of_workers > 0 else None)
+    
+    return training_loader, validation_loader
