@@ -6,6 +6,7 @@ import pickle
 import time
 import random
 import gc
+from scipy.signal import savgol_filter
 
 class Astec_Dataset():
     def __init__(self , config_dataset: dict):
@@ -15,6 +16,9 @@ class Astec_Dataset():
         self.save_dictionary_per_time_lengths = config_dataset['save_dictionary_per_time_lengths']
         self.which_normalization = config_dataset['which_normalization']
         self.device = tc.device(config_dataset['device'] if tc.cuda.is_available() else 'cpu')
+        self.polyorder_smoothing = config_dataset['polyorder_smoothing']
+        self.window_length_smoothing = config_dataset['window_length_smoothing']
+        self.smoothing = config_dataset['smoothing']
         print('Device: ', self.device)
         self.testing = config_dataset['testing']
         self.indeces_training_boundaries = '_'
@@ -280,18 +284,23 @@ class Astec_Dataset():
                     
                 else:
                     raise TypeError("Something is wrong with data structure")
+                if self.smoothing:
+                    concatenated_array = savgol_filter(concatenated_array, window_length=self.window_length_smoothing, polyorder=self.polyorder_smoothing, axis=1)
                 dict[n_o_s][m_t] = concatenated_array
+        
     
         for i in dict:
             bc_arrays = [
                 dict[i]['VDO'],
                 dict[i]['UPP_V001'],
             ]
-            dict[i]['boundary_conditions_and_time'] = np.concatenate(bc_arrays, axis=-1)
+            concatenated_bc = np.concatenate(bc_arrays, axis=-1)
+            if self.smoothing:
+                concatenated_bc = savgol_filter(concatenated_bc, window_length=self.window_length_smoothing, polyorder=self.polyorder_smoothing, axis=1)
+            dict[i]['boundary_conditions_and_time'] = concatenated_bc
             
             for key in ['VDO', 'UPP_V001']:
                 dict[i].pop(key)
-    
         return dict
     
     def make_dictionary_unified(self):
