@@ -114,7 +114,6 @@ def compute_errors(trajectory:str, input: list, target:list, is_AE:bool): #WATCH
         #compute RMSE_divided_by_std_per_time_step
         error = RMSE_divided_by_something(i, target[count], 'std', per_time_step = True)
         dictionary_of_errors[str(trajectory)]['RMSE_divided_by_std_per_time_step'].append(error)
-        
     return dictionary_of_errors
 
 def MSE(input:tc.tensor, target:tc.tensor, per_time_step: bool = False):
@@ -139,13 +138,15 @@ def RMSE(input:tc.tensor, target:tc.tensor, per_time_step: bool = False):
     loss = nn.MSELoss(reduction='none')
     array_of_errors = []
     e = loss(input, target) 
-    where_to_contract = tuple(np.arange(2,len(input.size()),1))
-    if len(input.size())>2:
+    if len(input.size()) >2:
+        where_to_contract = tuple(np.arange(2,len(input.size()),1))
         e = e.mean(dim = where_to_contract)** 0.5
+    else:
+        e = e** 0.5
     if per_time_step:
         array_of_errors.append(e)
     else:
-        e = e.mean(0)** 0.5
+        e = e.mean(0)
         array_of_errors.append(e)
     return array_of_errors
 
@@ -156,7 +157,7 @@ def RMSE_divided_by_something(input:tc.tensor, target:tc.tensor, which_division:
 
     loss = nn.MSELoss(reduction='none')
     array_of_errors = []
-    e = loss(input, target) ** 0.5
+    e = loss(input, target)
     where_to_contract = tuple(np.arange(2,len(input.size()),1))
     if which_division == 'max':
         normalization = tc.amax(target, (0,) + where_to_contract) + epsilon
@@ -168,12 +169,10 @@ def RMSE_divided_by_something(input:tc.tensor, target:tc.tensor, which_division:
         raise TypeError('Division you put is not existent.')
     
     if len(input.size())>2:
-        normalization = normalization[None, :, None, None]
+        e = e.mean(dim = where_to_contract)**0.5
         e = e/normalization
-        e = e.mean(dim = where_to_contract) 
-    
     else:
-        normalization = normalization[None, :]
+        e = e**0.5
         e = e/normalization
     if per_time_step:
         array_of_errors.append(e)

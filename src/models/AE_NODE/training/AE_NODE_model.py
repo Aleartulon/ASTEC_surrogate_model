@@ -47,6 +47,8 @@ class AE_NODE:
         self.data_training_path_dynamic = config_training['where_to_save_data'] + '/' + config_training['data_training_file_dinamic']
         self.data_validation_path_dynamic = config_training['where_to_save_data'] + '/' + config_training['data_validation_file_dinamic']
         self.batch_sizes = config_training['batch_sizes']
+        if self.which_solver[1] and np.any(np.array(self.batch_sizes)[1:] != 1):
+            raise TypeError('Batches must be 1 when using adaptive solver')
         self.early_stopping = config_training['early_stopping']
         self.number_of_workers = config_training['number_of_workers']
         self.all_on_gpu = config_training['all_on_gpu']

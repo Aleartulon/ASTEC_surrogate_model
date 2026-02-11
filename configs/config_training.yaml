@@ -15,7 +15,7 @@ all_on_gpu: false
 preload_to_ram : false
 dynamic_dataset_generation_during_training : true
 time_windows  :  [10, 10,1000] #note that first one is for the AE
-batch_sizes  :  [32, 32,8] #note that first one is for the AE
+batch_sizes  :  [32, 1,1] #note that first one is for the AE
 waiting_epochs_before_new_dataset_creation  :  [false, 50,50] #note that first one is for the AE
 number_of_workers: 8
 checkpoint: false  # if true uses existing checkpoint
