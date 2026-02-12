@@ -332,12 +332,13 @@ def extract_input_output_bc_variables(path, index_simulation:str, subsampling_in
             index_stop = check_index_stop_for_not_vessel_rupture_simulations(f)
         print('index_stop:', index_stop)
         time_of_simulations.append(f['dimensions/time_points'][:][0:index_stop][::subsampling_index]) 
-        print('Length simulation:',len(f['dimensions/time_points'][:][0:index_stop][::subsampling_index]))  
+        length_simulation = len(f['dimensions/time_points'][:][0:index_stop][::subsampling_index])
+        print('Length simulation:',length_simulation)  
         print('Last time step present: ', time_of_simulations[0][-1])
         output_dict[index_simulation] = build_dictionary_of_variables()
         fill_dictionary_of_variables(output_dict, index_simulation, f, index_stop, subsampling_index)
 
-    return output_dict, time_of_simulations
+    return output_dict, length_simulation
 
 def check_index_stop_for_not_vessel_rupture_simulations(file: h5py._hl.files.File):
     # Load all datasets once

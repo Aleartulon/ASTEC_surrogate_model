@@ -18,6 +18,7 @@ class Astec_Dataset():
         self.device = tc.device(config_dataset['device'] if tc.cuda.is_available() else 'cpu')
         self.polyorder_smoothing = config_dataset['polyorder_smoothing']
         self.window_length_smoothing = config_dataset['window_length_smoothing']
+        self.minimum_length_acceptable_simulation = config_dataset['minimum_length_acceptable_simulation']
         self.smoothing = config_dataset['smoothing']
         print('Device: ', self.device)
         self.testing = config_dataset['testing']
@@ -118,7 +119,11 @@ class Astec_Dataset():
         for count, index_simulation in enumerate(indeces):
             index_simulation = str(index_simulation)
             t1 = time.time()
-            single_simulation, _ = extract_input_output_bc_variables(self.path_to_hdf5, index_simulation, subsampling_indeces[count]) #build dictionary of data divided by number of simulation
+            single_simulation, length_simulation = extract_input_output_bc_variables(self.path_to_hdf5, index_simulation, subsampling_indeces[count]) #build dictionary of data divided by number of simulation
+            if length_simulation < self.minimum_length_acceptable_simulation:
+                print("Something wrong with this simulation, too short, skipping")
+                skipped_simulations.append(index_simulation)
+                continue
             t2 = time.time()
             print(f'Simulation: {index_simulation}. Build dictionary of data divided by number of simulation: {t2-t1} seconds')
             single_simulation = self.make_channels_for_dictionary_per_simulation(single_simulation) #build dictionary of data divided by simulations and make channels per spatial domain
