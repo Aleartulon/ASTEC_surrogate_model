@@ -139,6 +139,9 @@ class Astec_Dataset():
             print(f'Simulation: {index_simulation}. Build dictionary of data divided by simulations and make channels per spatial domain: {t3-t2} seconds')
             single_simulation = self.substitute_NaN_with_zeros(single_simulation) #substitute with zeros the NaN values
             t4 = time.time()
+            #apply smoothing
+            if self.smoothing:
+                single_simulation = self.use_smoothing(single_simulation)
             single_simulation = squeeze_first_dimension(single_simulation)
             print(f'Simulation: {index_simulation}. Substitute with zeros the NaN values: {t4-t3} seconds')
             
@@ -289,8 +292,6 @@ class Astec_Dataset():
                     
                 else:
                     raise TypeError("Something is wrong with data structure")
-                if self.smoothing:
-                    concatenated_array = savgol_filter(concatenated_array, window_length=self.window_length_smoothing, polyorder=self.polyorder_smoothing, axis=1)
                 dict[n_o_s][m_t] = concatenated_array
         
     
@@ -300,14 +301,17 @@ class Astec_Dataset():
                 dict[i]['UPP_V001'],
             ]
             concatenated_bc = np.concatenate(bc_arrays, axis=-1)
-            if self.smoothing:
-                concatenated_bc = savgol_filter(concatenated_bc, window_length=self.window_length_smoothing, polyorder=self.polyorder_smoothing, axis=1)
             dict[i]['boundary_conditions_and_time'] = concatenated_bc
             
             for key in ['VDO', 'UPP_V001']:
                 dict[i].pop(key)
         return dict
     
+    def use_smoothing(self, simulation):
+        print(simulation.keys())
+        exit()
+        concatenated_array = savgol_filter(concatenated_array, window_length=self.window_length_smoothing, polyorder=self.polyorder_smoothing, axis=1)
+        
     def make_dictionary_unified(self):
         numbers_of_simulation = list(self.dictionary_per_simulation.keys())
         dictionary_unified = {}

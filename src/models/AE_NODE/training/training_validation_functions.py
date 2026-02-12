@@ -290,7 +290,7 @@ class Training():
                 valid_l1_data, valid_l1_per_shape_data, valid_l1_unnorm_data, valid_l1_unnorm_per_shape_data, valid_l1_latent_data, valid_l2_TF_data, valid_l2_AR_latent_data, valid_l3_data, valid_real_data, valid_real_per_shape_data, valid_regularization_data, valid_loss_data = self.valid_epoch()
                 valid_loss_data = valid_l1_data + valid_l1_latent_data + valid_l2_TF_data + valid_l3_data + valid_regularization_data
             else:
-                if self.parent.which_solver[1] and (not changed_data_loaders_for_adaptive):
+                if (not changed_data_loaders_for_adaptive):
                     self.modify_dataset()
                     changed_data_loaders_for_adaptive = True
                     
