@@ -1,6 +1,6 @@
-path_to_test_data : '../../../../../../../scratch/ROM_datasets_ale/ASTEC/made_datasets/only_loca_min_max/'
+path_to_test_data : '../../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/made_datasets/only_loca_min_max/'
 name_test_file: 'data_testing_1_3.h5' # 'data_testing_583_602.h5'
-path_to_model: '../../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/saved_logs/LOCA/AE_NODE/Models/try_ODE_solver_smoothed/'
+path_to_model: '../../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/saved_logs/LOCA/AE_NODE/Models/smoothed_1_3/'
 device: 'cuda:0'
 trajectories_to_be_plotted : [1]
 autoencoding_figures : true

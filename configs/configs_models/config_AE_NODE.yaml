@@ -133,7 +133,7 @@ parameter_information: "concatenation" #how the parameter information is passed 
 n_FiLM_conditioning : 1 #number of FiLM layers (if FiLM is chosen instead of concatenation). FiLM = 1 only applies to the latent vector
 n_neurons_f: 200 #number of neurons of each layer of f
 which_solver: ['mine',false] # 'dopri5' to use adaptive RK of order 4-5. 'mine' uses mine. if true, it means it is adaptive
-scaling_output_factor: [true, 1.0] #if true, a learnable parameter is multiplied by the output, which is initialized with the second dimension. if false, the second dimension is the scalar that multiplies the output of f.
+scaling_output_factor: [true, 0.001] #if true, a learnable parameter is multiplied by the output, which is initialized with the second dimension. if false, the second dimension is the scalar that multiplies the output of f.
 substep_RK4 : 1 # if none, it is 1
 layer_norm_node : [false, false, false, false, false, false]
 
