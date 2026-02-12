@@ -1,5 +1,5 @@
 physics_model : '../../../../scratch/ROM_datasets_ale/ASTEC/saved_logs/LOCA/' # this is the Path to a directory for the training on a given dataset
-description : 'try_ODE_solver_smoothed/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
+description : 'smoothed/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
 data_path : '../../../../scratch/ROM_datasets_ale/ASTEC/made_datasets/only_loca_min_max/' #path of training and validation data
 where_to_save_data : '../../../../scratch/ROM_datasets_ale/ASTEC/' #if dynamic_dataset_generation_during_training this is where data is saved, else it is where data for training is found
 model: 'AE_NODE'
@@ -14,12 +14,12 @@ early_stopping: 250
 all_on_gpu: false
 preload_to_ram : false
 dynamic_dataset_generation_during_training : true
-time_windows  :  [10, 10, 1000] #note that first one is for the AE
+time_windows  :  [11, 11, 1001] #note that first one is for the AE
 batch_sizes  :  [64, 16,16] #note that first one is for the AE
 waiting_epochs_before_new_dataset_creation  :  [false, 50,50] #note that first one is for the AE
 number_of_workers: 8
-checkpoint: true  # if true uses existing checkpoint
-device : 'cuda:2' #device where to train
+checkpoint: false # if true uses existing checkpoint
+device : 'cuda:1' #device where to train
 which_normalization: 'min_max' # min_max or mean_std
 mixed_precision: true
 compile: true
