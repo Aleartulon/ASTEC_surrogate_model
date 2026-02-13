@@ -18,6 +18,7 @@ class Astec_Dataset():
         self.device = tc.device(config_dataset['device'] if tc.cuda.is_available() else 'cpu')
         self.polyorder_smoothing = config_dataset['polyorder_smoothing']
         self.window_length_smoothing = config_dataset['window_length_smoothing']
+        self.minimum_length_acceptable_simulation = config_dataset['minimum_length_acceptable_simulation']
         self.smoothing = config_dataset['smoothing']
         print('Device: ', self.device)
         self.testing = config_dataset['testing']
@@ -118,7 +119,11 @@ class Astec_Dataset():
         for count, index_simulation in enumerate(indeces):
             index_simulation = str(index_simulation)
             t1 = time.time()
-            single_simulation, _ = extract_input_output_bc_variables(self.path_to_hdf5, index_simulation, subsampling_indeces[count]) #build dictionary of data divided by number of simulation
+            single_simulation, length_simulation = extract_input_output_bc_variables(self.path_to_hdf5, index_simulation, subsampling_indeces[count]) #build dictionary of data divided by number of simulation
+            if length_simulation < self.minimum_length_acceptable_simulation:
+                print("Something wrong with this simulation, too short, skipping")
+                skipped_simulations.append(index_simulation)
+                continue
             t2 = time.time()
             print(f'Simulation: {index_simulation}. Build dictionary of data divided by number of simulation: {t2-t1} seconds')
             single_simulation = self.make_channels_for_dictionary_per_simulation(single_simulation) #build dictionary of data divided by simulations and make channels per spatial domain
@@ -136,7 +141,7 @@ class Astec_Dataset():
             t4 = time.time()
             #apply smoothing
             if self.smoothing:
-                single_simulation = self.use_smoothing(single_simulation)
+                single_simulation = self.use_smoothing(single_simulation, index_simulation)
             single_simulation = squeeze_first_dimension(single_simulation)
             print(f'Simulation: {index_simulation}. Substitute with zeros the NaN values: {t4-t3} seconds')
             
@@ -300,12 +305,26 @@ class Astec_Dataset():
             
             for key in ['VDO', 'UPP_V001']:
                 dict[i].pop(key)
+            self.length_boundaries = np.shape(concatenated_bc[0][-1])
         return dict
     
-    def use_smoothing(self, simulation):
-        print(simulation.keys())
-        exit()
-        concatenated_array = savgol_filter(concatenated_array, window_length=self.window_length_smoothing, polyorder=self.polyorder_smoothing, axis=1)
+    def use_smoothing(self, simulation:dict, index_simulation:int):
+        keys = simulation[index_simulation].keys()
+        found = False
+        for i in keys:
+            if i == 'boundary_conditions_and_time':
+                found = True
+                data = simulation[index_simulation][i]  # shape (1, 25184, 26)
+                # Apply filter on first 24 elements of last dimension
+                filtered = savgol_filter(data[..., :24], window_length=self.window_length_smoothing, polyorder=self.polyorder_smoothing, axis=1)
+
+                # Concatenate with the unfiltered last 2 elements
+                simulation[index_simulation][i] = np.concatenate([filtered, data[..., 24:]], axis=-1)
+            else:
+                simulation[index_simulation][i] = savgol_filter(simulation[index_simulation][i], window_length=self.window_length_smoothing, polyorder=self.polyorder_smoothing, axis=1)
+        if not found:
+            raise TypeError("boundary_conditions_and_time NOT FOUND")
+        return simulation 
         
     def make_dictionary_unified(self):
         numbers_of_simulation = list(self.dictionary_per_simulation.keys())

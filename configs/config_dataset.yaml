@@ -1,8 +1,8 @@
 path_to_hdf5 : '../../../../../../../tudelft.net/staff-umbrella/eldar/ASTEC/ordered_hdf5/'
-where_to_save_data: '../../../../../../scratch/ROM_datasets_ale/ASTEC/made_datasets/only_loca_min_max/'
-indeces_training_boundaries : [1,2] #[1,153,192,396, 398, 500] # It must be the boundaries, not all indeces!
-indeces_validation_boundaries : [1,3] #[511, 582] # It must be the boundaries, not all indeces!
-indeces_testing_boundaries : [1, 3] # It must be the boundaries, not all indeces!
+where_to_save_data: '../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/made_datasets/only_loca_min_max/'
+indeces_training_boundaries : [1,153,192,396, 398, 500] # It must be the boundaries, not all indeces!
+indeces_validation_boundaries : [511, 582] # It must be the boundaries, not all indeces!
+indeces_testing_boundaries : [583, 602] # It must be the boundaries, not all indeces!
 percentages_sampling_training : [0.1, 0.9] # percentage of training trajectories with a given subsampling
 percentages_sampling_validation : [0.1,0.9] # percentage of validation trajectories with a given subsampling
 percentages_sampling_testing : [0.1, 0.9] # percentage of testing trajectories with a given subsampling
@@ -14,5 +14,6 @@ save_dictionary_per_time_lengths : false
 which_normalization : 'min_max' #min_max or mean_std
 testing: false
 smoothing : true
-window_length_smoothing : 101
+window_length_smoothing : 100
 polyorder_smoothing : 3
+minimum_length_acceptable_simulation : 200

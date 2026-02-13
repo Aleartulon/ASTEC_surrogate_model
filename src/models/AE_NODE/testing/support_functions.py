@@ -307,7 +307,7 @@ def write_info( output_file, how_many_trajectories: int, which_trajectories: lis
             
 def plot_aggregated_errors_per_variable(path_txt_file:str, saving_path:str, metric:str):
     df = pd.read_fwf(path_txt_file, skiprows=2, skipfooter=1, engine='python',
-                  colspecs=[(0, 45), (45, 64), (64, 85)],
+                  colspecs=[(0, 45), (45, 65), (66, 86)],
                   names=['Variable', 'Mean', 'Std'])
     dict_global = {}
     dict_vessel = {}
@@ -358,7 +358,28 @@ def make_hist_and_plots(data_dictionary:dict, path:str,metric:str, latex_metric:
     plt.savefig(f'{path}/{metric}/{metric}_{label}_histogram.png', dpi=300, bbox_inches='tight')
     plt.close(fig)
     
-    #make plots
+    #make plots 
+    plot_array_x = [x for x in data_dictionary]
+    plot_array_y = [data_dictionary[x][0] for x in data_dictionary]
+    plot_array_unc = [data_dictionary[x][1] for x in data_dictionary]
+    if metric == "RMSE_divided_by_std" and label == 'g':
+        fig, axs = plt.subplots(1, 1, tight_layout=True, figsize=(15, 5))
+    else:
+        fig, axs = plt.subplots(1, 1, tight_layout=True)
+    x_pos = range(len(plot_array_x))
+    axs.errorbar(x_pos, plot_array_y, yerr=plot_array_unc, fmt='o', capsize=5)
+    axs.set_xticks(x_pos)
+    axs.set_xticklabels(plot_array_x, rotation=45, ha='right')
+    axs.set_ylabel(latex_metric, fontsize=16)
+    if metric == "RMSE_divided_by_std":
+        axs.hlines(0.5, xmin=0, xmax=len(plot_array_x)-1, colors='green', linestyles='solid')
+    axs.set_yscale('log')
+    plt.title(rf'{latex_metric} for $s_{{{label}}}$ variables', fontsize=16)
+    os.makedirs(f'{path}/{metric}/', exist_ok=True)
+    plt.savefig(f'{path}/{metric}/{metric}_{label}_plot.png', dpi=300, bbox_inches='tight')
+    plt.close(fig)
+    
+    
     
 def which_metric(metric, variable):
     if metric == "RMSE":
