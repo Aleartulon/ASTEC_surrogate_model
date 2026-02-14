@@ -362,7 +362,7 @@ def make_hist_and_plots(data_dictionary:dict, path:str,metric:str, latex_metric:
     plot_array_x = [x for x in data_dictionary]
     plot_array_y = [data_dictionary[x][0] for x in data_dictionary]
     plot_array_unc = [data_dictionary[x][1] for x in data_dictionary]
-    if metric == "RMSE_divided_by_std" and label == 'g':
+    if label == 'g':
         fig, axs = plt.subplots(1, 1, tight_layout=True, figsize=(15, 5))
     else:
         fig, axs = plt.subplots(1, 1, tight_layout=True)

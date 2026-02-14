@@ -1,5 +1,5 @@
 physics_model : '../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/saved_logs/LOCA/' # this is the Path to a directory for the training on a given dataset
-description : 'full_smoothed_larger_bs/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
+description : 'full_smoothed_20_latent_adaptive/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
 data_path : '../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/made_datasets/only_loca_min_max/' #path of training and validation data
 where_to_save_data : '../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/' #if dynamic_dataset_generation_during_training this is where data is saved, else it is where data for training is found
 model: 'AE_NODE'
@@ -14,9 +14,9 @@ early_stopping: 250
 all_on_gpu: false
 preload_to_ram : false
 dynamic_dataset_generation_during_training : true
-time_windows  :  [11, 11, 500, 1001] #note that first one is for the AE
-batch_sizes  :  [256, 256, 128, 64] #note that first one is for the AE
-waiting_epochs_before_new_dataset_creation  :  [false, 50,50,50] #note that first one is for the AE
+time_windows  :  [14, 14, 1004, 2004] #note that first one is for the AE
+batch_sizes  :  [256, 1, 1, 1] #note that first one is for the AE
+waiting_epochs_before_new_dataset_creation  :  [30, 5,25,25] #note that first one is for the AE
 number_of_workers: 8
 checkpoint: false  # if true uses existing checkpoint
 device : 'cuda' #device where to train
