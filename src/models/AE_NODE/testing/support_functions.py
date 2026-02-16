@@ -264,7 +264,7 @@ def compute_global_errors(where_to_get_data:str, where_to_save_data: str, genera
     
     write_info(f"{where_to_save_data}/info.txt", len(txt_files), txt_files)
         
-    #generate plots with aggregated images
+    #generate single plots with aggregated images
     for metric in dictionary_of_errors:  
         plot_aggregated_errors_per_variable(f"{where_to_save_data}/{metric}.txt", f"{where_to_save_data}",f"{metric}")
 
