@@ -275,6 +275,7 @@ def compute_global_errors(where_to_get_data:str, string_after_saving:str, where_
     
     #generate plots with 3 metrics combined
     combine_metrics_in_one_plot(total_dict, where_to_save_data, string_after_saving)
+    
     # generate instograms
     if generate_istograms:
         for metric in dictionary_of_errors:
@@ -381,7 +382,7 @@ def make_hist_and_plots(data_dictionary:dict, path:str,string_after_saving:str,m
         
     #make histograms
     hist_array = [data_dictionary[x][0] for x in data_dictionary]
-    fig, axs = plt.subplots(1, 1, sharey=True, tight_layout=True, figsize=(6, 5))
+    fig, axs = plt.subplots(1, 1, sharey=True, tight_layout=True)
     axs.hist(hist_array, bins=np.logspace(np.log10(min(hist_array)), np.log10(max(hist_array)), 100))
     axs.set_xscale('log')
     axs.set_xlabel(latex_metric, fontsize = 16)
@@ -397,7 +398,7 @@ def make_hist_and_plots(data_dictionary:dict, path:str,string_after_saving:str,m
     plot_array_x = [x for x in data_dictionary]
     plot_array_y = [data_dictionary[x][0] for x in data_dictionary]
     plot_array_unc = [data_dictionary[x][1] for x in data_dictionary]
-    fig, axs = plt.subplots(1, 1, tight_layout=True, figsize=(6, 5))
+    fig, axs = plt.subplots(1, 1, tight_layout=True)
     x_pos = range(len(plot_array_x))
     axs.errorbar(x_pos, plot_array_y, yerr=plot_array_unc, fmt='o', capsize=5)
     axs.set_xticks(x_pos)
@@ -445,7 +446,16 @@ def combine_metrics_in_one_plot(total_dict:dict, where_to_save_data:str, string_
     
     for variable in variables_to_be_plotted:
         plotting_data[variable] = {}
-        fig, axs = plt.subplots(1, 1, tight_layout=True)
+        if variable == 'g':
+            fig, axs = plt.subplots(1, 1, tight_layout=True,figsize = (12,5))
+        elif variable == 'v':
+            fig, axs = plt.subplots(1, 1, tight_layout=True,figsize = (12,5))
+        elif variable == 'p':
+            fig, axs = plt.subplots(1, 1, tight_layout=True,figsize = (12,5))
+        elif variable == 'cr':
+            fig, axs = plt.subplots(1, 1, tight_layout=True,figsize = (5,5))
+        elif variable == 'f':
+            fig, axs = plt.subplots(1, 1, tight_layout=True,figsize = (5,5))
         
         for idx, metric in enumerate(metrics_to_be_plotted):
             plot_array_x = [x for x in total_dict[metric][variable]]
@@ -505,7 +515,7 @@ def combine_metrics_in_one_plot(total_dict:dict, where_to_save_data:str, string_
                     ha='center', 
                     va='top',
                     transform=axs.get_xaxis_transform(),
-                    fontsize=10)
+                    fontsize=10, rotation=45)
         
         if variable == 'g':
             axs.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=16)
@@ -519,7 +529,6 @@ def combine_metrics_in_one_plot(total_dict:dict, where_to_save_data:str, string_
         pickle.dump(plotting_data, f)
     
     return 0
-    
 def compare_errors_AE_and_AE_NODE(path_AE:str, path_AE_NODE:str, where_to_save:str, string_after_saving:str):
     import pickle
     
@@ -539,7 +548,10 @@ def compare_errors_AE_and_AE_NODE(path_AE:str, path_AE_NODE:str, where_to_save:s
     os.makedirs(f'{where_to_save}/comparison_plots/', exist_ok=True)
     
     for variable in variables_to_be_plotted:
-        fig, axs = plt.subplots(1, 1, tight_layout=True)
+        if variable == 'g':
+            fig, axs = plt.subplots(1, 1, tight_layout=True,figsize = (10,5))
+        else:
+            fig, axs = plt.subplots(1, 1, tight_layout=True)
         
         for idx, metric in enumerate(metrics_to_be_plotted):
             # Get data from both models
@@ -585,7 +597,7 @@ def compare_errors_AE_and_AE_NODE(path_AE:str, path_AE_NODE:str, where_to_save:s
                     ha='center', 
                     va='top',
                     transform=axs.get_xaxis_transform(),
-                    fontsize=10)
+                    fontsize=10, rotation=45)
         
         if variable == 'g':
             axs.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=16)

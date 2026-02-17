@@ -1,8 +1,8 @@
-path_to_hdf5 : '../../../../../../../tudelft.net/staff-umbrella/eldar/ASTEC/ordered_hdf5/'
+path_to_hdf5 : '../../../../../../../tudelft.net/staff-umbrella/eldar/ASTEC_2/ordered_hdf5/'
 where_to_save_data: '../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/made_datasets/only_loca_min_max/'
-indeces_training_boundaries : [1,153,192,396, 398, 500] # It must be the boundaries, not all indeces! [1,153,192,396, 398, 500] 
-indeces_validation_boundaries :  [660, 733] # It must be the boundaries, not all indeces! [511, 582]
-indeces_testing_boundaries :  [602] # It must be the boundaries, not all indeces! [583, 602]
+indeces_training_boundaries : [1,702] # It must be the boundaries, not all indeces! [1,153,192,396, 398, 500] 
+indeces_validation_boundaries :  [703,803] # It must be the boundaries, not all indeces! [511, 582]
+indeces_testing_boundaries :  [804,844] # It must be the boundaries, not all indeces! [583, 602]
 percentages_sampling_training : [0.1, 0.9] # percentage of training trajectories with a given subsampling
 percentages_sampling_validation : [0.1,0.9] # percentage of validation trajectories with a given subsampling
 percentages_sampling_testing : [0.1, 0.9] # percentage of testing trajectories with a given subsampling
