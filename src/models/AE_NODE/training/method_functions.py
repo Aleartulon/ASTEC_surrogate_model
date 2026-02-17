@@ -1,7 +1,7 @@
 from src.models.AE_NODE.training.data_functions import *
 import time 
 import torch.nn.functional as F
-#from torchdiffeq import odeint
+from torchdiffeq import odeint
 
 class Training_Losses():
     def __init__(self, ae_node_instance):
@@ -107,10 +107,9 @@ class Training_Losses():
             e2_final = e2_final.reshape(number_batches, (number_of_time_steps-1), latent_dim)
             l3 = dynamics_MSE(e2_final, definitive_latent[:, 1:, :], None, False, F.relu((length_of_padding-1))) * loss_dict['Random_DT']
 
-        if loss_dict['AR_latent'] <= 0.0 and loss_dict['full_reconstruction'][1] <= 0.0:
-            with tc.no_grad():
-                l2_AR_latent = tc.tensor(0.0)
-                l_full_reconstruction = (tc.tensor(0.0,device=self.parent.device), tc.zeros(self.parent.number_of_different_domains, device = self.parent.device))
+        if loss_dict['AR_latent'] <= 0.0 or (not (self.parent.is_coupled[0]) and (self.parent.is_coupled[1] == 'AE')):
+            l2_AR_latent = tc.tensor(0.0)
+            l_full_reconstruction = (tc.tensor(0.0,device=self.parent.device), tc.zeros(self.parent.number_of_different_domains, device = self.parent.device))
         else:
             l2_AR_latent, l_full_reconstruction = self.advance_from_ic(fields, definitive_latent, tc.reshape(dt,(number_batches,number_of_time_steps-1)).unsqueeze(-1), latent_boundaries.reshape(number_batches , (number_of_time_steps-1) , latent_boundaries.size(-1)), length_of_padding, train, loss_dict)
             
@@ -124,10 +123,6 @@ class Training_Losses():
         B = true_latent.size(0)
         T = number_of_time_steps - 1
         latent_dim = true_latent.size(-1)
-        
-        if not (self.parent.is_coupled[0]) and (self.parent.is_coupled[1] == 'AE'):
-            return tc.tensor(0.0), (tc.tensor(0.0), tc.zeros(self.parent.number_of_different_domains, device = self.parent.device))
-            
         if which_technique == 'fully_autoregressive' or (not train):  #Encode initial condition and evolve in latent. Always done at validation to compute the actual final loss autoregressively
             if loss_dict['full_reconstruction'][0]:
                 #fields = standard_and_inverse_normalization_field(fields, self.parent.maxima_or_mean, self.parent.minima_or_std, self.parent.which_normalization, True)
