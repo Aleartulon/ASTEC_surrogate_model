@@ -4,6 +4,7 @@ import torch as tc
 import h5py
 import numpy as np
 import pandas as pd
+import pickle
 import os
 from src.models.AE_NODE.training.data_functions import auto_encoding_MSE
 from src.models.AE_NODE.training.data_functions import dynamics_MSE
@@ -162,7 +163,7 @@ def RMSE_divided_by_something(input:tc.tensor, target:tc.tensor, which_division:
     if which_division == 'max':
         normalization = tc.amax(target, (0,) + where_to_contract) + epsilon
     elif which_division == 'mean':
-        normalization = tc.mean(target, (0,) + where_to_contract) + epsilon
+        normalization = tc.mean(np.abs(target), (0,) + where_to_contract) + epsilon
     elif which_division == 'std':
         normalization = tc.std(target, (0,) + where_to_contract) + epsilon
     else:
@@ -221,7 +222,7 @@ def L2_error_norm(input:tc.tensor, target:tc.tensor, per_time_step: bool = False
             
     return array_of_errors
     
-def compute_global_errors(where_to_get_data:str, where_to_save_data: str, generate_istograms: bool, which_prediction: str):
+def compute_global_errors(where_to_get_data:str, string_after_saving:str, where_to_save_data: str, generate_istograms: bool, which_prediction: str):
     txt_files = [f for f in os.listdir(where_to_get_data) if f.endswith('.txt')]
     df = pd.read_csv(f"{where_to_get_data}/{txt_files[0]}", sep='\t')
     # create dictionary of errors
@@ -263,11 +264,18 @@ def compute_global_errors(where_to_get_data:str, where_to_save_data: str, genera
         write_dict_to_txt(statistics_errors[metric], f"{where_to_save_data}/{metric}.txt")
     
     write_info(f"{where_to_save_data}/info.txt", len(txt_files), txt_files)
+    
+    # dictionary of all metrics
+    total_dict = {}
         
-    #generate plots with aggregated images
+    #generate single plots with aggregated images
     for metric in dictionary_of_errors:  
-        plot_aggregated_errors_per_variable(f"{where_to_save_data}/{metric}.txt", f"{where_to_save_data}",f"{metric}")
-
+        dict_metric = plot_aggregated_errors_per_variable(f"{where_to_save_data}/{metric}.txt", f"{where_to_save_data}",string_after_saving,f"{metric}")
+        total_dict[metric] = dict_metric
+    
+    #generate plots with 3 metrics combined
+    combine_metrics_in_one_plot(total_dict, where_to_save_data, string_after_saving)
+    
     # generate instograms
     if generate_istograms:
         for metric in dictionary_of_errors:
@@ -277,7 +285,7 @@ def compute_global_errors(where_to_get_data:str, where_to_save_data: str, genera
                 plt.xlabel(metric, fontsize = 16)
                 plt.ylabel('Frequency', fontsize = 16)
                 plt.title(f"{variable.replace('_', ' ')}, {which_prediction} prediction", fontsize = 16)
-                plt.savefig(f'{where_to_save_data}/hist_{variable}_{metric}.png', dpi=300, bbox_inches='tight')
+                plt.savefig(f'{where_to_save_data}/hist_{variable}_{metric}_{string_after_saving}.png', dpi=300, bbox_inches='tight')
                 plt.close()
                 
     
@@ -305,7 +313,7 @@ def write_info( output_file, how_many_trajectories: int, which_trajectories: lis
         for i in which_trajectories:
             f.write(f"{i}\n")
             
-def plot_aggregated_errors_per_variable(path_txt_file:str, saving_path:str, metric:str):
+def plot_aggregated_errors_per_variable(path_txt_file:str, saving_path:str,string_after_saving:str, metric:str):
     df = pd.read_fwf(path_txt_file, skiprows=2, skipfooter=1, engine='python',
                   colspecs=[(0, 45), (45, 65), (66, 86)],
                   names=['Variable', 'Mean', 'Std'])
@@ -315,7 +323,21 @@ def plot_aggregated_errors_per_variable(path_txt_file:str, saving_path:str, metr
     dict_core = {}
     dict_faces = {}
     
+    to_be_skipped_RMSE_divided_by_max = ['Q_fp_Ac_scalar', 'Q_fp_Pa_scalar', 'Q_fp_Ra_scalar', 'Q_fp_Re_scalar', 'Q_fp_Th_scalar',  'Q_fp_Tl_scalar', 'm_debris_0_lower_plenum', 'm_debris_1_lower_plenum', 'm_magma_lower_plenum', 'm_debris_0_lower_vessel_vessel','m_debris_1_lower_vessel_vessel','m_magma_vessel_vessel'] #they are constant
+    to_be_skipped_RMSE_divided_by_mean = ['Q_fp_Ac_scalar', 'Q_fp_Pa_scalar', 'Q_fp_Ra_scalar', 'Q_fp_Re_scalar', 'Q_fp_Th_scalar',  'Q_fp_Tl_scalar', 'm_debris_0_lower_plenum', 'm_debris_1_lower_plenum', 'm_magma_lower_plenum', 'm_debris_0_lower_vessel_vessel','m_debris_1_lower_vessel_vessel','m_magma_vessel_vessel'] #they are constant
+    to_be_skipped_RMSE_divided_by_std = ['Q_fp_Ac_scalar', 'Q_fp_Pa_scalar', 'Q_fp_Ra_scalar', 'Q_fp_Re_scalar', 'Q_fp_Th_scalar',  'Q_fp_Tl_scalar', 'm_debris_0_lower_plenum', 'm_debris_1_lower_plenum', 'm_magma_lower_plenum', 'm_debris_0_lower_vessel_vessel','m_debris_1_lower_vessel_vessel','m_magma_vessel_vessel'] #they are constant
+    
     for count, i in enumerate(df['Variable']):
+        if metric == 'RMSE_divided_by_max':
+            if i in to_be_skipped_RMSE_divided_by_max:
+                continue
+        elif metric == 'RMSE_divided_by_mean':
+            if i in to_be_skipped_RMSE_divided_by_mean:
+                continue
+        elif metric == 'RMSE_divided_by_std':
+            if i in to_be_skipped_RMSE_divided_by_std:
+                continue
+        
         split = i.rsplit('_', 1)
         name = split[0].replace('_', ' ') 
         if split[-1] == 'scalar':
@@ -330,21 +352,35 @@ def plot_aggregated_errors_per_variable(path_txt_file:str, saving_path:str, metr
             dict_plenum[name] = [df['Mean'][count],df['Std'][count]]
         else:
             raise TypeError('Something wrong')
-    
-    
-        
-    make_hist_and_plots(dict_global, saving_path ,metric, latex_metric = which_metric(metric, "g"), label = 'g')
-    make_hist_and_plots(dict_vessel, saving_path ,metric,  latex_metric = which_metric(metric, "v"), label = 'v')
-    make_hist_and_plots(dict_plenum, saving_path ,metric,  latex_metric = which_metric(metric, "p"), label = 'p')
-    make_hist_and_plots(dict_core, saving_path ,metric, latex_metric = which_metric(metric, "cr"), label = 'cr')
-    make_hist_and_plots(dict_faces, saving_path ,metric, latex_metric = which_metric(metric, "f"), label = 'f')
-    
-    return 0
 
-def make_hist_and_plots(data_dictionary:dict, path:str,metric:str, latex_metric:str, label:str):
+    dict_global = make_hist_and_plots(dict_global, saving_path,string_after_saving ,metric, latex_metric = which_metric(metric, "g"), label = 'g')
+    dict_vessel = make_hist_and_plots(dict_vessel, saving_path ,string_after_saving,metric,  latex_metric = which_metric(metric, "v"), label = 'v',)
+    dict_plenum = make_hist_and_plots(dict_plenum, saving_path,string_after_saving ,metric,  latex_metric = which_metric(metric, "p"), label = 'p')
+    dict_core = make_hist_and_plots(dict_core, saving_path,string_after_saving ,metric, latex_metric = which_metric(metric, "cr"), label = 'cr')
+    dict_faces = make_hist_and_plots(dict_faces, saving_path,string_after_saving,metric, latex_metric = which_metric(metric, "f"), label = 'f')
     
+    dict_metric = { 'g': dict_global, 'v' : dict_vessel, 'p' :dict_plenum,'cr': dict_core, 'f': dict_faces}
+    return dict_metric
+
+def make_hist_and_plots(data_dictionary:dict, path:str,string_after_saving:str,metric:str, latex_metric:str, label:str):
+    
+    #aggregate fission products for ease of representation
+    if label == 'g':
+        new_dict = {}
+        mean = 0
+        std = 0
+        count = 0
+        for i in data_dictionary:
+            if i[:4] == 'Q fp':
+                mean += data_dictionary[i][0]
+                std += data_dictionary[i][1]
+                count+=1
+            else:
+                new_dict[i] = data_dictionary[i]
+        new_dict['FP'] = [mean/count, std/count]
+        data_dictionary = new_dict
+        
     #make histograms
-    
     hist_array = [data_dictionary[x][0] for x in data_dictionary]
     fig, axs = plt.subplots(1, 1, sharey=True, tight_layout=True)
     axs.hist(hist_array, bins=np.logspace(np.log10(min(hist_array)), np.log10(max(hist_array)), 100))
@@ -355,29 +391,28 @@ def make_hist_and_plots(data_dictionary:dict, path:str,metric:str, latex_metric:
     axs.axvline(median_val, color='red', linestyle='--', label=f'Median: {median_val:.2e}')
     plt.title(rf'{latex_metric} distribution for $s_{{{label}}}$ variables', fontsize=16)
     os.makedirs(f'{path}/{metric}/', exist_ok=True)
-    plt.savefig(f'{path}/{metric}/{metric}_{label}_histogram.png', dpi=300, bbox_inches='tight')
+    plt.savefig(f'{path}/{metric}/{metric}_{label}_histogram_{string_after_saving}.png', dpi=300, bbox_inches='tight')
     plt.close(fig)
     
     #make plots 
     plot_array_x = [x for x in data_dictionary]
     plot_array_y = [data_dictionary[x][0] for x in data_dictionary]
     plot_array_unc = [data_dictionary[x][1] for x in data_dictionary]
-    if metric == "RMSE_divided_by_std" and label == 'g':
-        fig, axs = plt.subplots(1, 1, tight_layout=True, figsize=(15, 5))
-    else:
-        fig, axs = plt.subplots(1, 1, tight_layout=True)
+    fig, axs = plt.subplots(1, 1, tight_layout=True)
     x_pos = range(len(plot_array_x))
     axs.errorbar(x_pos, plot_array_y, yerr=plot_array_unc, fmt='o', capsize=5)
     axs.set_xticks(x_pos)
-    axs.set_xticklabels(plot_array_x, rotation=45, ha='right')
+    axs.set_xticklabels(plot_array_x, rotation=90, ha='right')
     axs.set_ylabel(latex_metric, fontsize=16)
     if metric == "RMSE_divided_by_std":
         axs.hlines(0.5, xmin=0, xmax=len(plot_array_x)-1, colors='green', linestyles='solid')
     axs.set_yscale('log')
     plt.title(rf'{latex_metric} for $s_{{{label}}}$ variables', fontsize=16)
     os.makedirs(f'{path}/{metric}/', exist_ok=True)
-    plt.savefig(f'{path}/{metric}/{metric}_{label}_plot.png', dpi=300, bbox_inches='tight')
+    plt.savefig(f'{path}/{metric}/{metric}_{label}_plot_{string_after_saving}.png', dpi=300, bbox_inches='tight')
     plt.close(fig)
+    
+    return data_dictionary
     
     
     
@@ -399,3 +434,176 @@ def which_metric(metric, variable):
     else:
         raise TypeError(f"Something wrong, metric is {metric}")
     
+def combine_metrics_in_one_plot(total_dict:dict, where_to_save_data:str, string_after_saving:str):
+    metrics_to_be_plotted = ['RMSE_divided_by_mean', 'RMSE_divided_by_max', 'RMSE_divided_by_std']
+    variables_to_be_plotted = ['g','v','p','cr','f']
+    colors = ['blue', 'red', 'green']
+    
+    os.makedirs(f'{where_to_save_data}/combined_plots/', exist_ok=True)
+    
+    # Dictionary to store plotting data
+    plotting_data = {}
+    
+    for variable in variables_to_be_plotted:
+        plotting_data[variable] = {}
+        if variable == 'g':
+            fig, axs = plt.subplots(1, 1, tight_layout=True,figsize = (12,5))
+        elif variable == 'v':
+            fig, axs = plt.subplots(1, 1, tight_layout=True,figsize = (12,5))
+        elif variable == 'p':
+            fig, axs = plt.subplots(1, 1, tight_layout=True,figsize = (12,5))
+        elif variable == 'cr':
+            fig, axs = plt.subplots(1, 1, tight_layout=True,figsize = (5,5))
+        elif variable == 'f':
+            fig, axs = plt.subplots(1, 1, tight_layout=True,figsize = (5,5))
+        
+        for idx, metric in enumerate(metrics_to_be_plotted):
+            plot_array_x = [x for x in total_dict[metric][variable]]
+            plot_array_y = [total_dict[metric][variable][x][0] for x in total_dict[metric][variable]]
+            plot_array_unc = [total_dict[metric][variable][x][1] for x in total_dict[metric][variable]]
+            
+            for count, i in enumerate(plot_array_x):
+                split = i.rsplit(' ', 1)
+                if i =='Q H20 connection primary to vessel':
+                    plot_array_x[count] = 'Q H20 ptv'
+                elif i =='Q H20 connection vessel to primary':
+                    plot_array_x[count] = 'Q H20 vtp'
+                elif i =='Q steam connection vessel to primary':
+                    plot_array_x[count] = 'Q steam vtp'
+                elif i =='Q steam connection primary to vessel':
+                    plot_array_x[count] = 'Q steam ptv'
+                elif i =='m H20 connection vessel to primary':
+                    plot_array_x[count] = 'm H20 vtp'
+                elif i =='m H20 connection primary to vessel':
+                    plot_array_x[count] = 'm H20 ptv'
+                elif i =='m liq vessel mesh':
+                    plot_array_x[count] = 'm liq'
+                elif split[-1] == 'face' or split[-1] == 'vessel' or split[-1] == 'lower':
+                    plot_array_x[count] = split[0]
+            
+            # Store the processed data
+            plotting_data[variable][metric] = {
+                'labels': plot_array_x.copy(),  # Use .copy() to avoid reference issues
+                'values': plot_array_y,
+                'uncertainties': plot_array_unc
+            }
+            
+            x_pos = range(len(plot_array_x))
+            
+            if metric == 'RMSE_divided_by_mean':
+                label = r'RMSE$_{mean}$'
+            elif metric == 'RMSE_divided_by_max':
+                label = r'RMSE$_{max}$'
+            elif metric == 'RMSE_divided_by_std':
+                label = r'RMSE$_{std}$'
+            
+            axs.errorbar(x_pos, plot_array_y, yerr=plot_array_unc, 
+                        fmt='o', capsize=5, 
+                        color=colors[idx],
+                        label=label)
+        
+        axs.set_ylabel('Error', fontsize=16)
+        axs.hlines(0.5, xmin=0, xmax=len(plot_array_x)-1, colors='green', linestyles='dashed')
+        axs.set_yscale('log')
+        axs.set_xticks(x_pos)
+        axs.set_xticklabels([])
+        axs.tick_params(axis='y', labelsize=16) 
+        
+        for i, (pos, label_text) in enumerate(zip(x_pos, plot_array_x)):
+            y_offset = -0.02 if i % 2 == 0 else -0.06
+            axs.text(pos, y_offset, label_text, 
+                    ha='center', 
+                    va='top',
+                    transform=axs.get_xaxis_transform(),
+                    fontsize=10, rotation=45)
+        
+        if variable == 'g':
+            axs.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=16)
+        axs.set_title(rf'$s_{{{variable}}}$', fontsize =16)
+        plt.savefig(f'{where_to_save_data}/combined_plots/{variable}_{string_after_saving}.png', dpi=300, bbox_inches='tight')
+        plt.close(fig)
+    
+    # Save the plotting data
+    
+    with open(f'{where_to_save_data}/combined_plots/plotting_data.pkl', 'wb') as f:
+        pickle.dump(plotting_data, f)
+    
+    return 0
+def compare_errors_AE_and_AE_NODE(path_AE:str, path_AE_NODE:str, where_to_save:str, string_after_saving:str):
+    import pickle
+    
+    # Load the data from both models
+    with open(f'{path_AE}/combined_plots/plotting_data.pkl', 'rb') as f:
+        AE_data = pickle.load(f)
+    
+    with open(f'{path_AE_NODE}/combined_plots/plotting_data.pkl', 'rb') as f:
+        AE_NODE_data = pickle.load(f)
+    
+    # Define what to plot
+    metrics_to_be_plotted = ['RMSE_divided_by_mean', 'RMSE_divided_by_max', 'RMSE_divided_by_std']
+    variables_to_be_plotted = ['g','v','p','cr','f']
+    colors = ['blue', 'red', 'green']
+    
+    # Create directory for comparison plots
+    os.makedirs(f'{where_to_save}/comparison_plots/', exist_ok=True)
+    
+    for variable in variables_to_be_plotted:
+        if variable == 'g':
+            fig, axs = plt.subplots(1, 1, tight_layout=True,figsize = (10,5))
+        else:
+            fig, axs = plt.subplots(1, 1, tight_layout=True)
+        
+        for idx, metric in enumerate(metrics_to_be_plotted):
+            # Get data from both models
+            AE_metric = AE_data[variable][metric]
+            AE_NODE_metric = AE_NODE_data[variable][metric]
+            
+            labels = AE_metric['labels']  # Should be same for both
+            x_pos = range(len(labels))
+            
+            # Metric label
+            if metric == 'RMSE_divided_by_mean':
+                label_base = r'RMSE$_{mean}$'
+            elif metric == 'RMSE_divided_by_max':
+                label_base = r'RMSE$_{max}$'
+            elif metric == 'RMSE_divided_by_std':
+                label_base = r'RMSE$_{std}$'
+            
+            # Plot AE (circles)
+            axs.errorbar(x_pos, AE_metric['values'], yerr=AE_metric['uncertainties'], 
+                        fmt='o', capsize=5, 
+                        color=colors[idx],
+                        label=f'{label_base} AE',
+                        alpha=0.7)
+            
+            # Plot AE_NODE (squares)
+            axs.errorbar(x_pos, AE_NODE_metric['values'], yerr=AE_NODE_metric['uncertainties'], 
+                        fmt='s', capsize=5, 
+                        color=colors[idx],
+                        label=f'{label_base} AE-NODE',
+                        alpha=0.7)
+        
+        axs.set_ylabel('Error', fontsize=16)
+        axs.hlines(0.5, xmin=0, xmax=len(labels)-1, colors='green', linestyles='dashed')
+        axs.set_yscale('log')
+        axs.set_xticks(x_pos)
+        axs.set_xticklabels([])
+        axs.tick_params(axis='y', labelsize=16) 
+        
+        # Manually place labels with alternating heights
+        for i, (pos, label_text) in enumerate(zip(x_pos, labels)):
+            y_offset = -0.02 if i % 2 == 0 else -0.06
+            axs.text(pos, y_offset, label_text, 
+                    ha='center', 
+                    va='top',
+                    transform=axs.get_xaxis_transform(),
+                    fontsize=10, rotation=45)
+        
+        if variable == 'g':
+            axs.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=16)
+        axs.set_title(rf'$s_{{{variable}}}$ - AE vs AE-NODE comparison', fontsize = 16)
+        
+        plt.savefig(f'{where_to_save}/comparison_plots/{variable}_comparison_{string_after_saving}.png', dpi=300, bbox_inches='tight')
+        plt.close(fig)
+    
+    return 0

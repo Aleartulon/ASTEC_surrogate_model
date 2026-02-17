@@ -19,6 +19,7 @@ class Model_Test:
         self.path_to_test_data = information['path_to_test_data']
         self.name_test_file = information['name_test_file']
         self.path_to_model = information['path_to_model']
+        self.string_after_saving = information['string_after_saving']
         
         self.directory_images = self.path_to_model+'/Images/'
         self.directory_images_AutoEncoding_fields_reconstruction_scalar = self.directory_images + 'AutoEncoding/fields_reconstruction_scalar'
@@ -48,6 +49,9 @@ class Model_Test:
         self.directory_images_AE_NODE_global_errors_fields = self.directory_images + 'AE_NODE/global_errors_reconstruction_fields'
         self.directory_images_AE_NODE_errors_definitive_latent = self.directory_images + 'AE_NODE/errors_reconstruction_definitive_latent'
         self.directory_images_AE_NODE_errors_latent_per_shape = self.directory_images + 'AE_NODE/errors_reconstruction_latent_per_shape'
+        
+        self.directory_images_comparison_AE_AE_NODE = self.directory_images + '/comparison_AE_AE_NODE/'
+        os.makedirs(self.directory_images_comparison_AE_AE_NODE, exist_ok=True)
         
         self.directory_images_Operator_Actions = self.directory_images + '/Operator_Actions'
         self.which_processor = information['which_processor']
@@ -157,7 +161,7 @@ class Model_Test:
             
             del reconstructed_fields_per_trajectory_AE   
             #compute global errors AutoEncoding
-            compute_global_errors(self.directory_images_AutoEncoding_errors, self.directory_images_AutoEncoding_global_errors, generate_istograms = self.generate_istograms, which_prediction = 'AutoEncoder')
+            compute_global_errors(self.directory_images_AutoEncoding_errors, self.string_after_saving, self.directory_images_AutoEncoding_global_errors, generate_istograms = self.generate_istograms, which_prediction = 'AutoEncoder')
             
             # print Operator Actions of wanted simulations
             self.print_operator_actions(definitive_latent_vector_per_trajectory_AE)
@@ -193,7 +197,10 @@ class Model_Test:
                     self.generate_pictures_latent_space(trajectory_to_be_plotted, latent_vectors_per_trajectory_per_shape_AE, definitive_latent_vector_per_trajectory_AE, Time, 'AE_NODE', latent_vectors_per_trajectory_per_shape_AE_NODE, definitive_latent_vector_per_trajectory_AE_NODE)
                     
             #compute global errors AE_NODE
-            compute_global_errors(self.directory_images_AE_NODE_errors_fields, self.directory_images_AE_NODE_global_errors_fields, generate_istograms = self.generate_istograms, which_prediction = 'AE NODE')
+            compute_global_errors(self.directory_images_AE_NODE_errors_fields, self.string_after_saving, self.directory_images_AE_NODE_global_errors_fields, generate_istograms = self.generate_istograms, which_prediction = 'AE NODE')
+            
+            #compare errors AE and NODE
+            compare_errors_AE_and_AE_NODE(self.directory_images_AutoEncoding_global_errors, self.directory_images_AE_NODE_global_errors_fields, self.directory_images_comparison_AE_AE_NODE, self.string_after_saving)
             print('-----------------------------------------------------------------------')
             
     def print_operator_actions(self, definitive_latent_vector_per_trajectory_AE:dict):

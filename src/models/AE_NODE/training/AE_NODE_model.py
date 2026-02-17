@@ -26,15 +26,12 @@ class AE_NODE:
         self.k = model_information['k']
         self.which_solver = model_information['which_solver']
         self.substep_RK4 = model_information['substep_RK4']
-        self.time_of_AE = model_information['time_of_AE']
         self.time_of_lr_war_up = model_information['time_of_lr_war_up']
         self.clipping = model_information['clipping']
         self.is_coupled = model_information['is_coupled']
         self.compile = config_training['compile']
         self.freeze_AE_after_a_while = model_information['freeze_AE_after_a_while']
         self.is_AE_frozen = True if not self.is_coupled[0] and self.is_coupled[1] == 'NODE' else False
-        if not self.is_coupled[0]:
-            self.time_of_AE = 0
         self.autoregressive_step = model_information['autoregressive_step']
         self.last_time_series_weigth_AR_latent = model_information['last_time_series_weigth_AR_latent']
         self.last_time_series_weigth_AR_full_reconstruction = model_information['last_time_series_weigth_AR_full_reconstruction']
@@ -65,6 +62,9 @@ class AE_NODE:
         self.waiting_epochs_before_new_dataset_creation = config_training['waiting_epochs_before_new_dataset_creation']
         self.dynamic_dataset_generation_during_training = config_training['dynamic_dataset_generation_during_training']
         self.time_windows = config_training['time_windows']
+        self.time_of_AE = self.waiting_epochs_before_new_dataset_creation[0]
+        if not self.is_coupled[0]:
+            self.time_of_AE = 0
         
         self.indeces_training_boundaries = '_'
         self.indeces_validation_boundaries = '_'

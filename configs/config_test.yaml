@@ -1,8 +1,8 @@
 path_to_test_data : '../../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/made_datasets/only_loca_min_max/'
-name_test_file: 'data_testing_1_3.h5' # 'data_testing_583_602.h5'
-path_to_model: '../../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/saved_logs/LOCA/AE_NODE/Models/smoothed_1_3_FiLM_with_full_reconstruction_0.1_derivative/'
+name_test_file: 'data_testing_602.h5' # 'data_testing_583_602.h5' # 'data_testing_1_3.h5'
+path_to_model: '../../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/saved_logs/LOCA/AE_NODE/Models/full_smoothed_larger_bs_concatenation_less_time/'
 device: 'cuda:0'
-trajectories_to_be_plotted : [1]
+trajectories_to_be_plotted : [602]
 autoencoding_figures : true
 autoencoding_latent_figures : true
 latent_prediction_figures : true
@@ -11,8 +11,9 @@ actual_latent_prediction_figures: true
 TF_fields_prediction_figures: true
 TF_latent_prediction_figures: true
 compute_TF : true
-operator_actions_indeces : [1] #[583,584,585,586,587,588,589,590,591,592,593,594,595,596,597,598,599,600,601,602]
+operator_actions_indeces : [602] #[583,584,585,586,587,588,589,590,591,592,593,594,595,596,597,598,599,600,601,602]
 generate_images_error_per_time_step : false
 generate_istograms : false
 which_processor: 'mine' # 'dopri5' to use adaptive RK of order 4-5. 'mine' uses mine
 substep_RK4 : 1
+string_after_saving : 'LOCA'
