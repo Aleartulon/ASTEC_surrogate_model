@@ -1,8 +1,8 @@
 path_to_test_data : '../../../../../../../scratch/ROM_datasets_ale/ASTEC/made_datasets/only_sbo_min_max/'
 name_test_file: 'data_testing_1000_1027.h5'
-path_to_model: '../../../../../../../scratch/ROM_datasets_ale/ASTEC/saved_logs/LOCA/AE_NODE/Models/6_latent/'
+path_to_model: '../../../../../../../scratch/ROM_datasets_ale/ASTEC/saved_logs/SBO/AE_NODE/Models/6_latent/'
 device: 'cuda:2'
-trajectories_to_be_plotted : [1000]
+trajectories_to_be_plotted : [1000, 1010, 1023]
 autoencoding_figures : true
 autoencoding_latent_figures : true
 latent_prediction_figures : true

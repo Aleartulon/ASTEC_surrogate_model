@@ -478,11 +478,11 @@ def combine_metrics_in_one_plot(total_dict:dict, where_to_save_data:str, string_
 
             x_pos = range(len(plot_array_x))
             if metric == 'RMSE_divided_by_mean':
-                label = r'RMSE$_{mean}$'
+                label = r'RMSE$_{mean}(vr)$'
             elif metric == 'RMSE_divided_by_max':
-                label = r'RMSE$_{max}$'
+                label = r'RMSE$_{max}(vr)$'
             elif metric == 'RMSE_divided_by_std':
-                label = r'RMSE$_{std}$'
+                label = r'RMSE$_{std}(vr)$'
 
             axs.errorbar(x_pos, plot_array_y, yerr=plot_array_unc,
                          fmt='o', capsize=5,
@@ -546,11 +546,11 @@ def combine_metrics_in_one_plot(total_dict:dict, where_to_save_data:str, string_
             data = plotting_data[variable][metric]
 
             if metric == 'RMSE_divided_by_mean':
-                label = r'RMSE$_{mean}$'
+                label = r'RMSE$_{mean}(vr)$'
             elif metric == 'RMSE_divided_by_max':
-                label = r'RMSE$_{max}$'
+                label = r'RMSE$_{max}(vr)$'
             elif metric == 'RMSE_divided_by_std':
-                label = r'RMSE$_{std}$'
+                label = r'RMSE$_{std}(vr)$'
 
             ep = ax.errorbar(x_pos, data['values'], yerr=data['uncertainties'],
                              fmt='o', capsize=5,
@@ -629,11 +629,11 @@ def compare_errors_AE_and_AE_NODE(path_AE:str, path_AE_NODE:str, where_to_save:s
             AE_NODE_metric = AE_NODE_data[variable][metric]
 
             if metric == 'RMSE_divided_by_mean':
-                label_base = r'RMSE$_{mean}$'
+                label_base = r'RMSE$_{mean}(vr)$'
             elif metric == 'RMSE_divided_by_max':
-                label_base = r'RMSE$_{max}$'
+                label_base = r'RMSE$_{max}(vr)$'
             elif metric == 'RMSE_divided_by_std':
-                label_base = r'RMSE$_{std}$'
+                label_base = r'RMSE$_{std}$(vr)'
 
             ep1 = ax.errorbar(x_pos, AE_metric['values'], yerr=AE_metric['uncertainties'],
                               fmt='o', capsize=5, color=colors[idx],

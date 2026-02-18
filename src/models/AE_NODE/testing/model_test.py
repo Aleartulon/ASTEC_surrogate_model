@@ -576,7 +576,6 @@ class Model_Test:
             index_time = 1
         else:
             raise TypeError('Wrong type of prediction')
-            
         plt.figure(figsize=figsize)
         for dimension in range(latent_vectors_per_trajectory_per_shape_AE[trajectory][shape_index].size(-1)):
             color = plt.gca()._get_lines.get_next_color()
@@ -792,11 +791,11 @@ class Model_Test:
         #save fig of latent space of scalar values
         self.plot_latent_space_per_shape(trajectory_to_be_plotted, Time, latent_vectors_per_trajectory_per_shape_AE, latent_vectors_per_trajectory_per_shape_AE_NODE, which_prediction, shape_index = 0, ylabel='latent scalar', figsize=(15, 5), fontsize=16)
         #save fig of latent space of core
-        self.plot_latent_space_per_shape(trajectory_to_be_plotted, Time, latent_vectors_per_trajectory_per_shape_AE, latent_vectors_per_trajectory_per_shape_AE_NODE, which_prediction, shape_index = 1, ylabel='latent core', figsize=(15, 5), fontsize=16)
+        self.plot_latent_space_per_shape(trajectory_to_be_plotted, Time, latent_vectors_per_trajectory_per_shape_AE, latent_vectors_per_trajectory_per_shape_AE_NODE, which_prediction, shape_index = 1, ylabel='latent lower plenum', figsize=(15, 5), fontsize=16)
         #save fig of latent space of vessel 
-        self.plot_latent_space_per_shape(trajectory_to_be_plotted, Time, latent_vectors_per_trajectory_per_shape_AE, latent_vectors_per_trajectory_per_shape_AE_NODE, which_prediction, shape_index = 2, ylabel='latent vessel', figsize=(15, 5), fontsize=16)
+        self.plot_latent_space_per_shape(trajectory_to_be_plotted, Time, latent_vectors_per_trajectory_per_shape_AE, latent_vectors_per_trajectory_per_shape_AE_NODE, which_prediction, shape_index = 2, ylabel='latent core', figsize=(15, 5), fontsize=16)
         #save fig of latent space of lower plenum 
-        self.plot_latent_space_per_shape(trajectory_to_be_plotted, Time, latent_vectors_per_trajectory_per_shape_AE, latent_vectors_per_trajectory_per_shape_AE_NODE, which_prediction, shape_index = 3, ylabel='latent lower plenum', figsize=(15, 5), fontsize=16)
+        self.plot_latent_space_per_shape(trajectory_to_be_plotted, Time, latent_vectors_per_trajectory_per_shape_AE, latent_vectors_per_trajectory_per_shape_AE_NODE, which_prediction, shape_index = 3, ylabel='latent vessel', figsize=(15, 5), fontsize=16)
         #save fig of latent space of faces 
         self.plot_latent_space_per_shape(trajectory_to_be_plotted, Time, latent_vectors_per_trajectory_per_shape_AE,  latent_vectors_per_trajectory_per_shape_AE_NODE, which_prediction, shape_index = 4, ylabel='latent faces', figsize=(15, 5), fontsize=16)
         
