@@ -41,7 +41,7 @@ class Encoder(nn.Module):
         latent_faces_variables = self.encoder_faces_variables(faces_variables)
         
         #concatenate latent variables without latent_boundaries_variables
-        latent_in_variables_separated = [latent_scalar_variables, latent_plenum_variables, latent_core_variables, latent_vessel_variables, latent_faces_variables, latent_boundaries_variables] #useful at testing
+        latent_in_variables_separated = [latent_scalar_variables, latent_plenum_variables, latent_core_variables, latent_vessel_variables, latent_faces_variables]
         latent_in_variables = tc.concatenate((latent_scalar_variables, latent_plenum_variables, latent_core_variables, latent_vessel_variables, latent_faces_variables), axis = -1)
         definitive_latent = self.final_reduction(latent_in_variables) #final reduced vector of inner fields
         regularization_latent = self.l1_latent_regularization(definitive_latent, self.lambda_regularization) #regularization latent space 
@@ -205,7 +205,7 @@ class Decoder(nn.Module):
         self.decoder_vessel_variables = Convolutional_Decoder(config_training, model_information['auto_encoding']['auto_encoder_vessel'])
         self.decoder_faces_variables = Convolutional_Decoder(config_training, model_information['auto_encoding']['auto_encoder_faces'])
         self.indeces = self.get_indeces_reconstruction_latent_vectors(model_information)
-                
+ 
     def get_indeces_reconstruction_latent_vectors(self, model_information:dict):
         indeces = {}
         index = 0
