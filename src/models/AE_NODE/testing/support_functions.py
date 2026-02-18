@@ -163,7 +163,7 @@ def RMSE_divided_by_something(input:tc.tensor, target:tc.tensor, which_division:
     if which_division == 'max':
         normalization = tc.amax(target, (0,) + where_to_contract) + epsilon
     elif which_division == 'mean':
-        normalization = tc.mean(np.abs(target), (0,) + where_to_contract) + epsilon
+        normalization = tc.mean(tc.abs(target), (0,) + where_to_contract) + epsilon
     elif which_division == 'std':
         normalization = tc.std(target, (0,) + where_to_contract) + epsilon
     else:
@@ -438,172 +438,242 @@ def combine_metrics_in_one_plot(total_dict:dict, where_to_save_data:str, string_
     metrics_to_be_plotted = ['RMSE_divided_by_mean', 'RMSE_divided_by_max', 'RMSE_divided_by_std']
     variables_to_be_plotted = ['g','v','p','cr','f']
     colors = ['blue', 'red', 'green']
-    
     os.makedirs(f'{where_to_save_data}/combined_plots/', exist_ok=True)
-    
+
     # Dictionary to store plotting data
     plotting_data = {}
-    
     for variable in variables_to_be_plotted:
         plotting_data[variable] = {}
-        if variable == 'g':
-            fig, axs = plt.subplots(1, 1, tight_layout=True,figsize = (12,5))
-        elif variable == 'v':
-            fig, axs = plt.subplots(1, 1, tight_layout=True,figsize = (12,5))
-        elif variable == 'p':
-            fig, axs = plt.subplots(1, 1, tight_layout=True,figsize = (12,5))
-        elif variable == 'cr':
-            fig, axs = plt.subplots(1, 1, tight_layout=True,figsize = (5,5))
-        elif variable == 'f':
-            fig, axs = plt.subplots(1, 1, tight_layout=True,figsize = (5,5))
-        
+        fig, axs = plt.subplots(1, 1, tight_layout=True)
         for idx, metric in enumerate(metrics_to_be_plotted):
             plot_array_x = [x for x in total_dict[metric][variable]]
             plot_array_y = [total_dict[metric][variable][x][0] for x in total_dict[metric][variable]]
             plot_array_unc = [total_dict[metric][variable][x][1] for x in total_dict[metric][variable]]
-            
             for count, i in enumerate(plot_array_x):
                 split = i.rsplit(' ', 1)
-                if i =='Q H20 connection primary to vessel':
+                if i == 'Q H20 connection primary to vessel':
                     plot_array_x[count] = 'Q H20 ptv'
-                elif i =='Q H20 connection vessel to primary':
+                elif i == 'Q H20 connection vessel to primary':
                     plot_array_x[count] = 'Q H20 vtp'
-                elif i =='Q steam connection vessel to primary':
+                elif i == 'Q steam connection vessel to primary':
                     plot_array_x[count] = 'Q steam vtp'
-                elif i =='Q steam connection primary to vessel':
+                elif i == 'Q steam connection primary to vessel':
                     plot_array_x[count] = 'Q steam ptv'
-                elif i =='m H20 connection vessel to primary':
+                elif i == 'm H20 connection vessel to primary':
                     plot_array_x[count] = 'm H20 vtp'
-                elif i =='m H20 connection primary to vessel':
+                elif i == 'm H20 connection primary to vessel':
                     plot_array_x[count] = 'm H20 ptv'
                 elif i =='m liq vessel mesh':
                     plot_array_x[count] = 'm liq'
+                elif i =='m liq vess lower':
+                    plot_array_x[count] = 'm liq'
                 elif split[-1] == 'face' or split[-1] == 'vessel' or split[-1] == 'lower':
                     plot_array_x[count] = split[0]
-            
-            # Store the processed data
+
             plotting_data[variable][metric] = {
-                'labels': plot_array_x.copy(),  # Use .copy() to avoid reference issues
+                'labels': plot_array_x.copy(),
                 'values': plot_array_y,
                 'uncertainties': plot_array_unc
             }
-            
+
             x_pos = range(len(plot_array_x))
-            
             if metric == 'RMSE_divided_by_mean':
                 label = r'RMSE$_{mean}$'
             elif metric == 'RMSE_divided_by_max':
                 label = r'RMSE$_{max}$'
             elif metric == 'RMSE_divided_by_std':
                 label = r'RMSE$_{std}$'
-            
-            axs.errorbar(x_pos, plot_array_y, yerr=plot_array_unc, 
-                        fmt='o', capsize=5, 
-                        color=colors[idx],
-                        label=label)
-        
+
+            axs.errorbar(x_pos, plot_array_y, yerr=plot_array_unc,
+                         fmt='o', capsize=5,
+                         color=colors[idx],
+                         label=label)
+
+        ref_labels = plotting_data[variable][metrics_to_be_plotted[0]]['labels']
+        x_pos = range(len(ref_labels))
+
         axs.set_ylabel('Error', fontsize=16)
-        axs.hlines(0.5, xmin=0, xmax=len(plot_array_x)-1, colors='green', linestyles='dashed')
+        axs.hlines(0.5, xmin=0, xmax=max(len(ref_labels)-1, 1), colors='green', linestyles='dashed')
         axs.set_yscale('log')
         axs.set_xticks(x_pos)
         axs.set_xticklabels([])
-        axs.tick_params(axis='y', labelsize=16) 
-        
-        for i, (pos, label_text) in enumerate(zip(x_pos, plot_array_x)):
-            y_offset = -0.02 if i % 2 == 0 else -0.06
-            axs.text(pos, y_offset, label_text, 
-                    ha='center', 
-                    va='top',
-                    transform=axs.get_xaxis_transform(),
-                    fontsize=10, rotation=45)
-        
-        if variable == 'g':
-            axs.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=16)
-        axs.set_title(rf'$s_{{{variable}}}$', fontsize =16)
+        axs.tick_params(axis='y', labelsize=16)
+        for i, (pos, label_text) in enumerate(zip(x_pos, ref_labels)):
+            axs.text(pos, -0.02, label_text,
+                     ha='center', va='top',
+                     transform=axs.get_xaxis_transform(),
+                     fontsize=15, rotation=45)
+        axs.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=16)
+        axs.set_title(rf'$s_{{{variable}}}$', fontsize=16)
         plt.savefig(f'{where_to_save_data}/combined_plots/{variable}_{string_after_saving}.png', dpi=300, bbox_inches='tight')
         plt.close(fig)
-    
-    # Save the plotting data
-    
+
+    # ----------------------------------------------------------------
+    # Merge cr and f into cr_f, then save pkl with mutation
+    # ----------------------------------------------------------------
+    plotting_data['cr_f'] = {metric: {} for metric in metrics_to_be_plotted}
+    for metric in metrics_to_be_plotted:
+        plotting_data['cr_f'][metric] = {
+            'labels':        plotting_data['cr'][metric]['labels'] + plotting_data['f'][metric]['labels'],
+            'values':        list(np.concatenate([plotting_data['cr'][metric]['values'],        plotting_data['f'][metric]['values']])),
+            'uncertainties': list(np.concatenate([plotting_data['cr'][metric]['uncertainties'], plotting_data['f'][metric]['uncertainties']]))
+        }
+    plotting_data.pop('cr')
+    plotting_data.pop('f')
+
+    # Save the plotting data (with mutation, cr_f instead of cr and f)
     with open(f'{where_to_save_data}/combined_plots/plotting_data.pkl', 'wb') as f:
         pickle.dump(plotting_data, f)
-    
+
+    # ----------------------------------------------------------------
+    # Combined figure: row 1 -> cr_f, p  |  row 2 -> g, v
+    # ----------------------------------------------------------------
+    fig, axs_dict = plt.subplot_mosaic(
+        [['cr_f', 'p'],
+         ['g',    'v']],
+        figsize=(14, 10),
+        tight_layout=True
+    )
+    legend_handles, legend_labels = [], []
+
+    for idx_var, variable in enumerate(['cr_f', 'p', 'g', 'v']):
+        ax = axs_dict[variable]
+
+        ref_labels = plotting_data[variable][metrics_to_be_plotted[0]]['labels']
+        x_pos = range(len(ref_labels))
+
+        for idx, metric in enumerate(metrics_to_be_plotted):
+            data = plotting_data[variable][metric]
+
+            if metric == 'RMSE_divided_by_mean':
+                label = r'RMSE$_{mean}$'
+            elif metric == 'RMSE_divided_by_max':
+                label = r'RMSE$_{max}$'
+            elif metric == 'RMSE_divided_by_std':
+                label = r'RMSE$_{std}$'
+
+            ep = ax.errorbar(x_pos, data['values'], yerr=data['uncertainties'],
+                             fmt='o', capsize=5,
+                             color=colors[idx],
+                             label=label)
+
+            if idx_var == 0:
+                legend_handles.append(ep)
+                legend_labels.append(label)
+
+        ax.set_ylabel('Error', fontsize=16)
+        ax.hlines(0.5, xmin=0, xmax=max(len(ref_labels)-1, 1),
+                  colors='green', linestyles='dashed')
+        ax.set_yscale('log')
+        ax.set_xticks(x_pos)
+        ax.set_xticklabels([])
+        ax.tick_params(axis='y', labelsize=13)
+        for i, (pos, label_text) in enumerate(zip(x_pos, ref_labels)):
+            ax.text(pos, -0.02, label_text,
+                    ha='center', va='top',
+                    transform=ax.get_xaxis_transform(),
+                    fontsize=15, rotation=45)
+        if variable == 'cr_f':
+            title = rf'$s_{{cr}},s_f$'
+        elif variable == 'g':
+            title = rf'$s_g, s_{{B_1}}, s_{{B_2}}$'
+        else:
+            title = rf'$s_{{{variable}}}$'
+            
+        ax.set_title(title, fontsize=16)
+
+    fig.legend(legend_handles, legend_labels,
+               loc='lower center',
+               ncol=3,
+               fontsize=16,
+               bbox_to_anchor=(0.5, -0.04))
+
+    plt.savefig(f'{where_to_save_data}/combined_plots/all_variables_{string_after_saving}.png',
+                dpi=300, bbox_inches='tight')
+    plt.close(fig)
+
     return 0
+
 def compare_errors_AE_and_AE_NODE(path_AE:str, path_AE_NODE:str, where_to_save:str, string_after_saving:str):
     import pickle
-    
-    # Load the data from both models
+    # Load the data from both models (already mutated: cr_f instead of cr and f)
     with open(f'{path_AE}/combined_plots/plotting_data.pkl', 'rb') as f:
         AE_data = pickle.load(f)
-    
     with open(f'{path_AE_NODE}/combined_plots/plotting_data.pkl', 'rb') as f:
         AE_NODE_data = pickle.load(f)
-    
-    # Define what to plot
+
     metrics_to_be_plotted = ['RMSE_divided_by_mean', 'RMSE_divided_by_max', 'RMSE_divided_by_std']
-    variables_to_be_plotted = ['g','v','p','cr','f']
     colors = ['blue', 'red', 'green']
-    
-    # Create directory for comparison plots
+
     os.makedirs(f'{where_to_save}/comparison_plots/', exist_ok=True)
-    
-    for variable in variables_to_be_plotted:
-        if variable == 'g':
-            fig, axs = plt.subplots(1, 1, tight_layout=True,figsize = (10,5))
-        else:
-            fig, axs = plt.subplots(1, 1, tight_layout=True)
-        
+
+    # ----------------------------------------------------------------
+    # Combined figure: row 1 -> cr_f, p  |  row 2 -> g, v
+    # ----------------------------------------------------------------
+    fig, axs_dict = plt.subplot_mosaic(
+        [['cr_f', 'p'],
+         ['g',    'v']],
+        figsize=(14, 10),
+        tight_layout=True
+    )
+    legend_handles, legend_labels = [], []
+
+    for idx_var, variable in enumerate(['cr_f', 'p', 'g', 'v']):
+        ax = axs_dict[variable]
+
+        ref_labels = AE_data[variable][metrics_to_be_plotted[0]]['labels']
+        x_pos = range(len(ref_labels))
+
         for idx, metric in enumerate(metrics_to_be_plotted):
-            # Get data from both models
-            AE_metric = AE_data[variable][metric]
+            AE_metric      = AE_data[variable][metric]
             AE_NODE_metric = AE_NODE_data[variable][metric]
-            
-            labels = AE_metric['labels']  # Should be same for both
-            x_pos = range(len(labels))
-            
-            # Metric label
+
             if metric == 'RMSE_divided_by_mean':
                 label_base = r'RMSE$_{mean}$'
             elif metric == 'RMSE_divided_by_max':
                 label_base = r'RMSE$_{max}$'
             elif metric == 'RMSE_divided_by_std':
                 label_base = r'RMSE$_{std}$'
-            
-            # Plot AE (circles)
-            axs.errorbar(x_pos, AE_metric['values'], yerr=AE_metric['uncertainties'], 
-                        fmt='o', capsize=5, 
-                        color=colors[idx],
-                        label=f'{label_base} AE',
-                        alpha=0.7)
-            
-            # Plot AE_NODE (squares)
-            axs.errorbar(x_pos, AE_NODE_metric['values'], yerr=AE_NODE_metric['uncertainties'], 
-                        fmt='s', capsize=5, 
-                        color=colors[idx],
-                        label=f'{label_base} AE-NODE',
-                        alpha=0.7)
-        
-        axs.set_ylabel('Error', fontsize=16)
-        axs.hlines(0.5, xmin=0, xmax=len(labels)-1, colors='green', linestyles='dashed')
-        axs.set_yscale('log')
-        axs.set_xticks(x_pos)
-        axs.set_xticklabels([])
-        axs.tick_params(axis='y', labelsize=16) 
-        
-        # Manually place labels with alternating heights
-        for i, (pos, label_text) in enumerate(zip(x_pos, labels)):
-            y_offset = -0.02 if i % 2 == 0 else -0.06
-            axs.text(pos, y_offset, label_text, 
-                    ha='center', 
-                    va='top',
-                    transform=axs.get_xaxis_transform(),
-                    fontsize=10, rotation=45)
-        
-        if variable == 'g':
-            axs.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=16)
-        axs.set_title(rf'$s_{{{variable}}}$ - AE vs AE-NODE comparison', fontsize = 16)
-        
-        plt.savefig(f'{where_to_save}/comparison_plots/{variable}_comparison_{string_after_saving}.png', dpi=300, bbox_inches='tight')
-        plt.close(fig)
-    
+
+            ep1 = ax.errorbar(x_pos, AE_metric['values'], yerr=AE_metric['uncertainties'],
+                              fmt='o', capsize=5, color=colors[idx],
+                              label=f'{label_base} AE', alpha=0.7)
+            ep2 = ax.errorbar(x_pos, AE_NODE_metric['values'], yerr=AE_NODE_metric['uncertainties'],
+                              fmt='s', capsize=5, color=colors[idx],
+                              label=f'{label_base} AE-NODE', alpha=0.7)
+
+            if idx_var == 0:
+                legend_handles.extend([ep1, ep2])
+                legend_labels.extend([f'{label_base} AE', f'{label_base} AE-NODE'])
+
+        ax.set_ylabel('Error', fontsize=16)
+        ax.hlines(0.5, xmin=0, xmax=max(len(ref_labels)-1, 1),
+                  colors='green', linestyles='dashed')
+        ax.set_yscale('log')
+        ax.set_xticks(x_pos)
+        ax.set_xticklabels([])
+        ax.tick_params(axis='y', labelsize=16)
+        for i, (pos, label_text) in enumerate(zip(x_pos, ref_labels)):
+            ax.text(pos, -0.02, label_text,
+                    ha='center', va='top',
+                    transform=ax.get_xaxis_transform(),
+                    fontsize=15, rotation=45)
+        if variable == 'cr_f':
+            title = rf'$s_{{cr}}, s_f$, AE vs AE-NODE'
+        elif variable == 'g':
+            title = rf'$s_g, s_{{B_1}}, s_{{B_2}}$, AE vs AE-NODE'
+        else:
+            title = rf'$s_{{{variable}}}$, AE vs AE-NODE'
+        ax.set_title(title, fontsize=16)
+
+    fig.legend(legend_handles, legend_labels,
+               loc='lower center',
+               ncol=3,
+               fontsize=16,
+               bbox_to_anchor=(0.5, -0.05))
+
+    plt.savefig(f'{where_to_save}/comparison_plots/all_variables_comparison_{string_after_saving}.png',
+                dpi=300, bbox_inches='tight')
+    plt.close(fig)
+
     return 0
