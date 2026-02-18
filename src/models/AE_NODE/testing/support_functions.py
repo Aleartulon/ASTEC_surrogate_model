@@ -163,7 +163,7 @@ def RMSE_divided_by_something(input:tc.tensor, target:tc.tensor, which_division:
     if which_division == 'max':
         normalization = tc.amax(target, (0,) + where_to_contract) + epsilon
     elif which_division == 'mean':
-        normalization = tc.mean(np.abs(target), (0,) + where_to_contract) + epsilon
+        normalization = tc.mean(tc.abs(target), (0,) + where_to_contract) + epsilon
     elif which_division == 'std':
         normalization = tc.std(target, (0,) + where_to_contract) + epsilon
     else:
