@@ -1,7 +1,7 @@
 from src.models.AE_NODE.training.data_functions import *
 import time 
 import torch.nn.functional as F
-#from torchdiffeq import odeint
+from torchdiffeq import odeint
 
 class Training_Losses():
     def __init__(self, ae_node_instance):

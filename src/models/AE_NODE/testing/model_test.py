@@ -576,7 +576,6 @@ class Model_Test:
             index_time = 1
         else:
             raise TypeError('Wrong type of prediction')
-            
         plt.figure(figsize=figsize)
         for dimension in range(latent_vectors_per_trajectory_per_shape_AE[trajectory][shape_index].size(-1)):
             color = plt.gca()._get_lines.get_next_color()
@@ -769,7 +768,7 @@ class Model_Test:
         self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 5 , field_name = 'P_H2_lower_plenum', ylabel = 'P H2 lower plenum', figsize=(5, 5), fontsize=16)
         self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 6 , field_name = 'P_steam_lower_plenum', ylabel = 'P steam lower plenum', figsize=(5, 5), fontsize=16)
         self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 7 , field_name = 'm_gas_lower_plenum', ylabel = 'm gas lower plenum', figsize=(5, 5), fontsize=16)
-        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 8 ,field_name = 'm_liq_lower_plenum', ylabel =  'm liq vessel lower plenum', figsize=(5, 5), fontsize=16)
+        self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 8 ,field_name = 'm_liq_lower_plenum', ylabel =  'm liq lower plenum', figsize=(5, 5), fontsize=16)
         self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 9 , field_name = 'rho_gas_lower_plenum', ylabel = 'rho gas lower plenum', figsize=(5, 5), fontsize=16)
         self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 10 , field_name = 'rho_liq_lower_plenum', ylabel = 'rho liq lower plenum', figsize=(5, 5), fontsize=16)
         self.plot_scalar_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, shape_index = 3, variable_index = 11 , field_name = 'Q_liq_vap_lower_plenum', ylabel = 'Q liq vap lower plenum', figsize=(5, 5), fontsize=16)
@@ -792,11 +791,11 @@ class Model_Test:
         #save fig of latent space of scalar values
         self.plot_latent_space_per_shape(trajectory_to_be_plotted, Time, latent_vectors_per_trajectory_per_shape_AE, latent_vectors_per_trajectory_per_shape_AE_NODE, which_prediction, shape_index = 0, ylabel='latent scalar', figsize=(15, 5), fontsize=16)
         #save fig of latent space of core
-        self.plot_latent_space_per_shape(trajectory_to_be_plotted, Time, latent_vectors_per_trajectory_per_shape_AE, latent_vectors_per_trajectory_per_shape_AE_NODE, which_prediction, shape_index = 1, ylabel='latent core', figsize=(15, 5), fontsize=16)
+        self.plot_latent_space_per_shape(trajectory_to_be_plotted, Time, latent_vectors_per_trajectory_per_shape_AE, latent_vectors_per_trajectory_per_shape_AE_NODE, which_prediction, shape_index = 1, ylabel='latent lower plenum', figsize=(15, 5), fontsize=16)
         #save fig of latent space of vessel 
-        self.plot_latent_space_per_shape(trajectory_to_be_plotted, Time, latent_vectors_per_trajectory_per_shape_AE, latent_vectors_per_trajectory_per_shape_AE_NODE, which_prediction, shape_index = 2, ylabel='latent vessel', figsize=(15, 5), fontsize=16)
+        self.plot_latent_space_per_shape(trajectory_to_be_plotted, Time, latent_vectors_per_trajectory_per_shape_AE, latent_vectors_per_trajectory_per_shape_AE_NODE, which_prediction, shape_index = 2, ylabel='latent core', figsize=(15, 5), fontsize=16)
         #save fig of latent space of lower plenum 
-        self.plot_latent_space_per_shape(trajectory_to_be_plotted, Time, latent_vectors_per_trajectory_per_shape_AE, latent_vectors_per_trajectory_per_shape_AE_NODE, which_prediction, shape_index = 3, ylabel='latent lower plenum', figsize=(15, 5), fontsize=16)
+        self.plot_latent_space_per_shape(trajectory_to_be_plotted, Time, latent_vectors_per_trajectory_per_shape_AE, latent_vectors_per_trajectory_per_shape_AE_NODE, which_prediction, shape_index = 3, ylabel='latent vessel', figsize=(15, 5), fontsize=16)
         #save fig of latent space of faces 
         self.plot_latent_space_per_shape(trajectory_to_be_plotted, Time, latent_vectors_per_trajectory_per_shape_AE,  latent_vectors_per_trajectory_per_shape_AE_NODE, which_prediction, shape_index = 4, ylabel='latent faces', figsize=(15, 5), fontsize=16)
         

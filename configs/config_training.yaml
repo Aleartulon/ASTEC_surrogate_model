@@ -3,8 +3,8 @@ description : 'complete_6_latent_0.001_derivative_12_dim_boundaries_10_latent/' 
 data_path : '../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/made_datasets/only_loca_min_max/' #path of training and validation data
 where_to_save_data : '../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/' #if dynamic_dataset_generation_during_training this is where data is saved, else it is where data for training is found
 model: 'AE_NODE'
-indeces_training_boundaries : [1,702]
-indeces_validation_boundaries : [703,803]
+indeces_training_boundaries : [1,3] # [1028, 1214, 845, 948]
+indeces_validation_boundaries : [1,3] # [949, 981, 983, 999]
 reinitialize_model_at_each_dataset_reshape: true
 epochs: 10000 #maximum number of epochs
 learning_rate: 0.001 #initial learning rate
