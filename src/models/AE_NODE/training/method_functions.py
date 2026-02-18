@@ -257,5 +257,3 @@ class Training_Losses():
     def from_dt_to_T(self, dt):
         zero = tc.zeros(1, device=self.parent.device)
         return tc.cat([zero, tc.cumsum(dt[:,0].detach(), dim=0)])
-
-        

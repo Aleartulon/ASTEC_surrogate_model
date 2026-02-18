@@ -16,3 +16,4 @@ generate_images_error_per_time_step : false
 generate_istograms : false
 which_processor: 'mine' # 'dopri5' to use adaptive RK of order 4-5. 'mine' uses mine
 substep_RK4 : 1
+string_after_saving : 'LOCA'
