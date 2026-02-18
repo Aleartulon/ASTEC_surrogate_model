@@ -116,7 +116,7 @@ auto_encoding:
 
   # Final_reduction
   final_reduction_and_initial_increase:
-    output_dimension_encoder: 15 # THIS IS THE ACTUAL FINAL REDUCED DIMENSION
+    output_dimension_encoder: 6 # THIS IS THE ACTUAL FINAL REDUCED DIMENSION
 
     list_of_neurons_encoder: [70,50,30]
     last_activation_encoder: false
