@@ -14,9 +14,9 @@ early_stopping: 250
 all_on_gpu: false
 preload_to_ram : false
 dynamic_dataset_generation_during_training : true
-time_windows  :  [10, 10, 1000] #note that first one is for the AE
-batch_sizes  :  [256, 256, 64] #note that first one is for the AE
-waiting_epochs_before_new_dataset_creation  :  [25, 25,25] #note that first one is for the AE
+time_windows  :  [10, 10, 1000, 2000] #note that first one is for the AE
+batch_sizes  :  [256, 256, 64, 64] #note that first one is for the AE
+waiting_epochs_before_new_dataset_creation  :  [25, 25,25, 25] #note that first one is for the AE
 number_of_workers: 8
 checkpoint: false  # if true uses existing checkpoint
 device : 'cuda:1' #device where to train

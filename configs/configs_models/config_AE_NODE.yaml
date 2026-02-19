@@ -61,7 +61,7 @@ auto_encoding:
   #Auto-Encoder boundaries
   auto_encoder_boundaries:
     input_dimension_encoder: 24
-    output_dimension_encoder: 24 #dimension of the latent space
+    output_dimension_encoder: 12 #dimension of the latent space
     list_of_neurons_encoder: []
     last_activation_encoder: false
     layer_norm_encoder : [false]
@@ -86,13 +86,13 @@ auto_encoding:
   auto_encoder_vessel:
     input_dimension_encoder: [18, 15, 5]  # first dimension is # of channels (one if the predicted solution is a scalar field), second is spatial dimensions per channel.
     kernel_encoder: [3,3,3] #kernels sizes of the Encoder
-    filters_encoder: [16,32,64] #number of filters of the Encoder
+    filters_encoder: [18,32,64] #number of filters of the Encoder
     strides_encoder: [[1,1],[2,1],[2,1]] #strides of the Encoder
-    output_dimension_encoder: 15 #dimension of the latent space
+    output_dimension_encoder: 10 #dimension of the latent space
     last_activation_encoder: false
 
     kernel_decoder: [[3,3],[4,3],[3,3],[3,3],[3,3],[3,3]]  #kernels of the Decoder. For this, use one upsampling with kernel 4 and one with kernel 3 because of odd output
-    filters_decoder: [64,32, 20, 18] #number of filters of the Decoder
+    filters_decoder: [64,32, 18, 18] #number of filters of the Decoder
     strides_decoder: [[1,1],[2,1],[2,1],[1,1],[1,1],[1,1]] #strides of the Decoder
     last_activation_decoder: false
     group_norm_encoder : [true, false, false, false]
