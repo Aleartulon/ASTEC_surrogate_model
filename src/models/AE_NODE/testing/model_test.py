@@ -3,6 +3,7 @@ import numpy as np
 import os
 import sys
 import time
+import json
 import pickle
 from ..training.architecture import Encoder, Decoder, F_Latent, Fully_Connected_Encoder, Convolutional_Encoder
 from src.common_functions import load_config
@@ -180,7 +181,7 @@ class Model_Test:
                         latent_vectors_per_trajectory_per_shape_AE[trajectory_to_be_plotted] = [x[1:,:] for x in latent_vectors_per_trajectory_per_shape_AE[trajectory_to_be_plotted]]
                         self.generate_pictures_latent_space(trajectory_to_be_plotted, latent_vectors_per_trajectory_per_shape_AE, definitive_latent_vector_per_trajectory_AE, Time, 'TF', latent_vectors_per_trajectory_per_shape_TF, definitive_latent_vector_per_trajectory_TF)
                         
-            del reconstructed_fields_per_trajectory_TF
+                del reconstructed_fields_per_trajectory_TF
             # actual prediction in latent space
             print('------------------------- Actual Prediction -------------------------')  
             reconstructed_fields_per_trajectory_AE_NODE, latent_vectors_per_trajectory_per_shape_AE_NODE, definitive_latent_vector_per_trajectory_AE_NODE = self.autoregressive_prediction()
@@ -201,6 +202,7 @@ class Model_Test:
             
             #compare errors AE and NODE
             compare_errors_AE_and_AE_NODE(self.directory_images_AutoEncoding_global_errors, self.directory_images_AE_NODE_global_errors_fields, self.directory_images_comparison_AE_AE_NODE, self.string_after_saving)
+            self.plot_computational_time()
             print('-----------------------------------------------------------------------')
             
     def print_operator_actions(self, definitive_latent_vector_per_trajectory_AE:dict):
@@ -375,7 +377,8 @@ class Model_Test:
         reconstructed_fields_per_trajectory_AE_NODE = {}
         latent_vectors_per_trajectory_per_shape_AE_NODE = {}
         final_latent_vector_per_trajectory_AE_NODE = {}
-        
+        time_array = []
+        number_of_steps_array = []
         
         for trajectory in self.trajectories:
             fields, boundary_conditions, Time, DT = self.access_trajectory(trajectory)
@@ -389,13 +392,8 @@ class Model_Test:
             predicted_latents = tc.zeros((len(DT[0])-1, self.latent_dimension), device = self.device)
             
             #process in time until the end (how can I know what is the end?)
-            printing = False
             t0 = time.time()
             for count, dt in enumerate(DT[0][:-1]): #last one is fake, you need one less
-                if count > len(DT[0]/2) and not printing:
-                    printing = True
-                    t1 = time.time()
-                    print(f'More than half of trajectory {trajectory} done, it took {(t1-t0)/60} minutes')
                 next_latent_vector = self.training_losses.processor(next_latent_vector, dt.unsqueeze(0).unsqueeze(0), latent_boundaries_variables[count:count+1], self.which_processor)
                 predicted_latents[count] = next_latent_vector
             
@@ -404,7 +402,9 @@ class Model_Test:
             reconstructed_fields = [reconstructed_field.unsqueeze(0) for reconstructed_field in reconstructed_fields]
             reconstructed_fields = standard_and_inverse_normalization_field(reconstructed_fields, self.maxima_or_mean, self.minima_or_std, self.which_normalization, inverse = True)
             t1 = time.time()
-            print(f"Time to predict trajectory {trajectory}: {t1-t0}")
+            print(f"Time to predict trajectory {trajectory}: {t1-t0}. Number of predicted time steps: {len(DT[0][:-1])}.")
+            time_array.append(t1-t0)
+            number_of_steps_array.append(len(DT[0][:-1]))
             reconstructed_fields_per_trajectory_AE_NODE[trajectory] = reconstructed_fields
             latent_vectors_per_trajectory_per_shape_AE_NODE[trajectory] = reconstructed_latent_vectors_per_field
             final_latent_vector_per_trajectory_AE_NODE[trajectory] = predicted_latents
@@ -433,9 +433,30 @@ class Model_Test:
             self.generate_pictures_errors_latent_NODE_definitive(trajectory, error_definitive_latent_per_trajectory_AE_NODE, Time)
             self.generate_pictures_errors_latent_NODE_per_shape(trajectory, error_latent_per_variable_per_trajectory_AE_NODE, Time)
             
+            with open(self.directory_images_comparison_AE_AE_NODE + 'computational_time_array.json', 'w') as f:
+                json.dump(time_array, f)
+            with open(self.directory_images_comparison_AE_AE_NODE + 'number_of_time_steps_array.json', 'w') as f:
+                json.dump(number_of_steps_array, f)
         return reconstructed_fields_per_trajectory_AE_NODE, latent_vectors_per_trajectory_per_shape_AE_NODE, final_latent_vector_per_trajectory_AE_NODE
         
         
+    def plot_computational_time(self):
+        
+        with open(self.directory_images_comparison_AE_AE_NODE + 'computational_time_array.json', 'r') as f:
+            time_array = json.load(f)
+        with open(self.directory_images_comparison_AE_AE_NODE + 'number_of_time_steps_array.json', 'r') as f:
+            number_of_steps_array = json.load(f)
+        sorted_indices = sorted(range(len(number_of_steps_array)), key=lambda i: number_of_steps_array[i])
+        time_array = [time_array[i] for i in sorted_indices]
+        number_of_steps_array = [number_of_steps_array[i] / 1000 for i in sorted_indices]
+
+        fig, ax = plt.subplots()
+        ax.plot(number_of_steps_array, time_array, '+')
+        ax.set_title("Computational time of AE-NODE at inference", fontsize=16)
+        ax.set_xlabel(rf"Number of inference time steps $\times 10^3$", fontsize=16)
+        ax.set_ylabel("Required computational time [s]", fontsize=16)
+        plt.savefig(self.directory_images_comparison_AE_AE_NODE + 'computational_time_at_inference.png', dpi=300, bbox_inches='tight')
+        plt.close(fig) 
         
     def load_checkpoint_on_models(self):
         checkpoint = tc.load(self.path_to_model+'/checkpoint/check.pt', map_location=self.device, weights_only=False)
@@ -653,7 +674,7 @@ class Model_Test:
             plt.title(f'Trajectory number {trajectory}, {definitive_latent_vector_per_trajectory_AE[trajectory].size(-1)} dimensions, -- from Encoder, + from AE-NODE', fontsize=fontsize)
             plt.savefig(f'{self.directory_images_AE_NODE_final_latent}/{trajectory}_{ylabel}.png', dpi=300, bbox_inches='tight')
     
-    plt.close()
+        plt.close()
             
     def generate_pictures_fields(self, trajectory_to_be_plotted:str, reconstructed_fields_per_trajectory:dict, denormalized_fields_per_trajectory:dict, Time:dict, which_prediction: str):
         
