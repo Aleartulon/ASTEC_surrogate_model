@@ -515,7 +515,7 @@ class Model_Test:
             
         elif which_prediction == 'AE_NODE':
             index_time = 1
-            label_prediction = 'NODE prediction'
+            label_prediction = 'AE-NODE prediction'
         else:
             raise TypeError('Wrong type of prediction')
             
@@ -554,9 +554,9 @@ class Model_Test:
         # Plot with consistent color scale
         for count, i in enumerate(time_indices):
             axs[0, count].imshow(reconstructed_fields[trajectory][shape_index][0, time_indices[count], variable_index].cpu(),
-                                vmin=vmin, vmax=vmax)
+                                vmin=vmin, vmax=vmax, origin='lower')
             im = axs[1, count].imshow(denormalized_fields[trajectory][shape_index][0, time_indices[count], variable_index].cpu(),
-                                    vmin=vmin, vmax=vmax)
+                                    vmin=vmin, vmax=vmax, origin='lower')
             
             if which_prediction == 'TF' or which_prediction == 'AE_NODE':
                 axs[0, count].set_title(f't = {Time[trajectory][i+1]/3600:.2g} h', fontsize=fontsize)
@@ -629,52 +629,49 @@ class Model_Test:
             index_time = 1
         else:
             raise TypeError('Wrong type of prediction')
-        
+
         plt.figure(figsize=figsize)
-        
-        # Generate unique colors using a colormap
+
         n_dimensions = definitive_latent_vector_per_trajectory_AE[trajectory].size(-1)
-        
-        # Choose appropriate colormap based on number of dimensions
         if n_dimensions <= 10:
             colors = plt.cm.tab10(np.linspace(0, 1, n_dimensions))
         elif n_dimensions <= 20:
             colors = plt.cm.tab20(np.linspace(0, 1, n_dimensions))
         else:
             colors = plt.cm.hsv(np.linspace(0, 1, n_dimensions))
-        
+
         for dimension in range(n_dimensions):
             color = colors[dimension]
-            plt.plot(Time[trajectory][index_time:].cpu()[:] / 3600.0, 
-                    definitive_latent_vector_per_trajectory_AE[trajectory][:,dimension].cpu()[:], 
-                    label='From Encoder, dimension: ' + str(dimension+1), 
+            # Only add legend label for first dimension to avoid duplicates
+            encoder_label = '-- Encoder' if dimension == 0 else '_nolegend_'
+            node_label    = '+ NODE'     if dimension == 0 else '_nolegend_'
+
+            plt.plot(Time[trajectory][index_time:].cpu()[:] / 3600.0,
+                    definitive_latent_vector_per_trajectory_AE[trajectory][:, dimension].cpu()[:],
+                    label=encoder_label,
                     linestyle='--', markersize=3, color=color)
-            
-            if which_prediction == 'TF':
-                plt.plot(Time[trajectory][index_time:].cpu()[:] / 3600.0, 
-                        definitive_latent_vector_per_trajectory_AE_NODE_or_TF[trajectory][:,dimension].cpu()[:], 
-                        label='From NODE, dimension: ' + str(dimension+1), 
+
+            if which_prediction in ('TF', 'AE_NODE'):
+                plt.plot(Time[trajectory][index_time:].cpu()[:] / 3600.0,
+                        definitive_latent_vector_per_trajectory_AE_NODE_or_TF[trajectory][:, dimension].cpu()[:],
+                        label=node_label,
                         marker='+', markersize=3, color=color)
-            elif which_prediction == 'AE_NODE':
-                plt.plot(Time[trajectory][index_time:].cpu()[:] / 3600.0, 
-                        definitive_latent_vector_per_trajectory_AE_NODE_or_TF[trajectory][:,dimension].cpu()[:], 
-                        label='From NODE, dimension: ' + str(dimension+1), 
-                        marker='+', markersize=3, color=color)
-        
+
         plt.xlabel('Time, h', fontsize=fontsize)
         plt.ylabel(ylabel, fontsize=fontsize)
-        
+        plt.legend(fontsize=fontsize)
+
+        # Title with trajectory number only
+        plt.title(f'Trajectory {trajectory}', fontsize=fontsize)
+
         if which_prediction == 'AE':
-            plt.title(f'Trajectory number {trajectory}, {definitive_latent_vector_per_trajectory_AE[trajectory].size(-1)} dimensions', fontsize=fontsize)
             plt.savefig(f'{self.directory_images_AutoEncoding_final_latent}/{trajectory}_{ylabel}.png', dpi=300, bbox_inches='tight')
         elif which_prediction == 'TF':
-            plt.title(f'Trajectory number {trajectory}, {definitive_latent_vector_per_trajectory_AE[trajectory].size(-1)} dimensions, -- from Encoder, + from TF', fontsize=fontsize)
             plt.savefig(f'{self.directory_images_TF_final_latent}/{trajectory}_{ylabel}.png', dpi=300, bbox_inches='tight')
         elif which_prediction == 'AE_NODE':
-            plt.title(f'Trajectory number {trajectory}, {definitive_latent_vector_per_trajectory_AE[trajectory].size(-1)} dimensions, -- from Encoder, + from AE-NODE', fontsize=fontsize)
             plt.savefig(f'{self.directory_images_AE_NODE_final_latent}/{trajectory}_{ylabel}.png', dpi=300, bbox_inches='tight')
-    
-        plt.close()
+
+    plt.close()
             
     def generate_pictures_fields(self, trajectory_to_be_plotted:str, reconstructed_fields_per_trajectory:dict, denormalized_fields_per_trajectory:dict, Time:dict, which_prediction: str):
         
@@ -825,7 +822,7 @@ class Model_Test:
             self.plot_latent_space_per_shape(trajectory_to_be_plotted, Time, latent_vectors_per_trajectory_per_shape_AE,  latent_vectors_per_trajectory_per_shape_AE_NODE, which_prediction, shape_index = 5, ylabel='latent boundaries', figsize=(15, 5), fontsize=16)
             
         #save fig of definitive latent vector
-        self.plot_final_latent_space(trajectory_to_be_plotted, Time, definitive_latent_vector_per_trajectory_AE, definitive_latent_vector_per_trajectory_AE_NODE, which_prediction, ylabel='final latent space', figsize=(15, 5), fontsize=16)
+        self.plot_final_latent_space(trajectory_to_be_plotted, Time, definitive_latent_vector_per_trajectory_AE, definitive_latent_vector_per_trajectory_AE_NODE, which_prediction, ylabel='Predicted latent vector', figsize=(5, 5), fontsize=16)
     
     def generate_pictures_errors_field_reconstruction(self, trajectory:str, error_per_trajectory_AE:dict, time:tc.tensor, saving_directory: str, which_prediction: str): 
         dictionary_of_variables = build_dictionary_of_variables()

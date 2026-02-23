@@ -1,6 +1,6 @@
 path_to_test_data : '../../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/made_datasets/only_loca_min_max/'
 name_test_file: 'data_testing_804_844.h5'
-path_to_model: '../../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/saved_logs/LOCA/AE_NODE/Models/complete_6_latent_0.001_derivative_12_dim_boundaries/'
+path_to_model: '../../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/saved_logs/LOCA/AE_NODE/Models/complete_6_latent_0.001_derivative_12_dim_boundarie_1.0_AR/'
 device: 'cuda'
 trajectories_to_be_plotted : [804, 806, 808, 810, 812, 814, 816, 818, 820, 822, 824, 826, 828, 830, 832, 834, 836, 838, 840, 842, 844]
 autoencoding_figures : true
