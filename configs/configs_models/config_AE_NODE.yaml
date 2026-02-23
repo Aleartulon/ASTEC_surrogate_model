@@ -86,13 +86,13 @@ auto_encoding:
   auto_encoder_vessel:
     input_dimension_encoder: [18, 15, 5]  # first dimension is # of channels (one if the predicted solution is a scalar field), second is spatial dimensions per channel.
     kernel_encoder: [3,3,3] #kernels sizes of the Encoder
-    filters_encoder: [18,32,64] #number of filters of the Encoder
+    filters_encoder: [16,32,64] #number of filters of the Encoder
     strides_encoder: [[1,1],[2,1],[2,1]] #strides of the Encoder
     output_dimension_encoder: 10 #dimension of the latent space
     last_activation_encoder: false
 
     kernel_decoder: [[3,3],[4,3],[3,3],[3,3],[3,3],[3,3]]  #kernels of the Decoder. For this, use one upsampling with kernel 4 and one with kernel 3 because of odd output
-    filters_decoder: [64,32, 18, 18] #number of filters of the Decoder
+    filters_decoder: [64,32, 20, 18] #number of filters of the Decoder
     strides_decoder: [[1,1],[2,1],[2,1],[1,1],[1,1],[1,1]] #strides of the Decoder
     last_activation_decoder: false
     group_norm_encoder : [true, false, false, false]
@@ -116,7 +116,7 @@ auto_encoding:
 
   # Final_reduction
   final_reduction_and_initial_increase:
-    output_dimension_encoder: 6 # THIS IS THE ACTUAL FINAL REDUCED DIMENSION
+    output_dimension_encoder: 10 # THIS IS THE ACTUAL FINAL REDUCED DIMENSION
 
     list_of_neurons_encoder: [70,50,30]
     last_activation_encoder: false
@@ -132,7 +132,7 @@ parameter_information: "concatenation" #how the parameter information is passed 
 n_FiLM_conditioning : 1 #number of FiLM layers (if FiLM is chosen instead of concatenation). FiLM = 1 only applies to the latent vector
 n_neurons_f: 200 #number of neurons of each layer of f
 which_solver: ['mine', false] # 'dopri5' to use adaptive RK of order 4-5. 'mine' uses mine. if true, it means it is adaptive
-scaling_output_factor: [true, 0.01] #if true, a learnable parameter is multiplied by the output, which is initialized with the second dimension. if false, the second dimension is the scalar that multiplies the output of f.
+scaling_output_factor: [true, 0.001] #if true, a learnable parameter is multiplied by the output, which is initialized with the second dimension. if false, the second dimension is the scalar that multiplies the output of f.
 substep_RK4 : 1 # if none, it is 1
 layer_norm_node : [false, false, false, false, false, false]
 
