@@ -6,8 +6,8 @@ loss_coefficients: # coefficients that are multiplied to the loss function terms
   AR_latent: 1.0
   full_reconstruction: [true, 1.0]
   Random_DT: 1.0
-  AR_latent_strength: 1.0
-  full_reconstruction_strength: 1.0
+  AR_latent_strength: 0.02
+  full_reconstruction_strength: 0.02
   lambda_regularization: 0.0001 #coefficients in front of the regularization term for the latent vector
 
 loss_coefficients_not_coupled: # coefficients that are multiplied to the loss function terms when the trainin of AE and NODE is decoupled, signaling the relative importance of each [AE, TF, AUTOREGRESSIVE, TIME_GENERALIZATION]
@@ -116,7 +116,7 @@ auto_encoding:
 
   # Final_reduction
   final_reduction_and_initial_increase:
-    output_dimension_encoder: 6 # THIS IS THE ACTUAL FINAL REDUCED DIMENSION
+    output_dimension_encoder: 10 # THIS IS THE ACTUAL FINAL REDUCED DIMENSION
 
     list_of_neurons_encoder: [70,50,30]
     last_activation_encoder: false
