@@ -5,6 +5,7 @@ import sys
 import time
 import json
 import pickle
+import matplotlib.lines as mlines
 from ..training.architecture import Encoder, Decoder, F_Latent, Fully_Connected_Encoder, Convolutional_Encoder
 from src.common_functions import load_config
 import h5py
@@ -564,9 +565,17 @@ class Model_Test:
             else:
                 axs[0, count].set_title(f't = {Time[trajectory][i]/3600:.2g} h', fontsize=fontsize)
                 axs[1, count].set_title(f't = {Time[trajectory][i]/3600:.2g} h', fontsize=fontsize)
+            if count == 0:
+                axs[0, 0].set_ylabel('Prediction', fontsize=fontsize, fontweight='bold')
+                axs[1, 0].set_ylabel('Ground truth', fontsize=fontsize, fontweight='bold')
             
-        axs[0, 0].set_ylabel('Prediction', fontsize=fontsize, fontweight='bold')
-        axs[1, 0].set_ylabel('Ground truth', fontsize=fontsize, fontweight='bold')
+            axs[0, count].axis('off')
+            axs[1, count].axis('off')
+            
+            # Re-enable ylabel visibility for column 0
+            if count == 0:
+                axs[0, 0].yaxis.label.set_visible(True)
+                axs[1, 0].yaxis.label.set_visible(True)
         
         # Add a single colorbar for all subplots
         fig.colorbar(im, ax=axs, location='right', shrink=0.8)
@@ -620,58 +629,51 @@ class Model_Test:
             plt.savefig(f'{self.directory_images_AE_NODE_latent_per_shape}/{trajectory}_{ylabel}.png', dpi=300, bbox_inches='tight')
         plt.close()
         
-    def plot_final_latent_space(self, trajectory, Time, definitive_latent_vector_per_trajectory_AE: dict, 
-                            definitive_latent_vector_per_trajectory_AE_NODE_or_TF:dict, 
-                            which_prediction:str, ylabel='final_latent_space', figsize=(5, 5), fontsize=16):
+    def plot_final_latent_space(self, trajectory, Time, definitive_latent_vector_per_trajectory_AE: dict, definitive_latent_vector_per_trajectory_AE_NODE_or_TF:dict, which_prediction:str, ylabel='final_latent_space', figsize=(5, 5), fontsize=16):
         if which_prediction == 'AE':
             index_time = 0
         elif which_prediction == 'AE_NODE' or which_prediction == 'TF':
             index_time = 1
         else:
             raise TypeError('Wrong type of prediction')
-
+        
         plt.figure(figsize=figsize)
-
         n_dimensions = definitive_latent_vector_per_trajectory_AE[trajectory].size(-1)
+        
         if n_dimensions <= 10:
             colors = plt.cm.tab10(np.linspace(0, 1, n_dimensions))
         elif n_dimensions <= 20:
             colors = plt.cm.tab20(np.linspace(0, 1, n_dimensions))
         else:
             colors = plt.cm.hsv(np.linspace(0, 1, n_dimensions))
-
+        
         for dimension in range(n_dimensions):
             color = colors[dimension]
-            # Only add legend label for first dimension to avoid duplicates
-            encoder_label = '-- Encoder' if dimension == 0 else '_nolegend_'
-            node_label    = '+ NODE'     if dimension == 0 else '_nolegend_'
-
             plt.plot(Time[trajectory][index_time:].cpu()[:] / 3600.0,
                     definitive_latent_vector_per_trajectory_AE[trajectory][:, dimension].cpu()[:],
-                    label=encoder_label,
                     linestyle='--', markersize=3, color=color)
-
             if which_prediction in ('TF', 'AE_NODE'):
                 plt.plot(Time[trajectory][index_time:].cpu()[:] / 3600.0,
                         definitive_latent_vector_per_trajectory_AE_NODE_or_TF[trajectory][:, dimension].cpu()[:],
-                        label=node_label,
                         marker='+', markersize=3, color=color)
-
+        
+        plt.plot([], [], linestyle='--', color='black', label='Encoder')
+        if which_prediction != 'AE':
+            plt.plot([], [], marker='+', color='black', label='NODE')
+        plt.legend(fontsize=fontsize)
+        
         plt.xlabel('Time, h', fontsize=fontsize)
         plt.ylabel(ylabel, fontsize=fontsize)
-        plt.legend(fontsize=fontsize)
-
-        # Title with trajectory number only
         plt.title(f'Trajectory {trajectory}', fontsize=fontsize)
-
+        
         if which_prediction == 'AE':
             plt.savefig(f'{self.directory_images_AutoEncoding_final_latent}/{trajectory}_{ylabel}.png', dpi=300, bbox_inches='tight')
         elif which_prediction == 'TF':
             plt.savefig(f'{self.directory_images_TF_final_latent}/{trajectory}_{ylabel}.png', dpi=300, bbox_inches='tight')
         elif which_prediction == 'AE_NODE':
             plt.savefig(f'{self.directory_images_AE_NODE_final_latent}/{trajectory}_{ylabel}.png', dpi=300, bbox_inches='tight')
-
-    plt.close()
+        
+        plt.close()
             
     def generate_pictures_fields(self, trajectory_to_be_plotted:str, reconstructed_fields_per_trajectory:dict, denormalized_fields_per_trajectory:dict, Time:dict, which_prediction: str):
         

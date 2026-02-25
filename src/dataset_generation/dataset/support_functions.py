@@ -446,7 +446,7 @@ def update_normalization_statistics(maxima_or_mean:dict, minima_or_std:dict, sim
     if type_of_normalization == 'min_max':
         for shape in maxima_or_mean:
             maxima_or_mean[shape] = np.maximum(maxima_or_mean[shape],simulation_maxima_or_mean[shape])
-            minima_or_std[shape] = np.maximum(minima_or_std[shape],simulation_minima_or_std[shape])
+            minima_or_std[shape] = np.minimum(minima_or_std[shape],simulation_minima_or_std[shape])
             
     elif type_of_normalization == 'mean_std':
         for shape in maxima_or_mean:
