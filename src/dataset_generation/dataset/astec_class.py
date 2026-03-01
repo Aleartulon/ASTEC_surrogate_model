@@ -15,6 +15,8 @@ class Astec_Dataset():
         self.where_to_save_data = config_dataset['where_to_save_data']
         self.save_dictionary_per_time_lengths = config_dataset['save_dictionary_per_time_lengths']
         self.which_normalization = config_dataset['which_normalization']
+        self.percentile_high_norm_min_max = config_dataset['percentile_high_norm_min_max']
+        self.percentile_low_norm_min_max = config_dataset['percentile_low_norm_min_max']
         self.device = tc.device(config_dataset['device'] if tc.cuda.is_available() else 'cpu')
         self.polyorder_smoothing = config_dataset['polyorder_smoothing']
         self.window_length_smoothing = config_dataset['window_length_smoothing']
@@ -157,7 +159,7 @@ class Astec_Dataset():
         #get normalization statistics
         if purpose_of_data == 'training': 
             t7 = time.time()
-            self.maxima_or_mean, self.minima_or_std = get_normalization_statistics_progressively(self.path_to_constructed_data, self.which_normalization) 
+            self.maxima_or_mean, self.minima_or_std = get_normalization_statistics_progressively(self.path_to_constructed_data, self.which_normalization, self.percentile_high_norm_min_max, self.percentile_low_norm_min_max) 
             t8 = time.time()
             print(f'get normalizations statistics: {t8-t7} seconds')
             

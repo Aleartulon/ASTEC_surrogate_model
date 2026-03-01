@@ -399,7 +399,7 @@ def dict_to_hdf5(dictionary, h5file, path=''):
             
             h5file[f"{path}/{key}"] = value
             
-def get_normalization_statistics_progressively(path_hdf5:str, type_of_normalization:str):
+def get_normalization_statistics_progressively(path_hdf5:str, type_of_normalization:str, percentile_high: int, percentile_low:int):
     exist = False
     total_time_steps = 0 
     maxima_or_mean = {}
@@ -413,6 +413,9 @@ def get_normalization_statistics_progressively(path_hdf5:str, type_of_normalizat
                 if type_of_normalization == 'min_max':
                     maxima_or_mean = simulation_maxima_or_mean
                     minima_or_std = simulation_minima_or_std
+                    for shape in maxima_or_mean:
+                        maxima_or_mean[shape] = [maxima_or_mean[shape]]
+                        minima_or_std[shape] = [minima_or_std[shape]]
                 elif type_of_normalization == 'mean_std':
                     for shape in simulation_maxima_or_mean:
                         maxima_or_mean[shape] = simulation_maxima_or_mean[shape] * lenght_simulation
@@ -420,6 +423,16 @@ def get_normalization_statistics_progressively(path_hdf5:str, type_of_normalizat
                 exist = True
             else:
                 update_normalization_statistics(maxima_or_mean, minima_or_std, simulation_maxima_or_mean, simulation_minima_or_std,type_of_normalization , lenght_simulation)
+                
+    if type_of_normalization == 'min_max':
+        for shape in maxima_or_mean:
+            sorted_maxima= np.sort(np.array(maxima_or_mean[shape]), axis = 0)
+            sorted_minima = np.sort(np.array(minima_or_std[shape]), axis = 0)
+            n_sims = len(maxima_or_mean[shape])
+            low_idx = int(np.floor(percentile_low / 100.0 * n_sims))
+            high_idx = int(np.ceil(percentile_high / 100.0 * n_sims)) - 1
+            maxima_or_mean[shape] = sorted_maxima[high_idx]
+            minima_or_std[shape] = sorted_minima[low_idx]
     
     if type_of_normalization == 'mean_std':
         
@@ -444,9 +457,11 @@ def get_normalization_statistics_progressively(path_hdf5:str, type_of_normalizat
     return maxima_or_mean, minima_or_std      
 def update_normalization_statistics(maxima_or_mean:dict, minima_or_std:dict, simulation_maxima_or_mean:dict, simulation_minima_or_std:dict ,type_of_normalization:str, lenght_simulation:int ):
     if type_of_normalization == 'min_max':
+        print(type(maxima_or_mean))
+        print(type(list(maxima_or_mean)[0]))
         for shape in maxima_or_mean:
-            maxima_or_mean[shape] = np.maximum(maxima_or_mean[shape],simulation_maxima_or_mean[shape])
-            minima_or_std[shape] = np.minimum(minima_or_std[shape],simulation_minima_or_std[shape])
+            maxima_or_mean[shape].append(simulation_maxima_or_mean[shape])
+            minima_or_std[shape].append(simulation_minima_or_std[shape])
             
     elif type_of_normalization == 'mean_std':
         for shape in maxima_or_mean:
@@ -483,7 +498,7 @@ def get_normalization_statistics(simulation:dict, type_of_normalization:str):
     else:
         raise TypeError("Type of normalization not known. It can either be min_max or mean_std")  
                     
-    return maxima_or_mean, minima_or_std, np.shape(simulation[shapes[0]])[1]
+    return maxima_or_mean, minima_or_std, np.shape(simulation[shapes[0]])[0]
 
 def normalize_fields(field: np.array, maximum_or_mean: dict, minimum_or_std: dict, normalization: str, device):
     field = tc.tensor(field)
