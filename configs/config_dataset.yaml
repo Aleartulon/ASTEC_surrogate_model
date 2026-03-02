@@ -13,7 +13,4 @@ device : 'cuda:2'
 save_dictionary_per_time_lengths : false
 which_normalization : 'min_max' #min_max or mean_std
 testing: true
-smoothing : true
 window_length_smoothing : 100
-polyorder_smoothing : 3
-minimum_length_acceptable_simulation : 200

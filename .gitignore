@@ -13,5 +13,6 @@ downloads/
 assas_data_downloader.log
 *.log
 *.txt
+*.png
 tips.md
 explore_data.ipynb
