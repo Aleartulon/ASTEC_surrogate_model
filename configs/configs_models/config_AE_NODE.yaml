@@ -6,8 +6,8 @@ loss_coefficients: # coefficients that are multiplied to the loss function terms
   AR_latent: 1.0
   full_reconstruction: [true, 1.0]
   Random_DT: 1.0
-  AR_latent_strength: 0.001
-  full_reconstruction_strength: 0.001
+  AR_latent_strength: 1.0
+  full_reconstruction_strength: 1.0
   lambda_regularization: 0.0001 #coefficients in front of the regularization term for the latent vector
 
 loss_coefficients_not_coupled: # coefficients that are multiplied to the loss function terms when the trainin of AE and NODE is decoupled, signaling the relative importance of each [AE, TF, AUTOREGRESSIVE, TIME_GENERALIZATION]
@@ -37,7 +37,7 @@ auto_encoding:
   #Auto-Encoder scalar variables
   auto_encoder_scalar:
     input_dimension_encoder: 63
-    output_dimension_encoder: 11 #dimension of the latent space
+    output_dimension_encoder: 22 #dimension of the latent space
     list_of_neurons_encoder: [70,60,50]
     last_activation_encoder: false
 
@@ -61,7 +61,7 @@ auto_encoding:
   #Auto-Encoder boundaries
   auto_encoder_boundaries:
     input_dimension_encoder: 24
-    output_dimension_encoder: 24 #dimension of the latent space
+    output_dimension_encoder: 12 #dimension of the latent space
     list_of_neurons_encoder: []
     last_activation_encoder: false
     layer_norm_encoder : [false]
@@ -72,7 +72,7 @@ auto_encoding:
     kernel_encoder: [3,3,3] #kernels sizes of the Encoder
     filters_encoder: [16,32,64] #number of filters of the Encoder
     strides_encoder: [[1,1],[2,1],[2,1]] #strides of the Encoder
-    output_dimension_encoder: 5 #dimension of the latent space
+    output_dimension_encoder: 10 #dimension of the latent space
     last_activation_encoder: false
 
     kernel_decoder: [[3,3],[4,3],[4,3],[3,3],[3,3],[3,3]] #kernels sizes of the decoder
@@ -104,7 +104,7 @@ auto_encoding:
     kernel_encoder: [3,3,3] #kernels sizes of the Encoder
     filters_encoder: [16,32,64] #number of filters of the Encoder
     strides_encoder: [[1,1],[2,2],[2,1]] #strides of the Encoder
-    output_dimension_encoder: 10 #dimension of the latent space
+    output_dimension_encoder: 15 #dimension of the latent space
     last_activation_encoder: false
 
     kernel_decoder: [[3,3],[4,3],[4,3],[3,3],[3,3],[3,3]]  #kernels sizes of the Encoder

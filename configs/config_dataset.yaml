@@ -1,7 +1,7 @@
 path_to_hdf5 : '../../../../../../../tudelft.net/staff-umbrella/eldar/ASTEC_2/ordered_hdf5/'
-where_to_save_data: '../../../../../../scratch/ROM_datasets_ale/ASTEC/made_datasets/only_sbo_min_max/'
-indeces_training_boundaries  : [1,3] # [1028, 1214, 845, 948] # It must be the boundaries, not all indeces!
-indeces_validation_boundaries  :  [1,3] # [949, 981, 983, 999] # It must be the boundaries, not all indeces!
+where_to_save_data: '../../../../../../scratch/ROM_datasets_ale/ASTEC/made_datasets/only_sbo_percentile/'
+indeces_training_boundaries  : [1028, 1214, 845, 948] # It must be the boundaries, not all indeces!
+indeces_validation_boundaries  : [949, 981, 983, 999] # It must be the boundaries, not all indeces!
 indeces_testing_boundaries  :  [1000, 1027] # It must be the boundaries, not all indeces!
 percentages_sampling_training : [0.1, 0.9] # percentage of training trajectories with a given subsampling
 percentages_sampling_validation : [0.1,0.9] # percentage of validation trajectories with a given subsampling
@@ -12,6 +12,8 @@ subsampling_testing : [1 , 1] # subsamplings of trajectories in testing dataset
 device : 'cuda:2'
 save_dictionary_per_time_lengths : false
 which_normalization : 'min_max' #min_max or mean_std
+percentile_high_norm_min_max : 99 #takes the nth maxima (so if 2 it takes the second maximum)
+percentile_low_norm_min_max : 1 #takes the nth minima (so if 2 it takes the second minimum)
 testing: false
 smoothing : true
 window_length_smoothing : 100
