@@ -483,7 +483,7 @@ def get_normalization_statistics(simulation:dict, type_of_normalization:str):
     else:
         raise TypeError("Type of normalization not known. It can either be min_max or mean_std")  
                     
-    return maxima_or_mean, minima_or_std, np.shape(simulation[shapes[0]])[1]
+    return maxima_or_mean, minima_or_std, np.shape(simulation[shapes[0]])[0]
 
 def normalize_fields(field: np.array, maximum_or_mean: dict, minimum_or_std: dict, normalization: str, device):
     field = tc.tensor(field)

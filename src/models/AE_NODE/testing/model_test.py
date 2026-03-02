@@ -565,17 +565,15 @@ class Model_Test:
             else:
                 axs[0, count].set_title(f't = {Time[trajectory][i]/3600:.2g} h', fontsize=fontsize)
                 axs[1, count].set_title(f't = {Time[trajectory][i]/3600:.2g} h', fontsize=fontsize)
-            if count == 0:
-                axs[0, 0].set_ylabel('Prediction', fontsize=fontsize, fontweight='bold')
-                axs[1, 0].set_ylabel('Ground truth', fontsize=fontsize, fontweight='bold')
             
             axs[0, count].axis('off')
             axs[1, count].axis('off')
-            
-            # Re-enable ylabel visibility for column 0
+
             if count == 0:
-                axs[0, 0].yaxis.label.set_visible(True)
-                axs[1, 0].yaxis.label.set_visible(True)
+                axs[0, 0].text(-0.05, 0.5, 'Prediction', fontsize=fontsize, fontweight='bold',
+                            va='center', ha='right', rotation=90, transform=axs[0, 0].transAxes)
+                axs[1, 0].text(-0.05, 0.5, 'Ground truth', fontsize=fontsize, fontweight='bold',
+                            va='center', ha='right', rotation=90, transform=axs[1, 0].transAxes)
         
         # Add a single colorbar for all subplots
         fig.colorbar(im, ax=axs, location='right', shrink=0.8)

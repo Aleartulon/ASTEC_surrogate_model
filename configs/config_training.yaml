@@ -1,22 +1,22 @@
-physics_model : '../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/saved_logs/LOCA_SBO/' # this is the Path to a directory for the training on a given dataset
-description : '10_latent_0.02_AR_2000_huge_bs/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
-data_path : '../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/made_datasets/loca_sbo_min_max/' #path of training and validation data
+physics_model : '../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/saved_logs/LOCA/' # this is the Path to a directory for the training on a given dataset
+description : 'CORRECT_NORM_6_latent_1.0_no_regularization/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
+data_path : '../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/made_datasets/only_loca_min_max/' #path of training and validation data
 where_to_save_data : '../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/' #if dynamic_dataset_generation_during_training this is where data is saved, else it is where data for training is found
 model: 'AE_NODE'
-indeces_training_boundaries : [1, 702, 1028,1214,845,948]
-indeces_validation_boundaries : [703,803,949,981,983,999]
+indeces_training_boundaries : [1,702] # [1, 702, 1028,1214,845,948]
+indeces_validation_boundaries : [703, 803] # [703,803,949,981,983,999]
 reinitialize_model_at_each_dataset_reshape: true
 epochs: 10000 #maximum number of epochs
-learning_rate: 0.001 #initial learning rate
+learning_rate: 0.0007 #initial learning rate
 learning_rate_frozen_AE : [false, 0.001] #if true, once AE is frozen the lr is set to second dimension. if false, it is not changed
 gamma_lr: 0.999 # gamma of  tc.optim.lr_scheduler.ExponentialLR()
 early_stopping: 250
 all_on_gpu: false
 preload_to_ram : false
 dynamic_dataset_generation_during_training : true
-time_windows  :  [15, 15, 1005,2005] #note that first one is for the AE
-batch_sizes  :   [1024, 1024, 256,128] #note that first one is for the AE
-waiting_epochs_before_new_dataset_creation  :  [10, 10, 10, 10] #note that first one is for the AE
+time_windows  :  [13, 13,1003] #note that first one is for the AE
+batch_sizes  :   [256, 256, 64] #note that first one is for the AE
+waiting_epochs_before_new_dataset_creation  :  [25, 25, 25] #note that first one is for the AE
 number_of_workers: 8
 checkpoint: false  # if true uses existing checkpoint
 device : 'cuda' #device where to train
