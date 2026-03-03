@@ -429,7 +429,10 @@ def get_normalization_statistics_progressively(path_hdf5:str, type_of_normalizat
             sorted_maxima= np.sort(np.array(maxima_or_mean[shape]), axis = 0)
             sorted_minima = np.sort(np.array(minima_or_std[shape]), axis = 0)
             n_sims = len(maxima_or_mean[shape])
-            low_idx = int(np.floor(percentile_low / 100.0 * n_sims))
+            if percentile_low >= 100:
+                low_idx = n_sims - 1
+            else:
+                low_idx = int(np.floor(percentile_low / 100.0 * n_sims))
             high_idx = int(np.ceil(percentile_high / 100.0 * n_sims)) - 1
             maxima_or_mean[shape] = sorted_maxima[high_idx]
             minima_or_std[shape] = sorted_minima[low_idx]
@@ -457,8 +460,6 @@ def get_normalization_statistics_progressively(path_hdf5:str, type_of_normalizat
     return maxima_or_mean, minima_or_std      
 def update_normalization_statistics(maxima_or_mean:dict, minima_or_std:dict, simulation_maxima_or_mean:dict, simulation_minima_or_std:dict ,type_of_normalization:str, lenght_simulation:int ):
     if type_of_normalization == 'min_max':
-        print(type(maxima_or_mean))
-        print(type(list(maxima_or_mean)[0]))
         for shape in maxima_or_mean:
             maxima_or_mean[shape].append(simulation_maxima_or_mean[shape])
             minima_or_std[shape].append(simulation_minima_or_std[shape])

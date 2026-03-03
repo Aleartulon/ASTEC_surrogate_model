@@ -4,6 +4,9 @@ import numpy as np
 import torch as tc
 import pickle
 import time
+from joblib import Parallel, delayed
+import numpy as np
+from skimage.restoration import denoise_tv_chambolle
 import random
 import gc
 from scipy.signal import savgol_filter
@@ -22,6 +25,7 @@ class Astec_Dataset():
         self.window_length_smoothing = config_dataset['window_length_smoothing']
         self.minimum_length_acceptable_simulation = config_dataset['minimum_length_acceptable_simulation']
         self.smoothing = config_dataset['smoothing']
+        self.weight_denoise_tv_chambolle = config_dataset['weight_denoise_tv_chambolle']
         print('Device: ', self.device)
         self.testing = config_dataset['testing']
         self.indeces_training_boundaries = '_'
@@ -141,11 +145,15 @@ class Astec_Dataset():
             print(f'Simulation: {index_simulation}. Build dictionary of data divided by simulations and make channels per spatial domain: {t3-t2} seconds')
             single_simulation = self.substitute_NaN_with_zeros(single_simulation) #substitute with zeros the NaN values
             t4 = time.time()
+            print(f'Simulation: {index_simulation}. Substitute with zeros the NaN values: {t4-t3} seconds')
             #apply smoothing
             if self.smoothing:
+                t5 = time.time()
                 single_simulation = self.use_smoothing(single_simulation, index_simulation)
+                t6 = time.time()
+                print(f'Simulation: {index_simulation}. Time of smoothing: {t6-t5} seconds')
             single_simulation = squeeze_first_dimension(single_simulation)
-            print(f'Simulation: {index_simulation}. Substitute with zeros the NaN values: {t4-t3} seconds')
+            
             
             add_dict_to_hdf5(self.path_to_constructed_data, index_simulation, single_simulation[index_simulation], path='')
                 
@@ -310,23 +318,44 @@ class Astec_Dataset():
             self.length_boundaries = np.shape(concatenated_bc[0][-1])
         return dict
     
-    def use_smoothing(self, simulation:dict, index_simulation:int):
+    
+
+    def tv_smooth_axis1(self, data, weight=0.1, n_jobs=-1):
+        """Apply TV denoising along axis=1 for any shape (N, T, ...), parallelized."""
+        indices = list(np.ndindex(data.shape[0], *data.shape[2:]))
+
+        def smooth_one(idx, sliced):
+            return idx, denoise_tv_chambolle(sliced, weight=weight)
+
+        out = np.empty_like(data, dtype=float)
+        results = Parallel(n_jobs=n_jobs, backend="threading")(
+            delayed(smooth_one)(idx, data[(idx[0], slice(None)) + idx[1:]])
+            for idx in indices
+        )
+
+        for idx, smoothed in results:
+            slc = (idx[0], slice(None)) + idx[1:]
+            out[slc] = smoothed
+
+        return out
+
+    def use_smoothing(self, simulation: dict, index_simulation: int):
         keys = simulation[index_simulation].keys()
         found = False
         for i in keys:
             if i == 'boundary_conditions_and_time':
                 found = True
                 data = simulation[index_simulation][i]  # shape (1, 25184, 26)
-                # Apply filter on first 24 elements of last dimension
-                filtered = savgol_filter(data[..., :24], window_length=self.window_length_smoothing, polyorder=self.polyorder_smoothing, axis=1)
-
-                # Concatenate with the unfiltered last 2 elements
+                # Apply TV on first 24 elements of last dimension
+                filtered = self.tv_smooth_axis1(data[..., :24], weight=self.weight_denoise_tv_chambolle)
                 simulation[index_simulation][i] = np.concatenate([filtered, data[..., 24:]], axis=-1)
             else:
-                simulation[index_simulation][i] = savgol_filter(simulation[index_simulation][i], window_length=self.window_length_smoothing, polyorder=self.polyorder_smoothing, axis=1)
+                simulation[index_simulation][i] = self.tv_smooth_axis1(
+                    simulation[index_simulation][i], weight=self.weight_denoise_tv_chambolle
+                )
         if not found:
             raise TypeError("boundary_conditions_and_time NOT FOUND")
-        return simulation 
+        return simulation
         
     def make_dictionary_unified(self):
         numbers_of_simulation = list(self.dictionary_per_simulation.keys())
