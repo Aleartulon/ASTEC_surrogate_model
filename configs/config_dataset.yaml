@@ -1,5 +1,5 @@
 path_to_hdf5 : '../../../../../../../tudelft.net/staff-umbrella/eldar/ASTEC_2/ordered_hdf5/'
-where_to_save_data: '../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/made_datasets/loca_min_max_percentile/'
+where_to_save_data: '../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/made_datasets/only_loca_min_max_no_smoothing/'
 indeces_training_boundaries : [1, 702]
 indeces_validation_boundaries : [703,803]
 indeces_testing_boundaries  :  [804,844] # It must be the boundaries, not all indeces!
@@ -12,10 +12,10 @@ subsampling_testing : [1 , 1] # subsamplings of trajectories in testing dataset
 device : 'cuda:2'
 save_dictionary_per_time_lengths : false
 which_normalization : 'min_max' #min_max or mean_std
-percentile_high_norm_min_max : 80 #takes the nth maxima (so if 2 it takes the second maximum)
-percentile_low_norm_min_max : 20 #takes the nth minima (so if 2 it takes the second minimum)
-testing: false
-smoothing : true
+percentile_high_norm_min_max : 100 #takes the nth maxima (so if 2 it takes the second maximum)
+percentile_low_norm_min_max : 0 #takes the nth minima (so if 2 it takes the second minimum)
+testing: true
+smoothing : false
 window_length_smoothing : 100
 polyorder_smoothing : 3
 minimum_length_acceptable_simulation : 200

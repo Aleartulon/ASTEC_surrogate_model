@@ -1,15 +1,15 @@
 physics_model : '../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/saved_logs/LOCA/' # this is the Path to a directory for the training on a given dataset
-description : 'CORRECT_NORM_6_latent_1.0_no_regularization/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
-data_path : '../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/made_datasets/only_loca_min_max/' #path of training and validation data
+description : 'NO_SMOOTHING_6_latent_0.99_gamma/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
+data_path : '../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/made_datasets/only_loca_min_max_no_smoothing/' #path of training and validation data
 where_to_save_data : '../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/' #if dynamic_dataset_generation_during_training this is where data is saved, else it is where data for training is found
 model: 'AE_NODE'
 indeces_training_boundaries : [1,702] # [1, 702, 1028,1214,845,948]
 indeces_validation_boundaries : [703, 803] # [703,803,949,981,983,999]
 reinitialize_model_at_each_dataset_reshape: true
 epochs: 10000 #maximum number of epochs
-learning_rate: 0.0007 #initial learning rate
+learning_rate: 0.00098 #initial learning rate
 learning_rate_frozen_AE : [false, 0.001] #if true, once AE is frozen the lr is set to second dimension. if false, it is not changed
-gamma_lr: 0.999 # gamma of  tc.optim.lr_scheduler.ExponentialLR()
+gamma_lr: 0.99 # gamma of  tc.optim.lr_scheduler.ExponentialLR()
 early_stopping: 250
 all_on_gpu: false
 preload_to_ram : false
