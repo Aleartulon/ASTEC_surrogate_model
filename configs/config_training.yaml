@@ -22,7 +22,7 @@ checkpoint: false  # if true uses existing checkpoint
 device : 'cuda' #device where to train
 which_normalization: 'min_max' # min_max or mean_std
 mixed_precision: true
-compile: false
+compile: true
 
 #Data information if dynamic_dataset_generation_during_training is false
 data_training_file_dinamic: 'data_training_normalized_t_W_' #use when modifying dynamically during training the dataset

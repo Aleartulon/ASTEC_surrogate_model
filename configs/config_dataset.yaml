@@ -9,7 +9,7 @@ percentages_sampling_testing : [0.1, 0.9] # percentage of testing trajectories w
 subsampling_training : [1,1] # subsamplings of trajectories in training dataset
 subsampling_validation : [1,1] # subsamplings of trajectories in validation dataset
 subsampling_testing : [1 , 1] # subsamplings of trajectories in testing dataset
-device : 'cuda:2'
+device : 'cpu'
 save_dictionary_per_time_lengths : false
 which_normalization : 'min_max' #min_max or mean_std
 percentile_high_norm_min_max : 100 #takes the nth maxima (so if 2 it takes the second maximum)
@@ -18,4 +18,5 @@ testing: true
 smoothing : false
 window_length_smoothing : 100
 polyorder_smoothing : 3
+weight_denoise_tv_chambolle : 0.1
 minimum_length_acceptable_simulation : 200
