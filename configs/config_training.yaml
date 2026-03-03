@@ -1,28 +1,28 @@
 physics_model : '../../../../scratch/ROM_datasets_ale/ASTEC/saved_logs/SBO/' # this is the Path to a directory for the training on a given dataset
-description : 'CORRECT_NORM_6_latent_1.0_AR_0.01_derivative/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
-data_path : '../../../../scratch/ROM_datasets_ale/ASTEC/made_datasets/only_sbo_min_max/' #path of training and validation data
+description : 'NO_SMOOTHING_6_gamma_0.99/' #for a given dataset, one can train with different hyperparameters, hence the 'description'
+data_path : '../../../../scratch/ROM_datasets_ale/ASTEC/made_datasets/only_sbo_min_max_no_smoothing/' #path of training and validation data
 where_to_save_data : '../../../../scratch/ROM_datasets_ale/ASTEC/' #if dynamic_dataset_generation_during_training this is where data is saved, else it is where data for training is found
 model: 'AE_NODE'
 indeces_training_boundaries : [1028, 1214, 845, 948]
 indeces_validation_boundaries : [949, 981, 983, 999]
 reinitialize_model_at_each_dataset_reshape: true
 epochs: 10000 #maximum number of epochs
-learning_rate: 0.0006 #initial learning rate
+learning_rate: 0.001 #initial learning rate
 learning_rate_frozen_AE : [false, 0.001] #if true, once AE is frozen the lr is set to second dimension. if false, it is not changed
-gamma_lr: 0.999 # gamma of  tc.optim.lr_scheduler.ExponentialLR()
+gamma_lr: 0.99 # gamma of  tc.optim.lr_scheduler.ExponentialLR()
 early_stopping: 250
 all_on_gpu: false
 preload_to_ram : false
 dynamic_dataset_generation_during_training : true
-time_windows  :  [10, 10, 1000] #note that first one is for the AE
-batch_sizes  :   [256, 256, 64] #note that first one is for the AE
-waiting_epochs_before_new_dataset_creation  :  [25, 25, 25] #note that first one is for the AE
+time_windows  :  [11, 11, 1001,2001] #note that first one is for the AE
+batch_sizes  :   [256, 256, 64,32] #note that first one is for the AE
+waiting_epochs_before_new_dataset_creation  :  [25, 25, 25,25] #note that first one is for the AE
 number_of_workers: 8
 checkpoint: false  # if true uses existing checkpoint
-device : 'cuda:2' #device where to train
+device : 'cuda:1' #device where to train
 which_normalization: 'min_max' # min_max or mean_std
 mixed_precision: true
-compile: false
+compile: true
 
 #Data information if dynamic_dataset_generation_during_training is false
 data_training_file_dinamic: 'data_training_normalized_t_W_' #use when modifying dynamically during training the dataset
