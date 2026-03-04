@@ -19,7 +19,7 @@ def make_faces_array(x, device:tc.device):
     
     # Create output array
     shape_x = x.shape
-    reshaped_faces = tc.zeros((shape_x[0], shape_x[1], 16, 9), device = device)
+    reshaped_faces = tc.zeros((shape_x[0], shape_x[1], 16, 9), device=device, dtype=x.dtype)
     
     # Vectorized assignment for normal indices
     normal_mask = ~needs_averaging
