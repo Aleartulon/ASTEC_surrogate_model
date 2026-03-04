@@ -1,5 +1,5 @@
 path_to_hdf5 : '../../../../../../../tudelft.net/staff-umbrella/eldar/ASTEC_2/ordered_hdf5/'
-where_to_save_data: '../../../../../../scratch/ROM_datasets_ale/ASTEC/made_datasets/only_sbo_min_max_no_smoothing/'
+where_to_save_data: '../../../../../../scratch/ROM_datasets_ale/ASTEC/made_datasets/only_sbo_min_max_denoise_tv_chambolle_smoothing/'
 indeces_training_boundaries  : [1028, 1214, 845, 948] # It must be the boundaries, not all indeces!
 indeces_validation_boundaries  : [949, 981, 983, 999] # It must be the boundaries, not all indeces!
 indeces_testing_boundaries  :  [1000, 1027] # It must be the boundaries, not all indeces!
@@ -15,7 +15,7 @@ which_normalization : 'min_max' #min_max or mean_std
 percentile_high_norm_min_max : 100 #takes the nth maxima (so if 2 it takes the second maximum)
 percentile_low_norm_min_max : 0 #takes the nth minima (so if 2 it takes the second minimum)
 testing: false
-smoothing : false
+smoothing : true
 window_length_smoothing : 100
 polyorder_smoothing : 3
 weight_denoise_tv_chambolle : 0.1

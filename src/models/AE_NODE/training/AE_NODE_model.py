@@ -14,12 +14,19 @@ class AE_NODE:
         self.model_information = model_information
         
         self.device = config_training['device']
+        self.seed = config_training['seed']
+        tc.manual_seed(self.seed)
+        tc.cuda.manual_seed_all(self.seed)
+        np.random.seed(self.seed)
+        tc.backends.cudnn.deterministic = True
+        tc.backends.cudnn.benchmark = False
         self.epochs = config_training['epochs']
         self.PATH_logs = config_training['PATH']
         self.checkpoint = config_training['checkpoint']
         self.mixed_precision = config_training['mixed_precision']
         self.gamma_lr = config_training['gamma_lr']
         self.learning_rate_frozen_AE = config_training['learning_rate_frozen_AE']
+        self.initial_lrs = config_training['initial_lrs']
 
         self.loss_coefficients = model_information['loss_coefficients'] if model_information['is_coupled'][0] else model_information['loss_coefficients_not_coupled']
         self.time_only_TF = model_information['time_only_TF']
@@ -81,10 +88,11 @@ class AE_NODE:
         #save conversion name file 
         shutil.copy( self.data_path + '/rename_log.txt', self.PATH_logs + '/rename_log.txt')
         
-        if len(self.batch_sizes) + len(self.waiting_epochs_before_new_dataset_creation) + len(self.time_windows) != len(self.time_windows) * 3:
+        if len(self.batch_sizes) + len(self.waiting_epochs_before_new_dataset_creation) + len(self.time_windows) + len(self.initial_lrs) != len(self.time_windows) * 4:
             print(f'Length batch_sizes: {len(self.batch_sizes)}')
             print(f'Length waiting_epochs_before_new_dataset_creation: {len(self.waiting_epochs_before_new_dataset_creation)}')
             print(f'Length time_windows: {len(self.time_windows)}')
+            print(f'Length lrs: {len(self.initial_lrs)}')
             raise TypeError("Length of array of time_windows is not equal to length of array of batch_sizes or of waiting_epochs_before_new_dataset_creation")
         
         #check confi files are okay when training decoupled
@@ -144,7 +152,7 @@ class AE_NODE:
                 print("Models compiled with torch.compile()")
 
         #define optimizer, the pre scheduler for the warmup of the model and the scheduler
-        self.optim = tc.optim.Adam(params_to_optimize, lr=config_training['learning_rate'])
+        self.optim = tc.optim.Adam(params_to_optimize, lr=self.initial_lrs[0])
         lambda1 = lambda i : i / (self.time_of_lr_war_up+1)
         self.pre_scheduler = tc.optim.lr_scheduler.LambdaLR(self.optim,lambda1)
         self.scheduler = tc.optim.lr_scheduler.ExponentialLR(self.optim, self.gamma_lr)
