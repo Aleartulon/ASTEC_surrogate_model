@@ -487,7 +487,7 @@ def initialize_parameters(model_information, encoder, decoder, f, device):
 
 def make_data_loader(data_training_path:str, all_on_gpu:bool, device:tc.device, batch_size:int, number_of_workers:int, pin_memory:bool, data_validation_path:str, preload_to_ram:bool):
     dataset_training = ASTEC_Dataset(data_training_path, all_on_gpu, device, preload_to_ram=preload_to_ram)
-    training_loader = DataLoader(dataset_training, batch_size = batch_size, num_workers = number_of_workers, shuffle=True,drop_last=False,pin_memory=pin_memory, prefetch_factor=4 if number_of_workers > 0 else None)
+    training_loader = DataLoader(dataset_training, batch_size = batch_size, num_workers = number_of_workers, shuffle=True,drop_last=False,pin_memory=pin_memory, prefetch_factor=2 if number_of_workers > 0 else None, worker_init_fn=seed_worker)
     
     length_dataset = dataset_training.size
     if batch_size > length_dataset:
@@ -499,6 +499,10 @@ def make_data_loader(data_training_path:str, all_on_gpu:bool, device:tc.device, 
     print('-------------------------------------------')
             
     dataset_validation = ASTEC_Dataset(data_validation_path, all_on_gpu, device, preload_to_ram=preload_to_ram)
-    validation_loader = DataLoader(dataset_validation, batch_size = batch_size, num_workers = number_of_workers, shuffle=True,drop_last=False,pin_memory=pin_memory, prefetch_factor=2 if number_of_workers > 0 else None)
+    validation_loader = DataLoader(dataset_validation, batch_size = batch_size, num_workers = number_of_workers, shuffle=True,drop_last=False,pin_memory=pin_memory, prefetch_factor=2 if number_of_workers > 0 else None, worker_init_fn=seed_worker)
     
     return training_loader, validation_loader
+
+def seed_worker(worker_id):
+    worker_seed = (tc.initial_seed() + worker_id) % 2**32
+    np.random.seed(worker_seed)
