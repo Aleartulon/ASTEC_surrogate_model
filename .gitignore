@@ -14,5 +14,7 @@ assas_data_downloader.log
 *.log
 *.txt
 *.png
+!vessel_and_core.png
+!faces.png
 tips.md
 explore_data.ipynb
