@@ -25,21 +25,21 @@ The vessel is a **2D axisymmetric** structure with **5 concentric rings** (colum
 |---|---|---|
 | Lower plenum | `0` | Single volume at the very bottom of the vessel |
 | Vessel grid | `1 – 75` | 5 columns × 15 rows (bottom-to-top, left-to-right within each row) |
-| Core subset | `11 – 46` | The first 3 columns (rows 1–12), where fuel rods are located |
-| Boundary B₁ | `76` | Connection point between vessel and hot leg |
-| Boundary B₂ | `77` | Connection point between vessel and cold leg |
-| Hot leg first volume (h₁) | `78` | First control volume of the hot leg (primary circuit) |
-| Cold leg first volume (c₁) | `79` | First control volume of the cold leg (primary circuit) |
+| Core subset | `11 – 46` | The first 3 columns, where fuel rods are located |
+| Boundary $B_1$ | `76` | Connection point between vessel and hot leg |
+| Boundary $B_2$ | `77` | Connection point between vessel and cold leg |
+| Hot leg first volume ($h_1$) | `78` | First control volume of the hot leg (primary circuit) |
+| Cold leg first volume ($c_1$) | `79` | First control volume of the cold leg (primary circuit) |
 | Faces | `80 – 219` | 140 interfaces between adjacent vessel volumes |
 
 ### Column layout (left to right)
 
-- **Columns 1–3** — contain fuel rods (the "core" region, indices 11–46)
-- **Columns 4–5** — vessel volumes without fuel (indices 47–75 plus bottom rows 1–10)
+- **Columns 1–3** — contain fuel rods 
+- **Columns 4–5** — vessel volumes without fuel
 
 ### How faces work
 
-Each **face** sits at the interface between two volumes and carries the flow variables at that boundary. For example, face `5` is the interface between the lower plenum (index `0`) and the bottom volume of the 5th column.
+Each **face** sits at the interface between two volumes and carries the flow variables at that boundary. For example, face `84` is the interface between the lower plenum (index `0`) and the bottom volume of the 5th column.
 
 ![Faces geometry](faces.png)
 
@@ -79,7 +79,7 @@ Same 13 variables as the hot leg (listed above).
 
 Everything below is **predicted** by the surrogate model (and fed back autoregressively at each time step).
 
-#### Global variables — s_g — scalar in time
+#### Global variables — $s_g$ — scalar in time
 
 | Variable | Short name | Unit |
 |---|---|---|
@@ -91,7 +91,7 @@ Everything below is **predicted** by the surrogate model (and fed back autoregre
 
 The 53 fission product elements are: Ac, Ag, Am, As, Ba, Br, Cd, Ce, Cm, Cs, Cu, Dy, Er, Eu, Ga, Gd, Ge, Ho, I, Ln, Kr, La, Mo, Nb, Nd, Np, Pa, Pd, Pm, Pr, Pu, Ra, Rb, Re, Rh, Ru, Sb, Se, Sm, Sn, Sr, Tb, Tc, Te, Th, Tl, Tm, U, Xe, Y, Yb, Zn, Zr.
 
-#### Lower plenum variables — s_p (index 0) — 15 variables
+#### Lower plenum variables — $s_p$ (index 0) — 15 variables
 
 | Variable | Short name | Unit |
 |---|---|---|
@@ -111,7 +111,7 @@ The 53 fission product elements are: Ac, Ag, Am, As, Ba, Br, Cd, Ce, Cm, Cs, Cu,
 | Volume proportion debris classes | V deb | - |
 | Volume proportion magma | V mag | - |
 
-#### Core variables — s_cr (indices 11–46, 36 volumes) — 4 variables per volume
+#### Core variables — $s_{cr}$ (indices 11–46, 36 volumes) — 4 variables per volume
 
 | Variable | Short name | Unit |
 |---|---|---|
@@ -120,7 +120,7 @@ The 53 fission product elements are: Ac, Ag, Am, As, Ba, Br, Cd, Ce, Cm, Cs, Cu,
 | Component state of fuel | state fuel | - |
 | Component state of cladding | state clad | - |
 
-#### Vessel variables — s_v (indices 1–75, 75 volumes) — 17 variables per volume
+#### Vessel variables — $s_v$ (indices 1–75, 75 volumes) — 17 variables per volume
 
 | Variable | Short name | Unit |
 |---|---|---|
@@ -142,7 +142,7 @@ The 53 fission product elements are: Ac, Ag, Am, As, Ba, Br, Cd, Ce, Cm, Cs, Cu,
 | Vessel debris 0 mass | m debris 0 | kg |
 | Vessel debris 1 mass | m debris 1 | kg |
 
-#### Face variables — s_f (indices 80–219, 140 faces) — 3 variables per face
+#### Face variables — $s_f$ (indices 80–219, 140 faces) — 3 variables per face
 
 | Variable | Short name | Unit |
 |---|---|---|
@@ -150,7 +150,7 @@ The 53 fission product elements are: Ac, Ag, Am, As, Ba, Br, Cd, Ce, Cm, Cs, Cu,
 | Gas velocity | V gas | m/s |
 | Liquid velocity | V liq | m/s |
 
-#### Boundary B₁ — s_B₁ (index 76) — 3 variables
+#### Boundary $B_1$ — $s_{B_1}$ (index 76) — 3 variables
 
 | Variable | Short name | Unit |
 |---|---|---|
@@ -158,7 +158,7 @@ The 53 fission product elements are: Ac, Ag, Am, As, Ba, Br, Cd, Ce, Cm, Cs, Cu,
 | Instantaneous water flow | Q H2O ptv | kg/s |
 | Cumulative total mass of water | m H2O ptv | kg |
 
-#### Boundary B₂ — s_B₂ (index 77) — 3 variables
+#### Boundary $B_2$ — $s_{B_2}$ (index 77) — 3 variables
 
 | Variable | Short name | Unit |
 |---|---|---|
@@ -172,33 +172,36 @@ The 53 fission product elements are: Ac, Ag, Am, As, Ba, Br, Cd, Ce, Cm, Cs, Cu,
 
 The vessel domain connects to the **primary circuit** through two boundary points:
 
-- **B₁ (index 76)** ↔ hot leg first volume **h₁ (index 78)**
-- **B₂ (index 77)** ↔ cold leg first volume **c₁ (index 79)**
+- **$B_1$ (index 76)** ↔ hot leg first volume **$h_1$ (index 78)**
+- **$B_2$ (index 77)** ↔ cold leg first volume **$c_1$ (index 79)**
 
 In the SM framework:
 
-- **Input (from primary circuit):** the full time history of p(h₁) and p(c₁) up to the current time step drives the vessel physics.
-- **Output (predicted by SM):** all vessel, core, plenum, face, global, and boundary variables — including s_B₁ and s_B₂, which are needed to couple back to the primary circuit.
+- **Input (from primary circuit):** at each time step, the values of $p(h_1)$ and $p(c_1)$ needs to be given to the SM to be informed about the change at the boundaries driven by the activation of the operator actions.
+- **Output (predicted by SM):** all vessel, core, plenum, face, global, and boundary variables — including $s_{B_1}$ and $s_{B_2}$, which are needed to couple back to the primary circuit.
 
-In other words, the SM takes primary-circuit conditions at the vessel boundary and predicts everything inside the vessel, plus the boundary fluxes that the primary circuit solver needs for the next coupling step.
+In other words, the SM takes primary-circuit conditions at $h_1$ and $c_1$ (at the vessel boundary) and predicts everything inside the vessel, plus the boundary fluxes that the primary circuit solver needs for the next coupling step.
 
----
+To be more clear, so fare we have called **Inputs** those quantities that are the actual degrees of freedom of the vessel, i.e., the quantities that, if not given at a certain moment in time $t$, would make it impossible to the SM, or to any physical solver, to predict the next time step. On the other hand, **Outputs** are those quantities that are output to the model and are not really needed to predict other variables (if we remove the core variables from the dataset we can still predict the vessel ones, but if we remove $p(h_1)$ and $p(c_1)$ this task would be impossible). To be even more clear, one might devise a surrogate model that performs the mapping $(p(h_1)(t_i), p(c_1)(t_i))\rightarrow (s_{g}(t_i),s_{p}(t_i),s_{v}(t_i),s_{cr}(t_i),s_{B_1}(t_i), s_{B_2}(t_i))$. The initial condition in such mapping would not be necessary in our system as the initial condition is constant.
 
-## Operator Actions (Source of Variation)
+All this being said, depending on the surrogate model developed, one might decide to predict autoregressively the output variables at time $t_{i+1}$ from the output variables at time $t_{i}$ and the $p(h_1)(t_i)$ and $p(c_1)(t_i)$; in such case also $(s_{g}(t_i),s_{p}(t_i),s_{v}(t_i),s_{cr}(t_i),s_{B_1}(t_i), s_{B_2}(t_i))$ are input to the model, although they are not necessary for the prediction.
 
-Each simulation is parameterized by a vector **k** of 12 operator action activation times. Key actions include:
+## SM Time-Stepping & Coupling Logic
 
-| Action | Description |
-|---|---|
-| Opensrv | Open pilot-operated relief valve (PORV) during DBA |
-| Pu₅ | Activate filtered containment venting at pressure setpoint |
-| t₁ˢʳᵛ | PORV opening time during DBA phase |
-| t₂ˢʳᵛ | Fully open PORV during SA phase |
-| tᶠᵇˢᵉᵇ | Switch pressurizer valve operation mode |
-| tᶜˢˢ | Restore containment spray system |
-| tᵉⁿᵈˢˢᵍ² | Close PORV following SGTR |
-| tᵖᵉˢᵖ | Start RCS pumps |
-| tᵖᵉˢˢᵍ | Start SG pumps |
-| tˢᵍ²ᵗʳ | SGTR occurrence time |
+Since ICARE and CESAR are internally coupled through a non-trivial sub-cycling scheme (with micro time-steps $\delta t_1$ and $\delta t_2$), the SM **only operates at the macro time-steps** $t_i \in \mathbf{T}$, ignoring all intermediate sub-steps.
 
-These are sampled using **Sobol low-discrepancy sequences** with constraints to keep action sequences physically meaningful. Combined with the accident type (LOCA or SBO), they are the only source of variation since the initial condition is always the same.
+At each macro step, the SM predicts the next vessel state $s(\mathbf{x}, t_{i+1} | k)$ given two inputs:
+
+- the **current vessel state** $s(\mathbf{x}, t_i | k)$ (all vessel, core, plenum, face, global, and boundary variables)
+- the **current primary circuit state** $p(\hat{\mathbf{x}}, t_i | k)$ (the hot leg $h_1$ and cold leg $c_1$ variables), which is provided by the primary circuit model
+
+By taking $p$ as input and predicting $s_{B_1}$ and $s_{B_2}$ as output, the SM **completely decouples the vessel from the rest of the reactor**. This enables a modular coupling strategy where the primary circuit can be handled by another SM or by ASTEC itself.
+
+### Coupling loop
+
+The vessel SM and the primary circuit model exchange data at each macro time-step as follows:
+
+1. The **primary circuit model** computes $p(\hat{\mathbf{x}}, t_i | k)$ at time $t_i$
+2. The **vessel SM** takes $p(\hat{\mathbf{x}}, t_i | k)$ and $s(\mathbf{x}, t_i | k)$ as input and predicts $s(\mathbf{x}, t_{i+1} | k)$
+3. The **primary circuit model** reads the predicted boundaries $s_{B_1}(\mathbf{x}_{B_1}, t_{i+1} | k)$ and $s_{B_2}(\mathbf{x}_{B_2}, t_{i+1} | k)$ and computes $p(\hat{\mathbf{x}}, t_{i+1} | k)$
+4. Repeat from step 2
