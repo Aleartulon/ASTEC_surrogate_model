@@ -323,9 +323,9 @@ def plot_aggregated_errors_per_variable(path_txt_file:str, saving_path:str,strin
     dict_core = {}
     dict_faces = {}
     
-    to_be_skipped_RMSE_divided_by_max = ['Q_fp_Ac_scalar', 'Q_fp_Pa_scalar', 'Q_fp_Ra_scalar', 'Q_fp_Re_scalar', 'Q_fp_Th_scalar',  'Q_fp_Tl_scalar', 'm_debris_0_lower_plenum', 'm_debris_1_lower_plenum', 'm_magma_lower_plenum', 'm_debris_0_lower_vessel_vessel','m_debris_1_lower_vessel_vessel','m_magma_vessel_vessel'] #they are constant
-    to_be_skipped_RMSE_divided_by_mean = ['Q_fp_Ac_scalar', 'Q_fp_Pa_scalar', 'Q_fp_Ra_scalar', 'Q_fp_Re_scalar', 'Q_fp_Th_scalar',  'Q_fp_Tl_scalar', 'm_debris_0_lower_plenum', 'm_debris_1_lower_plenum', 'm_magma_lower_plenum', 'm_debris_0_lower_vessel_vessel','m_debris_1_lower_vessel_vessel','m_magma_vessel_vessel'] #they are constant
-    to_be_skipped_RMSE_divided_by_std = ['Q_fp_Ac_scalar', 'Q_fp_Pa_scalar', 'Q_fp_Ra_scalar', 'Q_fp_Re_scalar', 'Q_fp_Th_scalar',  'Q_fp_Tl_scalar', 'm_debris_0_lower_plenum', 'm_debris_1_lower_plenum', 'm_magma_lower_plenum', 'm_debris_0_lower_vessel_vessel','m_debris_1_lower_vessel_vessel','m_magma_vessel_vessel'] #they are constant
+    to_be_skipped_RMSE_divided_by_max = ['Q_fp_Ac_scalar', 'Q_fp_Pa_scalar', 'Q_fp_Ra_scalar', 'Q_fp_Re_scalar', 'Q_fp_Th_scalar',  'Q_fp_Tl_scalar', 'm_debris_0_lower_plenum', 'm_debris_1_lower_plenum', 'm_magma_lower_plenum', 'm_debris_0_lower_vessel_vessel','m_debris_1_lower_vessel_vessel'] #they are constant
+    to_be_skipped_RMSE_divided_by_mean = ['Q_fp_Ac_scalar', 'Q_fp_Pa_scalar', 'Q_fp_Ra_scalar', 'Q_fp_Re_scalar', 'Q_fp_Th_scalar',  'Q_fp_Tl_scalar', 'm_debris_0_lower_plenum', 'm_debris_1_lower_plenum', 'm_magma_lower_plenum', 'm_debris_0_lower_vessel_vessel','m_debris_1_lower_vessel_vessel'] #they are constant
+    to_be_skipped_RMSE_divided_by_std = ['Q_fp_Ac_scalar', 'Q_fp_Pa_scalar', 'Q_fp_Ra_scalar', 'Q_fp_Re_scalar', 'Q_fp_Th_scalar',  'Q_fp_Tl_scalar', 'm_debris_0_lower_plenum', 'm_debris_1_lower_plenum', 'm_magma_lower_plenum', 'm_debris_0_lower_vessel_vessel','m_debris_1_lower_vessel_vessel'] #they are constant
     
     for count, i in enumerate(df['Variable']):
         if metric == 'RMSE_divided_by_max':

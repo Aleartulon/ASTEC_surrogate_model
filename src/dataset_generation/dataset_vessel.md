@@ -49,9 +49,9 @@ Each **face** sits at the interface between two volumes and carries the flow var
 
 ### Inputs to the SM
 
-The SM receives as input the time history of the **hot leg** and **cold leg** variables up to the current time step. These come from the primary circuit domain.
-
+The SM receives as input the values of the variables coming from the **hot leg** and **cold leg** to predict the values of the variables in $B_1$ and $B_2$ and in the rest of the vessel. These variables are taken from indeces $0$ for the hot leg and $12$ for the cold leg from the ASTEC vector coming from the path 'primary/volume/{variable}'.
 #### Hot leg — p(h₁) (index 78) — 13 variables
+P_up_primary_volume is always NaN in the hdf5 file.
 
 | Variable | Unit |
 |---|---|
@@ -67,23 +67,22 @@ The SM receives as input the time history of the **hot leg** and **cold leg** va
 | Saturation temperature | K |
 | Void fraction of steam-water | - |
 | Liquid temperature | K |
-| Pressure above water level | Pa |
 
-#### Cold leg — p(c₁) (index 79) — 13 variables
+#### Cold leg — $p(c_1)$ (index 79) — 12 variables
 
-Same 13 variables as the hot leg (listed above).
+Same 12 variables as the hot leg (listed above).
 
 ---
 
 ### Outputs of the SM
 
-Everything below is **predicted** by the surrogate model (and fed back autoregressively at each time step).
+Everything below is **predicted** by the surrogate model.
 
 #### Global variables — $s_g$ — scalar in time
 
 | Variable | Short name | Unit |
 |---|---|---|
-| H₂ cumulated mass in the core | m cum H2 | kg |
+| $H_2$ cumulated mass in the core | m cum H2 | kg |
 | Corium mass in the core | m tot cor | kg |
 | Total activity in domain | FP A heat | Bq |
 | Maximum saturation in core meshes | sat core mesh | - |
@@ -91,7 +90,7 @@ Everything below is **predicted** by the surrogate model (and fed back autoregre
 
 The 53 fission product elements are: Ac, Ag, Am, As, Ba, Br, Cd, Ce, Cm, Cs, Cu, Dy, Er, Eu, Ga, Gd, Ge, Ho, I, Ln, Kr, La, Mo, Nb, Nd, Np, Pa, Pd, Pm, Pr, Pu, Ra, Rb, Re, Rh, Ru, Sb, Se, Sm, Sn, Sr, Tb, Tc, Te, Th, Tl, Tm, U, Xe, Y, Yb, Zn, Zr.
 
-#### Lower plenum variables — $s_p$ (index 0) — 15 variables
+#### Lower plenum variables — $s_p$ (index 0) — 18 variables
 
 | Variable | Short name | Unit |
 |---|---|---|
@@ -110,6 +109,9 @@ The 53 fission product elements are: Ac, Ag, Am, As, Ba, Br, Cd, Ce, Cm, Cs, Cu,
 | Porosity of mesh with rods | porosity | - |
 | Volume proportion debris classes | V deb | - |
 | Volume proportion magma | V mag | - |
+| Magma mass in the vessel |m magma| kg |
+| Vessel debris 0 mass | m debris 0 | kg |
+| Vessel debris 1 mass | m debris 1 | kg |
 
 #### Core variables — $s_{cr}$ (indices 11–46, 36 volumes) — 4 variables per volume
 
@@ -120,7 +122,7 @@ The 53 fission product elements are: Ac, Ag, Am, As, Ba, Br, Cd, Ce, Cm, Cs, Cu,
 | Component state of fuel | state fuel | - |
 | Component state of cladding | state clad | - |
 
-#### Vessel variables — $s_v$ (indices 1–75, 75 volumes) — 17 variables per volume
+#### Vessel variables — $s_v$ (indices 1–75, 75 volumes) — 18 variables per volume
 
 | Variable | Short name | Unit |
 |---|---|---|
@@ -139,6 +141,7 @@ The 53 fission product elements are: Ac, Ag, Am, As, Ba, Br, Cd, Ce, Cm, Cs, Cu,
 | Porosity of mesh with rods | porosity | - |
 | Volume proportion debris classes | V deb | - |
 | Volume proportion magma | V mag | - |
+| Magma mass in the vessel |m magma| kg |
 | Vessel debris 0 mass | m debris 0 | kg |
 | Vessel debris 1 mass | m debris 1 | kg |
 
@@ -151,7 +154,7 @@ The 53 fission product elements are: Ac, Ag, Am, As, Ba, Br, Cd, Ce, Cm, Cs, Cu,
 | Liquid velocity | V liq | m/s |
 
 #### Boundary $B_1$ — $s_{B_1}$ (index 76) — 3 variables
-
+This variables comes from index $0$ of path connection/general/{variable}. The other variables in this volume are either NaN or missing in the HDF5 files.
 | Variable | Short name | Unit |
 |---|---|---|
 | Instantaneous steam mass flow | Q steam ptv | kg/s |
@@ -159,7 +162,7 @@ The 53 fission product elements are: Ac, Ag, Am, As, Ba, Br, Cd, Ce, Cm, Cs, Cu,
 | Cumulative total mass of water | m H2O ptv | kg |
 
 #### Boundary $B_2$ — $s_{B_2}$ (index 77) — 3 variables
-
+This variables comes from index $1$ of path connection/general/{variable}. The other variables in this volume are either NaN or missing in the HDF5 files.
 | Variable | Short name | Unit |
 |---|---|---|
 | Instantaneous steam mass flow | Q steam vtp | kg/s |
@@ -170,7 +173,7 @@ The 53 fission product elements are: Ac, Ag, Am, As, Ba, Br, Cd, Ce, Cm, Cs, Cu,
 
 ## Boundary Conditions & Coupling
 
-The vessel domain connects to the **primary circuit** through two boundary points:
+The vessel domain is connected to the **primary circuit** through two boundary points:
 
 - **$B_1$ (index 76)** ↔ hot leg first volume **$h_1$ (index 78)**
 - **$B_2$ (index 77)** ↔ cold leg first volume **$c_1$ (index 79)**
@@ -182,18 +185,17 @@ In the SM framework:
 
 In other words, the SM takes primary-circuit conditions at $h_1$ and $c_1$ (at the vessel boundary) and predicts everything inside the vessel, plus the boundary fluxes that the primary circuit solver needs for the next coupling step.
 
-To be more clear, so fare we have called **Inputs** those quantities that are the actual degrees of freedom of the vessel, i.e., the quantities that, if not given at a certain moment in time $t$, would make it impossible to the SM, or to any physical solver, to predict the next time step. On the other hand, **Outputs** are those quantities that are output to the model and are not really needed to predict other variables (if we remove the core variables from the dataset we can still predict the vessel ones, but if we remove $p(h_1)$ and $p(c_1)$ this task would be impossible). To be even more clear, one might devise a surrogate model that performs the mapping $(p(h_1)(t_i), p(c_1)(t_i))\rightarrow (s_{g}(t_i),s_{p}(t_i),s_{v}(t_i),s_{cr}(t_i),s_{B_1}(t_i), s_{B_2}(t_i))$. The initial condition in such mapping would not be necessary in our system as the initial condition is constant.
+To be more clear, so fare we have called **Inputs** those quantities that are the actual degrees of freedom of the vessel, i.e., the quantities that, if not given at a certain moment in time $t$, would make it impossible to the SM, or to any physical solver, to predict the next time step. On the other hand, **Outputs** are those quantities that are output to the model and are not really needed to predict other variables (if we remove the core variables from the dataset we can still predict the vessel ones, but if we remove $p(h_1)$ and $p(c_1)$ this task would be impossible). To be even more clear, one might devise a surrogate model that performs the mapping $(p(h_1)(t_{i+1}), p(c_1)(t_{i+1}))\rightarrow (s_{g}(t_{i+1}),s_{p}(t_{i+1}),s_{v}(t_{i+1}),s_{cr}(t_{i+1}),s_{B_1}(t_{i+1}), s_{B_2}(t_{i+1}))$. The initial condition in such mapping would not be necessary in our system as the initial condition is constant.
 
 All this being said, depending on the surrogate model developed, one might decide to predict autoregressively the output variables at time $t_{i+1}$ from the output variables at time $t_{i}$ and the $p(h_1)(t_i)$ and $p(c_1)(t_i)$; in such case also $(s_{g}(t_i),s_{p}(t_i),s_{v}(t_i),s_{cr}(t_i),s_{B_1}(t_i), s_{B_2}(t_i))$ are input to the model, although they are not necessary for the prediction.
 
 ## SM Time-Stepping & Coupling Logic
 
-Since ICARE and CESAR are internally coupled through a non-trivial sub-cycling scheme (with micro time-steps $\delta t_1$ and $\delta t_2$), the SM **only operates at the macro time-steps** $t_i \in \mathbf{T}$, ignoring all intermediate sub-steps.
+Since ICARE and CESAR are internally coupled through a non-trivial sub-cycling scheme (with micro time-steps $\delta t_1$ and $\delta t_2$), the SM **only operates at the macro time-steps** ignoring all intermediate sub-steps.
+One way to model the SM is autoregressively: at each macro step, the SM predicts the next vessel state at time $t_{i+1}$ given two inputs:
 
-At each macro step, the SM predicts the next vessel state $s(\mathbf{x}, t_{i+1} | k)$ given two inputs:
-
-- the **current vessel state** $s(\mathbf{x}, t_i | k)$ (all vessel, core, plenum, face, global, and boundary variables)
-- the **current primary circuit state** $p(\hat{\mathbf{x}}, t_i | k)$ (the hot leg $h_1$ and cold leg $c_1$ variables), which is provided by the primary circuit model
+- the **current vessel state** (all vessel, core, plenum, face, global, and boundary variables) at time $t_i$;
+- the **current primary circuit state** (the hot leg $h_1$ and cold leg $c_1$ variables), which is provided by the primary circuit model at time $t_i$.
 
 By taking $p$ as input and predicting $s_{B_1}$ and $s_{B_2}$ as output, the SM **completely decouples the vessel from the rest of the reactor**. This enables a modular coupling strategy where the primary circuit can be handled by another SM or by ASTEC itself.
 
@@ -201,7 +203,7 @@ By taking $p$ as input and predicting $s_{B_1}$ and $s_{B_2}$ as output, the SM 
 
 The vessel SM and the primary circuit model exchange data at each macro time-step as follows:
 
-1. The **primary circuit model** computes $p(\hat{\mathbf{x}}, t_i | k)$ at time $t_i$
-2. The **vessel SM** takes $p(\hat{\mathbf{x}}, t_i | k)$ and $s(\mathbf{x}, t_i | k)$ as input and predicts $s(\mathbf{x}, t_{i+1} | k)$
-3. The **primary circuit model** reads the predicted boundaries $s_{B_1}(\mathbf{x}_{B_1}, t_{i+1} | k)$ and $s_{B_2}(\mathbf{x}_{B_2}, t_{i+1} | k)$ and computes $p(\hat{\mathbf{x}}, t_{i+1} | k)$
-4. Repeat from step 2
+1. The **primary circuit model** computes $p(c_1)(t_i)$ and $p(h_1)(t_i)$ at time $t_i$;
+2. The **vessel SM** takes $p(c_1)(t_i)$ and $p(h_1)(t_i)$ and $(s_{g}(t_i),s_{p}(t_i),s_{v}(t_i),s_{cr}(t_i),s_{B_1}(t_i), s_{B_2}(t_i))$ as input and predicts $(s_{g}(t_{i+1}),s_{p}(t_{i+1}),s_{v}(t_{i+1}),s_{cr}(t_{i+1}),s_{B_1}(t_{i+1}), s_{B_2}(t_{i+1}))$;
+3. The **primary circuit model** reads the predicted boundaries $s_{B_1}(t_{i+1})$ and $s_{B_2}(t_{i+1})$ and computes $p(c_1)(t_{i+1})$ and $p(h_1)(t_{i+1})$. 
+4. Repeat from step 2.
