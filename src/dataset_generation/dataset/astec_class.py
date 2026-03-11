@@ -25,6 +25,7 @@ class Astec_Dataset():
         self.window_length_smoothing = config_dataset['window_length_smoothing']
         self.minimum_length_acceptable_simulation = config_dataset['minimum_length_acceptable_simulation']
         self.smoothing = config_dataset['smoothing']
+        self.smoothing_method = config_dataset['smoothing_method'] # default keeps backward compat
         self.weight_denoise_tv_chambolle = config_dataset['weight_denoise_tv_chambolle']
         print('Device: ', self.device)
         self.testing = config_dataset['testing']
@@ -346,16 +347,40 @@ class Astec_Dataset():
             if i == 'boundary_conditions_and_time':
                 found = True
                 data = simulation[index_simulation][i]  # shape (1, 25184, 26)
-                # Apply TV on first 24 elements of last dimension
-                filtered = self.tv_smooth_axis1(data[..., :24], weight=self.weight_denoise_tv_chambolle)
+                filtered = self.smooth_axis1(data[..., :24])
                 simulation[index_simulation][i] = np.concatenate([filtered, data[..., 24:]], axis=-1)
             else:
-                simulation[index_simulation][i] = self.tv_smooth_axis1(
-                    simulation[index_simulation][i], weight=self.weight_denoise_tv_chambolle
-                )
+                simulation[index_simulation][i] = self.smooth_axis1(simulation[index_simulation][i])
         if not found:
             raise TypeError("boundary_conditions_and_time NOT FOUND")
         return simulation
+
+    def smooth_axis1(self, data, n_jobs=-1):
+        """Apply smoothing along axis=1, either TV Chambolle or moving average."""
+        if self.smoothing_method == 'tv_chambolle':
+            return self.tv_smooth_axis1(data, weight=self.weight_denoise_tv_chambolle, n_jobs=n_jobs)
+        elif self.smoothing_method == 'moving_average':
+            return self.ma_smooth_axis1(data, n_jobs=n_jobs)
+        else:
+            raise ValueError(f"Unknown smoothing method: {self.smoothing_method}")
+
+    def ma_smooth_axis1(self, data, n_jobs=-1):
+        """Apply moving average smoothing along axis=1, with reflect padding to avoid edge effects."""
+        from scipy.ndimage import uniform_filter1d
+        
+        indices = list(np.ndindex(data.shape[0], *data.shape[2:]))
+        out = np.empty_like(data, dtype=float)
+        
+        def smooth_one(idx, sliced):
+            return idx, uniform_filter1d(sliced, size=self.window_length_smoothing, mode='reflect')
+        
+        results = Parallel(n_jobs=n_jobs, backend="threading")(
+            delayed(smooth_one)(idx, data[(idx[0], slice(None)) + idx[1:]])
+            for idx in indices
+        )
+        for idx, smoothed in results:
+            out[(idx[0], slice(None)) + idx[1:]] = smoothed
+        return out
         
     def make_dictionary_unified(self):
         numbers_of_simulation = list(self.dictionary_per_simulation.keys())
