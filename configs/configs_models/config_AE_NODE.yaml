@@ -4,7 +4,7 @@ loss_coefficients: # coefficients that are multiplied to the loss function terms
   AE: [1,1] #first one is for the field reconstruction, second one for the latent reconstruction per shape
   TF: 1
   AR_latent: 1.0
-  full_reconstruction: [false, 0.0]
+  full_reconstruction: [true, 1.0]
   Random_DT: 1.0
   AR_latent_strength: 1.0
   full_reconstruction_strength: 1.0
@@ -116,7 +116,7 @@ auto_encoding:
 
   # Final_reduction
   final_reduction_and_initial_increase:
-    output_dimension_encoder: 10 # THIS IS THE ACTUAL FINAL REDUCED DIMENSION
+    output_dimension_encoder: 6 # THIS IS THE ACTUAL FINAL REDUCED DIMENSION
 
     list_of_neurons_encoder: [70,50,30]
     last_activation_encoder: false
