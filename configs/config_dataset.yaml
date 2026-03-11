@@ -13,10 +13,11 @@ device : 'cpu'
 save_dictionary_per_time_lengths : false
 which_normalization : 'min_max' #min_max or mean_std
 percentile_high_norm_min_max : 100 # takes the nth percentile of the mzximum. So if it is 100, it will take the biggest of the maxima
-percentile_low_norm_min_max : 100 # takes the nth percentile of the mzximum. So if it is 100, it will take the biggest of the minima
+percentile_low_norm_min_max : 0 # takes the nth percentile of the mzximum. So if it is 100, it will take the biggest of the minima
 testing: true
-smoothing : false
-window_length_smoothing : 100
+smoothing_method : 'moving_average'
+smoothing : true
+window_length_smoothing : 300
 polyorder_smoothing : 3
 weight_denoise_tv_chambolle : 0.1
 minimum_length_acceptable_simulation : 200
