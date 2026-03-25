@@ -60,15 +60,56 @@ python -u -m src.models.AE_NODE.testing.main
 ## Project Structure
 
 ```
-├── configs/          # Training configuration files
-├── data/             # Data loading and preprocessing
-├── models/           # Model architectures
-├── checkpoints/      # Saved model weights
-├── notebooks/        # Exploratory analysis
-├── train.py
-├── evaluate.py
-├── inference.py
-└── requirements.txt
+.
+├── README.md
+├── configs
+│   ├── config_dataset.yaml
+│   ├── config_sliced_dataset.yaml
+│   ├── config_test.yaml
+│   ├── config_training.yaml
+│   └── configs_models
+│       ├── config_AE_NODE.yaml
+│       └── config_ONLY_DECODER.yaml
+├── environment.yml
+└── src
+    ├── __init.py__
+    ├── common_functions.py
+    ├── dataset_generation
+    │   ├── dataset
+    │   │   ├── astec_class.py
+    │   │   ├── main.py
+    │   │   └── support_functions.py
+    │   ├── dataset_vessel.md
+    │   ├── download_and_explore
+    │   │   ├── README.md
+    │   │   ├── change_name_hdf5_file.py
+    │   │   ├── check_rel_names_hdf5_files.py
+    │   │   ├── dataset_download.py
+    │   │   ├── file_mapping.txt
+    │   │   ├── rename_files_with_numbers.py
+    │   │   └── void_fraction.png
+    │   ├── faces.png
+    │   ├── sliced_dataset
+    │   │   ├── main.py
+    │   │   ├── sliced_dataset_class.py
+    │   │   └── support_functions.py
+    │   └── vessel_and_core.png
+    ├── models
+    │   ├── AE_NODE
+    │   │   ├── __init__.py
+    │   │   │   ├── main.py
+    │   │   │   ├── model_test.py
+    │   │   │   └── support_functions.py
+    │   │   └── training
+    │   │       ├── AE_NODE_model.py
+    │   │       ├── __init__.py
+    │   │       ├── architecture.py
+    │   │       ├── data_functions.py
+    │   │       ├── main.py
+    │   │       ├── method_functions.py
+    │   │       ├── notes.md
+    │   │       └── training_validation_functions.py
+    └── plot_losses.py
 ```
 
 ---
