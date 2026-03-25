@@ -11,9 +11,6 @@ This project has been developed within the European project ASSAS [1].
 - [Installation](#installation)
 - [Usage](#usage)
 - [Project Structure](#project-structure)
-- [Results](#results)
-- [Contributing](#contributing)
-- [License](#license)
 
 ---
 
@@ -31,7 +28,7 @@ We frame the problem as a general physical system desribed by a PDE, as we expla
 
 ```bash
 git clone https://github.com/Aleartulon/ASTEC_surrogate_model/tree/main
-cd repo-name
+cd ASTEC_surrogate_model
 pip install -r requirements.txt
 ```
 
@@ -113,25 +110,6 @@ python -u -m src.models.AE_NODE.testing.main
 ```
 
 ---
-
-## Results
-
-| Model       | Dataset  | Accuracy | F1 Score |
-|-------------|----------|----------|----------|
-| Baseline    | CIFAR-10 | 91.2%    | 0.911    |
-| Fine-tuned  | CIFAR-10 | 94.7%    | 0.946    |
-
----
-
-## Contributing
-
-Contributions are welcome. Please open an issue before submitting a pull request.
-
----
-
-## License
-
-This project is licensed under the [MIT License](LICENSE).
 
 ## References
 
