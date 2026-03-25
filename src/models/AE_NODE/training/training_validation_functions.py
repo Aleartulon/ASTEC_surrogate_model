@@ -519,6 +519,7 @@ class Training():
         #fetch the best model of previous iteration
         if self.parent.reinitialize_model_at_each_dataset_reshape:
             initialize_model_to_last_checkpoint(self.parent.encoder, self.parent.f, self.parent.decoder, self.parent.device, self.parent.PATH_logs+'/checkpoint/check.pt')
-        for param_group in self.parent.optim.param_groups:
-            param_group['lr'] = self.parent.initial_lrs[self.parent.how_many_datasets_creations-1]
-        self.parent.scheduler = tc.optim.lr_scheduler.ExponentialLR(self.parent.optim, self.parent.gamma_lr)
+        if self.parent.reset_lr:
+            for param_group in self.parent.optim.param_groups:
+                param_group['lr'] = self.parent.initial_lrs[self.parent.how_many_datasets_creations-1]
+            self.parent.scheduler = tc.optim.lr_scheduler.ExponentialLR(self.parent.optim, self.parent.gamma_lr)
