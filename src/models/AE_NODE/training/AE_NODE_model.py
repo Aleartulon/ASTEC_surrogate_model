@@ -27,6 +27,7 @@ class AE_NODE:
         self.gamma_lr = config_training['gamma_lr']
         self.learning_rate_frozen_AE = config_training['learning_rate_frozen_AE']
         self.initial_lrs = config_training['initial_lrs']
+        self.reset_lr = config_training['reset_lr']
 
         self.loss_coefficients = model_information['loss_coefficients'] if model_information['is_coupled'][0] else model_information['loss_coefficients_not_coupled']
         self.time_only_TF = model_information['time_only_TF']

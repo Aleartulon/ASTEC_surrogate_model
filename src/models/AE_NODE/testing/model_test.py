@@ -522,9 +522,9 @@ class Model_Test:
             
         plt.figure(figsize=figsize)
         plt.plot(Time[trajectory][index_time:].cpu()[:]/ 3600.0, reconstructed_fields[trajectory][shape_index][:, :, variable_index].cpu()[0][:], 
-                label=label_prediction)
+                label=label_prediction,linestyle='--',alpha=0.7)
         plt.plot(Time[trajectory][index_time:].cpu()[:]/ 3600.0, denormalized_fields[trajectory][shape_index][:, :, variable_index].cpu()[0][:], 
-                label='Ground truth')
+                label='Ground truth', alpha=0.7)
         plt.xlabel('Time, h', fontsize=fontsize)
         plt.ylabel(ylabel, fontsize=fontsize)
         plt.legend(fontsize=fontsize)

@@ -433,11 +433,11 @@ class F_Latent(nn.Module):
                 if self.param_dim > 0:
                     self.dfnn = nn.Linear(self.final_latent_dim + self.param_dim, self.final_latent_dim, bias = True)
                     self.layers_norm.append(tc.nn.LayerNorm(self.final_latent_dim))
-                    nn.init.xavier_uniform_(i.weight)
+                    nn.init.xavier_uniform_(self.dfnn.weight)
                 else:
                     self.dfnn = nn.Linear(self.final_latent_dim, self.final_latent_dim, bias = True)
                     self.layers_norm.append(tc.nn.LayerNorm(self.final_latent_dim))
-                    nn.init.xavier_uniform_(i.weight)
+                    nn.init.xavier_uniform_(self.dfnn.weight)
 
 
         elif self.parameter_information == 'FiLM':
@@ -472,25 +472,27 @@ class F_Latent(nn.Module):
         if self.parameter_information == 'concatenation':
             if self.param_dim > 0:
                 x = tc.cat((x, parameter), dim=1)
-            
+                
+            if self.number_of_layers !=0:
             # First layer
-            x = self.linears[0](x)
-            if self.layer_norm_node[0]:
-                x = self.layers_norm[0](x)
-            x = self.activation(x)
-            
-            # Middle layers with residual connections
-            for count, i in enumerate(self.linears[1:-1]):
-                x = i(x)
-                if self.layer_norm_node[count+1]:
-                    x = self.layers_norm[count+1](x)
+                x = self.linears[0](x)
+                if self.layer_norm_node[0]:
+                    x = self.layers_norm[0](x)
                 x = self.activation(x)
-            
-            # Final layer
-            x = self.linears[-1](x)
-            if self.layer_norm_node[-1]:
-                x = self.layers_norm[-1](x)
-            
+                
+                # Middle layers with residual connections
+                for count, i in enumerate(self.linears[1:-1]):
+                    x = i(x)
+                    if self.layer_norm_node[count+1]:
+                        x = self.layers_norm[count+1](x)
+                    x = self.activation(x)
+                
+                # Final layer
+                x = self.linears[-1](x)
+                if self.layer_norm_node[-1]:
+                    x = self.layers_norm[-1](x)
+            else:
+                x = self.dfnn(x)
             return x * self.scaling_output_factor[1]
             
 
