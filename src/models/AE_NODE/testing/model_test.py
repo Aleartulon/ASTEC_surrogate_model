@@ -472,6 +472,8 @@ class Model_Test:
         self.encoder.load_state_dict(encoder_state_dict)
         self.f.load_state_dict(f_state_dict)
         self.decoder.load_state_dict(decoder_state_dict)
+
+        print(f"Learned F_Latent output_scale: {self.f.output_scale.item():.6f}")
         
         total_params_enc = sum(p.numel() for p in self.encoder.parameters() if p.requires_grad)
         total_params_dec = sum(p.numel() for p in self.decoder.parameters() if p.requires_grad)

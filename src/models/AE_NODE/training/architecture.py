@@ -465,7 +465,9 @@ class F_Latent(nn.Module):
     
         #define scale of output
         if self.scaling_output_factor[0]:
-            self.scaling_output_factor[1] = nn.Parameter(tc.tensor(self.scaling_output_factor[1]))
+            self.output_scale = nn.Parameter(tc.tensor(float(self.scaling_output_factor[1])))
+        else:
+            self.register_buffer('output_scale', tc.tensor(float(self.scaling_output_factor[1])))
             
     def forward(self, t:tc.tensor, x:tc.tensor, parameter:tc.tensor):
         
@@ -493,7 +495,7 @@ class F_Latent(nn.Module):
                     x = self.layers_norm[-1](x)
             else:
                 x = self.dfnn(x)
-            return x * self.scaling_output_factor[1]
+            return x * self.output_scale
             
 
         elif self.parameter_information == 'FiLM':
@@ -528,4 +530,4 @@ class F_Latent(nn.Module):
             if self.layer_norm_node[-1]:
                 x = self.layers_norm[-1](x)
                 
-            return x * self.scaling_output_factor[1]
+            return x * self.output_scale
