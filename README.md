@@ -6,6 +6,28 @@ Simulations of severe accidents in nuclear reactors can take up to months to run
 This project has been developed within the European project ASSAS [1].
 
 ---
+## Overview
+
+We frame the problem as a general physical system desribed by a PDE, as we explain in [4]. We use an Auto-Encoder to compress the 1996 degrees of freedom (around 100 variables, both scalars and fields) into a reduced representation. The dynamics of the reduced representation is approximated by a NODE.
+
+- **Task:** Approximation of the dynamics of about 100 physical variables over time at the variation of the time of activation of 10 different operator actions.
+- **Dataset:** Simulations from ASTEC [2], generated within the ASSAS project [1]. 
+- **Framework:** PyTorch.
+
+---
+
+## Installation
+
+```bash
+git clone https://github.com/Aleartulon/ASTEC_surrogate_model/tree/main
+cd ASTEC_surrogate_model
+pip install -r requirements.txt
+```
+
+
+---
+
+## Usage
 
 **First dataset generation**
 ```bash
@@ -27,6 +49,7 @@ python -u -m src.models.AE_NODE.testing.main
   <img src="assets/844_Predicted latent vector_LOCA.png" width="49%">
   <img src="assets/844_m_magma_vessel_LOCA.png" width="49%">
 </p>
+=======
 
 ## References
 
