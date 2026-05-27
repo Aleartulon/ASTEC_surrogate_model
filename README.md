@@ -21,7 +21,7 @@ We frame the problem as a general physical system desribed by a PDE, as we expla
 ```bash
 git clone https://github.com/Aleartulon/ASTEC_surrogate_model/tree/main
 cd ASTEC_surrogate_model
-pip install -r requirements.txt
+conda env create -f environment.yml
 ```
 
 
