@@ -18,3 +18,4 @@ assas_data_downloader.log
 !faces.png
 tips.md
 explore_data.ipynb
+*.pkl

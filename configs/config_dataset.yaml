@@ -1,8 +1,8 @@
 path_to_hdf5 : '../../../../../../../tudelft.net/staff-umbrella/eldar/ASTEC_2/ordered_hdf5/'
-where_to_save_data: '../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/made_datasets/only_sbo_min_max_no_smoothing_100_100/'
-indeces_training_boundaries  : [1028, 1214, 845, 948] # It must be the boundaries, not all indeces!
-indeces_validation_boundaries  : [949, 981, 983, 999] # It must be the boundaries, not all indeces!
-indeces_testing_boundaries  :  [1000, 1027] # It must be the boundaries, not all indeces!
+where_to_save_data: '../../../../../../scratch/aalelonghi/ROM_datasets_ale/ASTEC/made_datasets/only_loca_min_max_no_smoothing/'
+indeces_training_boundaries  : [1,702] # [1028, 1214, 845, 948] # It must be the boundaries, not all indeces!
+indeces_validation_boundaries  : [703, 803]  # It must be the boundaries, not all indeces!
+indeces_testing_boundaries  :  [844, 844]  # It must be the boundaries, not all indeces!
 percentages_sampling_training : [0.1, 0.9] # percentage of training trajectories with a given subsampling
 percentages_sampling_validation : [0.1,0.9] # percentage of validation trajectories with a given subsampling
 percentages_sampling_testing : [0.1, 0.9] # percentage of testing trajectories with a given subsampling
@@ -16,7 +16,7 @@ percentile_high_norm_min_max : 100 # takes the nth percentile of the mzximum. So
 percentile_low_norm_min_max : 0 # takes the nth percentile of the mzximum. So if it is 100, it will take the biggest of the minima
 testing: true
 smoothing_method : 'moving_average'
-smoothing : true
+smoothing : false
 window_length_smoothing : 300
 polyorder_smoothing : 3
 weight_denoise_tv_chambolle : 0.1
