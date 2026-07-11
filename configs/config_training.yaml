@@ -29,5 +29,5 @@ compile: false
 #Data information if dynamic_dataset_generation_during_training is false
 data_training_file_dinamic: 'data_training_normalized_t_W_' #use when modifying dynamically during training the dataset
 data_validation_file_dinamic: 'data_validation_normalized_t_W_' #use when modifying dynamically during training the dataset
-data_training_file : 'data_training_normalized_t_W_10_1_153_192_396_398_250.h5' #use when using a fixed dataset during training 
-data_validation_file : 'data_validation_normalized_t_W_10_511_582.h5' #use when using a fixed dataset during training 
+data_training_file : 'data_training_normalized_t_W_10_1028_1214_845_948.h5' #use when using a fixed dataset during training 
+data_validation_file : 'data_validation_normalized_t_W_10_949_981_983_999.h5' #use when using a fixed dataset during training 

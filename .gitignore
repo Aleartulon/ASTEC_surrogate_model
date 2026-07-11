@@ -16,6 +16,8 @@ assas_data_downloader.log
 *.png
 !vessel_and_core.png
 !faces.png
+!assets/*.png
 tips.md
 explore_data.ipynb
+ONLY_DECODER/
 *.pkl

@@ -115,10 +115,8 @@ def load_checkpoint(encoder, f, decoder, optim, scheduler, path, device ,parent_
             print(f"⚠ Warning: Could not load optimizer state: {e}")
             print("  Creating fresh optimizer with checkpoint learning rate")
         
-        # ✅ FIX: Replace the optimizer in parent instance
         parent_instance.optim = new_optim
         
-        # ✅ FIX: Recreate scheduler with the new optimizer
         gamma = parent_instance.config_training.get('gamma_lr', 0.999)
         parent_instance.scheduler = tc.optim.lr_scheduler.ExponentialLR(parent_instance.optim, gamma)
         

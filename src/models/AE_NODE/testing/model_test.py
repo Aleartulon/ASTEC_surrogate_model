@@ -472,6 +472,8 @@ class Model_Test:
         self.encoder.load_state_dict(encoder_state_dict)
         self.f.load_state_dict(f_state_dict)
         self.decoder.load_state_dict(decoder_state_dict)
+
+        #print(f"Learned F_Latent output_scale: {self.f.output_scale.item():.6f}")
         
         total_params_enc = sum(p.numel() for p in self.encoder.parameters() if p.requires_grad)
         total_params_dec = sum(p.numel() for p in self.decoder.parameters() if p.requires_grad)
@@ -750,7 +752,11 @@ class Model_Test:
         
         # generate figure of core 
         time_indeces = [0, int(len(Time[trajectory_to_be_plotted])*0.4), int(len(Time[trajectory_to_be_plotted])*0.8), -2]
+<<<<<<< HEAD
         #time_indeces = [6000, 7000, 8000, 20000]
+=======
+        #time_indeces = [17000, 20000, 22000, 24000]
+>>>>>>> 6b7cf8ec52b033baa3212e246326b29522cf7525
         self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='T comp fuel', shape_index = 1, variable_index=0, time_indices=time_indeces, figsize=(10, 8), fontsize=16)
         self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='T comp clad', shape_index = 1, variable_index=1, time_indices=time_indeces, figsize=(10, 8), fontsize=16)
         self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='state fuel', shape_index = 1, variable_index=2, time_indices=time_indeces, figsize=(10, 8), fontsize=16)
