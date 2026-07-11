@@ -433,11 +433,11 @@ class F_Latent(nn.Module):
                 if self.param_dim > 0:
                     self.dfnn = nn.Linear(self.final_latent_dim + self.param_dim, self.final_latent_dim, bias = True)
                     self.layers_norm.append(tc.nn.LayerNorm(self.final_latent_dim))
-                    nn.init.xavier_uniform_(self.dfnn.weight)
+                    nn.init.xavier_uniform_(i.weight)
                 else:
                     self.dfnn = nn.Linear(self.final_latent_dim, self.final_latent_dim, bias = True)
                     self.layers_norm.append(tc.nn.LayerNorm(self.final_latent_dim))
-                    nn.init.xavier_uniform_(self.dfnn.weight)
+                    nn.init.xavier_uniform_(i.weight)
 
 
         elif self.parameter_information == 'FiLM':
@@ -465,37 +465,33 @@ class F_Latent(nn.Module):
     
         #define scale of output
         if self.scaling_output_factor[0]:
-            self.output_scale = nn.Parameter(tc.tensor(float(self.scaling_output_factor[1])))
-        else:
-            self.register_buffer('output_scale', tc.tensor(float(self.scaling_output_factor[1])))
+            self.scaling_output_factor[1] = nn.Parameter(tc.tensor(self.scaling_output_factor[1]))
             
     def forward(self, t:tc.tensor, x:tc.tensor, parameter:tc.tensor):
         
         if self.parameter_information == 'concatenation':
             if self.param_dim > 0:
                 x = tc.cat((x, parameter), dim=1)
-                
-            if self.number_of_layers !=0:
+            
             # First layer
-                x = self.linears[0](x)
-                if self.layer_norm_node[0]:
-                    x = self.layers_norm[0](x)
+            x = self.linears[0](x)
+            if self.layer_norm_node[0]:
+                x = self.layers_norm[0](x)
+            x = self.activation(x)
+            
+            # Middle layers with residual connections
+            for count, i in enumerate(self.linears[1:-1]):
+                x = i(x)
+                if self.layer_norm_node[count+1]:
+                    x = self.layers_norm[count+1](x)
                 x = self.activation(x)
-                
-                # Middle layers with residual connections
-                for count, i in enumerate(self.linears[1:-1]):
-                    x = i(x)
-                    if self.layer_norm_node[count+1]:
-                        x = self.layers_norm[count+1](x)
-                    x = self.activation(x)
-                
-                # Final layer
-                x = self.linears[-1](x)
-                if self.layer_norm_node[-1]:
-                    x = self.layers_norm[-1](x)
-            else:
-                x = self.dfnn(x)
-            return x * self.output_scale
+            
+            # Final layer
+            x = self.linears[-1](x)
+            if self.layer_norm_node[-1]:
+                x = self.layers_norm[-1](x)
+            
+            return x * self.scaling_output_factor[1]
             
 
         elif self.parameter_information == 'FiLM':
@@ -530,4 +526,4 @@ class F_Latent(nn.Module):
             if self.layer_norm_node[-1]:
                 x = self.layers_norm[-1](x)
                 
-            return x * self.output_scale
+            return x * self.scaling_output_factor[1]

@@ -473,7 +473,7 @@ class Model_Test:
         self.f.load_state_dict(f_state_dict)
         self.decoder.load_state_dict(decoder_state_dict)
 
-        print(f"Learned F_Latent output_scale: {self.f.output_scale.item():.6f}")
+        #print(f"Learned F_Latent output_scale: {self.f.output_scale.item():.6f}")
         
         total_params_enc = sum(p.numel() for p in self.encoder.parameters() if p.requires_grad)
         total_params_dec = sum(p.numel() for p in self.decoder.parameters() if p.requires_grad)
@@ -752,6 +752,7 @@ class Model_Test:
         
         # generate figure of core 
         time_indeces = [0, int(len(Time[trajectory_to_be_plotted])*0.4), int(len(Time[trajectory_to_be_plotted])*0.8), -2]
+        #time_indeces = [17000, 20000, 22000, 24000]
         self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='T comp fuel', shape_index = 1, variable_index=0, time_indices=time_indeces, figsize=(10, 8), fontsize=16)
         self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='T comp clad', shape_index = 1, variable_index=1, time_indices=time_indeces, figsize=(10, 8), fontsize=16)
         self.plot_core_and_vessel_values(trajectory_to_be_plotted, Time, reconstructed_fields_per_trajectory, denormalized_fields_per_trajectory, which_prediction, field_name='state fuel', shape_index = 1, variable_index=2, time_indices=time_indeces, figsize=(10, 8), fontsize=16)
@@ -879,17 +880,22 @@ class Model_Test:
             #now deal with global errors per trajectory per time-steps
             if self.generate_images_error_per_time_step:
                 for count, variable_name in enumerate(all_variables):
-                    plt.figure(figsize=(10,5))
-                    
-                    for metric in dict_of_errors:
-                        if len(metric) > 4 and metric[-4:] == 'step':
-                            plt.plot(time[index_time:].cpu().numpy()/3600, dict_of_errors[metric][count])
-                            plt.title(variable_name, fontsize = 16)
-                            plt.xlabel('Time, h', fontsize = 16)
-                            plt.ylabel(metric.replace("_", " "), fontsize = 16)
-                            plt.yscale('log')
-                            plt.savefig(f'{saving_directory}/{trajectory}_{variable_name}_{metric}.png', dpi=300, bbox_inches='tight')
-                            plt.close()
+                    #plt.figure(figsize=(10,5))
+                    accepted_variables = ['Q_H20_connection_primary_to_vessel_scalar', 'Q_steam_connection_primary_to_vessel_scalar', 'm_H20_connection_primary_to_vessel_scalar', 
+                                          'Q_H20_connection_vessel_to_primary_scalar','Q_steam_connection_vessel_to_primary_scalar', 'm_H20_connection_vessel_to_primary_scalar']
+                    if variable_name in accepted_variables:
+                        
+                        for metric in dict_of_errors:
+                            if len(metric) > 4 and metric[-4:] == 'step':
+                                plt.plot(time[index_time:].cpu().numpy()/3600, dict_of_errors[metric][count])
+                                plt.title(variable_name, fontsize = 16)
+                                plt.xlabel('Time, h', fontsize = 16)
+                                plt.ylabel(metric.replace("_", " "), fontsize = 16)
+                                plt.yscale('log')
+                                np.save(f'{saving_directory}/{trajectory}_{variable_name}_{metric}_Time.npy', time[index_time:].cpu().numpy()/3600)
+                                np.save(f'{saving_directory}/{trajectory}_{variable_name}_{metric}_Y.npy', dict_of_errors[metric][count])
+                                #plt.savefig(f'{saving_directory}/{trajectory}_{variable_name}_{metric}.png', dpi=300, bbox_inches='tight')
+                                plt.close()
                         
     def generate_pictures_errors_latent_NODE_per_shape(self, trajectory:str, latent_error :dict, time:tc.tensor): 
         all_variables = ('scalar', 'core', 'vessel', 'lower_plenum', 'faces')
