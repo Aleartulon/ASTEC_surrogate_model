@@ -20,3 +20,4 @@ assas_data_downloader.log
 tips.md
 explore_data.ipynb
 ONLY_DECODER/
+*.pkl
