@@ -2,8 +2,8 @@
 
 ![Dimensionality reduction](assets/dimensionality_reduction_anucene.png)
 
-Simulations of severe accidents in nuclear reactors can take up to months to run, making their use unfeasible to train nuclear operators to react correctly in order to prevent catastrophic events like core melting. In this project we construct a surrogate model of the ASTEC simulator [2], based on the data-driven methodology developed in [3]. The link with an official paper will be posted when available.
-This project has been developed within the European project ASSAS [1].
+Simulations of severe accidents in nuclear reactors can take up to months to run, making their use unfeasible to train nuclear operators to react correctly in order to prevent catastrophic events like core melting. In this project we construct a surrogate model of the ASTEC simulator [3], based on the data-driven methodology developed in [4]. For technical details refer to [1].
+This project has been developed within the European project ASSAS [2].
 
 ---
 ## Overview
@@ -11,7 +11,7 @@ This project has been developed within the European project ASSAS [1].
 We frame the problem as a general physical system desribed by a PDE, as we explain in [4]. We use an Auto-Encoder to compress the 1996 degrees of freedom (around 100 variables, both scalars and fields) into a reduced representation. The dynamics of the reduced representation is approximated by a NODE.
 
 - **Task:** Approximation of the dynamics of about 100 physical variables over time at the variation of the time of activation of 10 different operator actions.
-- **Dataset:** Simulations from ASTEC [2], generated within the ASSAS project [1]. 
+- **Dataset:** Simulations from ASTEC [3], generated within the ASSAS project [2]. 
 - **Framework:** PyTorch.
 
 ---
@@ -52,9 +52,10 @@ python -u -m src.models.AE_NODE.testing.main
 =======
 
 ## References
+[1] Longhi, A., Lathouwers, D., & Perkó, Z. *A Deep Learning-based surrogate model for Severe Accidents in nuclear reactors using ASTEC* https://arxiv.org/abs/2607.04450
 
-[1] ASSAS Consortium. *ASSAS -- Artificial Intelligence for Simulation of Severe Accidents*. Horizon Europe Project, coordinated by ASNR, 2023–2026. https://assas-horizon-euratom.eu
+[2] ASSAS Consortium. *ASSAS -- Artificial Intelligence for Simulation of Severe Accidents*. Horizon Europe Project, coordinated by ASNR, 2023–2026. https://assas-horizon-euratom.eu
 
-[2] Chailan, L., Bosland, L., Carénini, L., Chambarel, J., Cousin, F., et al. *Overview of ASTEC Integral Code Status and Perspectives*. 9th European Review Meeting on Severe Accident Research (ERMSAR2019), Prague, Czech Republic, March 2019. DOI: irsn-04106726
+[3] Chailan, L., Bosland, L., Carénini, L., Chambarel, J., Cousin, F., et al. *Overview of ASTEC Integral Code Status and Perspectives*. 9th European Review Meeting on Severe Accident Research (ERMSAR2019), Prague, Czech Republic, March 2019. DOI: irsn-04106726
 
-[3] Longhi, A., Lathouwers, D., & Perkó, Z. *Latent space modeling of parametric and time-dependent PDEs using neural ODEs*. Computer Methods in Applied Mechanics and Engineering, 448, 118394, January 2026. https://doi.org/10.1016/j.cma.2025.118394
+[4] Longhi, A., Lathouwers, D., & Perkó, Z. *Latent space modeling of parametric and time-dependent PDEs using neural ODEs*. Computer Methods in Applied Mechanics and Engineering, 448, 118394, January 2026. https://doi.org/10.1016/j.cma.2025.118394
