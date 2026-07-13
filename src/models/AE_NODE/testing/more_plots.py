@@ -66,9 +66,21 @@ def _var_title(variable: str) -> str:
         return rf'$s_{{{variable}}}$'
 
 
+def _legend_label(label_prefix, ml) -> str:
+    """Legend text for one model.
+
+    ``label_prefix is None`` (the default) renders the latent dimension as
+    ``$\\lambda=ml$``; otherwise the prefix is simply concatenated to ``ml``
+    (so ``label_prefix=''`` keeps verbatim names such as 'Baseline').
+    """
+    if label_prefix is None:
+        return rf'$\lambda={ml}$'
+    return f'{label_prefix}{ml}'
+
+
 def _plot_variable(ax, models_data: dict, variable: str, metric: str,
                    model_labels: list, colors: list, text_fontsize: int = 13,
-                   label_prefix: str = 'latent '):
+                   label_prefix: str = None):
     """Draw one metric of one variable group, overlaying every model on ``ax``.
 
     Returns the (handles, labels) so a shared figure legend can be built.
@@ -86,16 +98,19 @@ def _plot_variable(ax, models_data: dict, variable: str, metric: str,
         lut = {lab: (v, u) for lab, v, u in zip(d['labels'], d['values'], d['uncertainties'])}
         ys = [lut[lab][0] if lab in lut else np.nan for lab in ref_labels]
         us = [lut[lab][1] if lab in lut else np.nan for lab in ref_labels]
+        legend_label = _legend_label(label_prefix, ml)
         ep = ax.errorbar(x_pos + offsets[i], ys, yerr=us,
                          fmt='o', capsize=4,
                          color=colors[i % len(colors)],
-                         label=f'{label_prefix}{ml}', alpha=0.85)
+                         label=legend_label, alpha=0.85)
         handles.append(ep)
-        labels.append(f'{label_prefix}{ml}')
+        labels.append(legend_label)
 
-    ax.set_ylabel('Error', fontsize=16)
-    ax.hlines(0.5, xmin=0, xmax=max(len(ref_labels) - 1, 1),
-              colors='green', linestyles='dashed')
+    ax.set_ylabel(METRIC_DISPLAY.get(metric, metric), fontsize=16)
+    if metric == 'RMSE_divided_by_std':
+        # the 0.5 reference is only meaningful for the std-normalised error
+        ax.hlines(0.5, xmin=0, xmax=max(len(ref_labels) - 1, 1),
+                  colors='green', linestyles='dashed')
     ax.set_yscale('log')
     ax.set_xticks(x_pos)
     ax.set_xticklabels([])
@@ -112,7 +127,7 @@ def _plot_variable(ax, models_data: dict, variable: str, metric: str,
 def combine_models_in_one_plot(model_paths: dict, where_to_save_data: str,
                                string_after_saving: str,
                                metric: str = 'RMSE_divided_by_std',
-                               label_prefix: str = 'latent ',
+                               label_prefix: str = None,
                                suptitle: str = None):
     """Overlay several models for a single metric.
 
@@ -132,9 +147,10 @@ def combine_models_in_one_plot(model_paths: dict, where_to_save_data: str,
         (``RMSE_divided_by_mean``, ``RMSE_divided_by_max``,
         ``RMSE_divided_by_std``).
     label_prefix : str, optional
-        Prepended to every model label in the legend.  The default keeps the
-        original latent-dimension behaviour; pass ``''`` when the labels are
-        already full names (e.g. 'Baseline', 'AE-NODE').
+        Controls the legend text.  ``None`` (the default) renders each model key
+        as ``$\\lambda=<key>$`` (latent-dimension behaviour); any string is
+        prepended to the key instead, so pass ``''`` when the labels are already
+        full names (e.g. 'Baseline', 'AE-NODE').
     suptitle : str, optional
         Title of the combined mosaic; defaults to the latent-dimension one.
     """
@@ -170,9 +186,8 @@ def combine_models_in_one_plot(model_paths: dict, where_to_save_data: str,
         if idx_var == 0:
             legend_handles, legend_labels = handles, labels
 
-    if suptitle is None:
-        suptitle = rf'Reconstruction error {metric_disp} vs latent dimension'
-    fig.suptitle(suptitle, fontsize=18)
+    if suptitle is not None:
+        fig.suptitle(suptitle, fontsize=18)
     fig.legend(legend_handles, legend_labels,
                loc='lower center',
                ncol=len(model_labels),
@@ -201,5 +216,5 @@ if __name__ == '__main__':
     where_to_save = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'latent_dimension_comparison')
     combine_models_in_one_plot(model_paths, where_to_save,
                                string_after_saving='latent_comparison',
-                               metric='RMSE_divided_by_std')
+                               metric='RMSE_divided_by_mean')
     print(f'Saved plots in {where_to_save}/combined_plots/')
