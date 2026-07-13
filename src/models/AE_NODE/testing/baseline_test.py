@@ -48,18 +48,25 @@ class Baseline_Test:
                           self.directory_images_errors_fields, self.directory_images_global_errors_fields]:
             os.makedirs(directory, exist_ok=True)
 
-        #raw ASTEC simulations and indeces of the candidate training trajectories
+        #raw ASTEC simulations and indeces of the candidate trajectories for the nearest-neighbour pool.
+        #validation trajectories are included by default: a practitioner doing lookup would use every
+        #available simulation, and the model also saw the validation set through model selection
         self.path_to_hdf5 = config_dataset['path_to_hdf5']
-        x = config_dataset['indeces_training_boundaries']
-        self.indeces_training = np.concatenate([np.arange(x[2*i], x[2*i+1]+1, 1) for i in range(int(len(x)/2))])
+        self.include_validation_in_pool = information.get('include_validation_in_pool', True)
+        x = list(config_dataset['indeces_training_boundaries'])
+        if self.include_validation_in_pool:
+            x += list(config_dataset['indeces_validation_boundaries'])
+        self.indeces_pool = np.concatenate([np.arange(x[2*i], x[2*i+1]+1, 1) for i in range(int(len(x)/2))])
+        self.pool_tag = 'training_validation' if self.include_validation_in_pool else 'training'
+        print(f'Nearest-neighbour pool: {self.pool_tag}, {len(self.indeces_pool)} candidate indeces')
         self.minimum_length_acceptable_simulation = config_dataset['minimum_length_acceptable_simulation']
         self.which_normalization = config_dataset['which_normalization']
 
         #Astec_Dataset gives access to the same construction pipeline used to build the test set
         self.astec_dataset = Astec_Dataset(config_dataset)
 
-        #get normalization, needed to denormalize the test data
-        indeces_training_boundaries = '_' + '_'.join(str(i) for i in x)
+        #get normalization, needed to denormalize the test data (always named after the training boundaries)
+        indeces_training_boundaries = '_' + '_'.join(str(i) for i in config_dataset['indeces_training_boundaries'])
         with open(f"{self.path_to_test_data}/maxima_or_mean{indeces_training_boundaries}.pkl", 'rb') as file:
             self.maxima_or_mean = pickle.load(file)
 
@@ -79,21 +86,22 @@ class Baseline_Test:
         self.discarded_training_trajectories = set()
 
     def extract_training_operator_actions(self):
-        cache_path = self.directory_images + 'training_operator_actions.pkl'
+        #cache name carries the pool composition, so switching pool never reuses a stale cache
+        cache_path = self.directory_images + f'operator_actions_pool_{self.pool_tag}.pkl'
         if os.path.exists(cache_path):
             with open(cache_path, 'rb') as f:
                 dictionary_of_op = pickle.load(f)
-            print(f'Loaded operator actions of {len(dictionary_of_op)} training simulations from {cache_path}')
+            print(f'Loaded operator actions of {len(dictionary_of_op)} pool simulations from {cache_path}')
             return dictionary_of_op
 
         dictionary_of_op = {}
-        for index in self.indeces_training:
+        for index in self.indeces_pool:
             path_trajectory = f'{self.path_to_hdf5}/{index}.h5'
             if not os.path.exists(path_trajectory):
-                print(f'Training simulation {index} not found in {self.path_to_hdf5}, skipping')
+                print(f'Pool simulation {index} not found in {self.path_to_hdf5}, skipping')
                 continue
             dictionary_of_op[str(index)] = extract_op_from_file(path_trajectory)
-        print(f'Extracted operator actions of {len(dictionary_of_op)} training simulations')
+        print(f'Extracted operator actions of {len(dictionary_of_op)} pool simulations')
 
         with open(cache_path, 'wb') as f:
             pickle.dump(dictionary_of_op, f)
