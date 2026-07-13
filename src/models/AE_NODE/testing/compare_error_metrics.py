@@ -92,6 +92,7 @@ def main():
     parser.add_argument('--where_to_save', type=str, required=True)
     parser.add_argument('--string_after_saving', type=str, default='SBO')
     parser.add_argument('--metrics', nargs='+', default=['RMSE_divided_by_mean', 'RMSE_divided_by_max', 'RMSE_divided_by_std'])
+    parser.add_argument('--no_suptitle', action='store_true', help='do not draw the title on top of the figures')
     args = parser.parse_args()
 
     if len(args.dirs) != len(args.labels):
@@ -101,9 +102,9 @@ def main():
     os.makedirs(args.where_to_save, exist_ok=True)
 
     for metric in args.metrics:
+        suptitle = None if args.no_suptitle else f"{metric.replace('_', ' ')}, {' vs '.join(args.labels)}"
         combine_models_in_one_plot(model_paths, args.where_to_save, args.string_after_saving,
-                                   metric=metric, label_prefix='',
-                                   suptitle=f"{metric.replace('_', ' ')}, {' vs '.join(args.labels)}")
+                                   metric=metric, label_prefix='', suptitle=suptitle)
 
     models_data = _load_models(model_paths)
     summary_table(models_data, args.metrics, args.where_to_save, args.string_after_saving)
