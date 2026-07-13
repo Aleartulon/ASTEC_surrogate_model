@@ -51,7 +51,8 @@ class Model_Test:
         self.directory_images_AE_NODE_global_errors_fields = self.directory_images + 'AE_NODE/global_errors_reconstruction_fields'
         self.directory_images_AE_NODE_errors_definitive_latent = self.directory_images + 'AE_NODE/errors_reconstruction_definitive_latent'
         self.directory_images_AE_NODE_errors_latent_per_shape = self.directory_images + 'AE_NODE/errors_reconstruction_latent_per_shape'
-        
+        self.directory_images_AE_NODE_maximum_fuel = self.directory_images + 'AE_NODE/maximum_fuel'
+
         self.directory_images_comparison_AE_AE_NODE = self.directory_images + '/comparison_AE_AE_NODE/'
         os.makedirs(self.directory_images_comparison_AE_AE_NODE, exist_ok=True)
         
@@ -64,6 +65,7 @@ class Model_Test:
         self.build_directories('AutoEncoding')
         self.build_directories('TF', AE = False)
         self.build_directories('AE_NODE', AE = False)
+        os.makedirs(self.directory_images_AE_NODE_maximum_fuel, exist_ok=True)
         os.makedirs(self.directory_images+'/Operator_Actions/', exist_ok=True)
         
         self.device = tc.device(information['device']) if tc.cuda.is_available() else tc.device("cpu")
@@ -200,7 +202,10 @@ class Model_Test:
                     
             #compute global errors AE_NODE
             compute_global_errors(self.directory_images_AE_NODE_errors_fields, self.string_after_saving, self.directory_images_AE_NODE_global_errors_fields, generate_istograms = self.generate_istograms, which_prediction = 'AE NODE')
-            
+
+            #compute errors over time of the maximum fuel temperature (AE_NODE only)
+            self.maximum_fuel_temperature_errors(reconstructed_fields_per_trajectory_AE_NODE)
+
             #compare errors AE and NODE
             compare_errors_AE_and_AE_NODE(self.directory_images_AutoEncoding_global_errors, self.directory_images_AE_NODE_global_errors_fields, self.directory_images_comparison_AE_AE_NODE, self.string_after_saving)
             self.plot_computational_time()
@@ -439,8 +444,44 @@ class Model_Test:
             with open(self.directory_images_comparison_AE_AE_NODE + 'number_of_time_steps_array.json', 'w') as f:
                 json.dump(number_of_steps_array, f)
         return reconstructed_fields_per_trajectory_AE_NODE, latent_vectors_per_trajectory_per_shape_AE_NODE, final_latent_vector_per_trajectory_AE_NODE
-        
-        
+
+    def maximum_fuel_temperature_errors(self, reconstructed_fields_per_trajectory_AE_NODE: dict, fontsize = 16):
+
+        for trajectory in self.trajectories:
+            fields, _, time, _ = self.access_trajectory(trajectory)
+            fields = standard_and_inverse_normalization_field(fields, self.maxima_or_mean, self.minima_or_std, self.which_normalization, inverse = True)
+
+            #maximum over the core mesh of T_comp_fuel_core per time step (core is shape 1, T_comp_fuel is variable 0), first time step skipped because it is not predicted by the NODE
+            expected_maximum = tc.amax(fields[1][:, 1:, 0], dim = (-2, -1))
+            predicted_maximum = tc.amax(reconstructed_fields_per_trajectory_AE_NODE[trajectory][1][:, :, 0], dim = (-2, -1))
+
+            time_hours = time[1:].cpu().numpy() / 3600
+            np.save(f'{self.directory_images_AE_NODE_maximum_fuel}/{trajectory}_maximum_fuel_temperature_Time.npy', time_hours)
+
+            #errors over time
+            for which_division in ('max', 'mean', 'std'):
+                error = RMSE_divided_by_something(predicted_maximum.unsqueeze(-1), expected_maximum.unsqueeze(-1), which_division, per_time_step = True)[0][:, 0].cpu().numpy()
+                np.save(f'{self.directory_images_AE_NODE_maximum_fuel}/{trajectory}_maximum_fuel_temperature_RMSE_divided_by_{which_division}_per_time_step.npy', error)
+                plt.figure(figsize=(10, 5))
+                plt.plot(time_hours, error)
+                plt.title('Maximum fuel temperature', fontsize = fontsize)
+                plt.xlabel('Time, h', fontsize = fontsize)
+                plt.ylabel(f'RMSE divided by {which_division}', fontsize = fontsize)
+                plt.yscale('log')
+                plt.savefig(f'{self.directory_images_AE_NODE_maximum_fuel}/{trajectory}_maximum_fuel_temperature_RMSE_divided_by_{which_division}_per_time_step.png', dpi=300, bbox_inches='tight')
+                plt.close()
+
+            #prediction vs expected
+            plt.figure(figsize=(5, 5))
+            plt.plot(time_hours, predicted_maximum[0].cpu().numpy(), label='AE-NODE prediction', linestyle='--', alpha=0.7)
+            plt.plot(time_hours, expected_maximum[0].cpu().numpy(), label='Ground truth', alpha=0.7)
+            plt.xlabel('Time, h', fontsize = fontsize)
+            plt.ylabel('Maximum fuel temperature', fontsize = fontsize)
+            plt.legend(fontsize = fontsize)
+            plt.title(f'Trajectory number {trajectory}', fontsize = fontsize)
+            plt.savefig(f'{self.directory_images_AE_NODE_maximum_fuel}/{trajectory}_maximum_fuel_temperature.png', dpi=300, bbox_inches='tight')
+            plt.close()
+
     def plot_computational_time(self):
         
         with open(self.directory_images_comparison_AE_AE_NODE + 'computational_time_array.json', 'r') as f:
