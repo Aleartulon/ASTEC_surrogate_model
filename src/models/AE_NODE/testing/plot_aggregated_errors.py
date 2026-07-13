@@ -53,13 +53,13 @@ METRIC_ORDER = [
 
 # Pretty (mathtext) labels for the metrics, used in titles / axis labels.
 METRIC_LABELS = {
-    "RMSE": r"$\mathrm{RMSE}$",
-    "RMSE_divided_by_max": r"$\mathrm{RMSE}_{\mathrm{max}}$",
-    "RMSE_divided_by_mean": r"$\mathrm{RMSE}_{\mathrm{mean}}$",
-    "RMSE_divided_by_std": r"$\mathrm{RMSE}_{\mathrm{std}}$",
-    "MSE": r"$\mathrm{MSE}$",
-    "MSE_normalized_by_mean": r"$\mathrm{MSE}_{\mathrm{mean}}$",
-    "L2_error_norm": r"$L_2\ \mathrm{error}$",
+    "RMSE": "RMSE",
+    "RMSE_divided_by_max": "RMSE$_{max}$",
+    "RMSE_divided_by_mean": "RMSE$_{mean}$",
+    "RMSE_divided_by_std": "RMSE$_{std}$",
+    "MSE": "MSE",
+    "MSE_normalized_by_mean": "MSE$_{mean}$",
+    "L2_error_norm": "$L_2$ error",
 }
 
 

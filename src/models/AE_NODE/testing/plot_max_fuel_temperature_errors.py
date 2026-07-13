@@ -29,29 +29,40 @@ def main():
 
     os.makedirs(args.where_to_save, exist_ok=True)
 
+    time_suffix = '_maximum_fuel_temperature_Time.npy'
+    sims = sorted((os.path.basename(f)[:-len(time_suffix)]
+                   for f in glob.glob(os.path.join(args.errors_dir, '*' + time_suffix))),
+                  key=lambda s: (not s.isdigit(), int(s) if s.isdigit() else s))
+    if not sims:
+        raise FileNotFoundError(f'No *{time_suffix} files found in {args.errors_dir}')
+
+    #one consistent color per simulation across every figure, as in plot_aggregated_errors
+    cmap = plt.get_cmap('turbo')
+    colors = {s: cmap(i / max(len(sims) - 1, 1)) for i, s in enumerate(sims)}
+
     for which_division in DIVISIONS:
-        suffix = f'_maximum_fuel_temperature_RMSE_divided_by_{which_division}_per_time_step.npy'
-        error_files = sorted(glob.glob(os.path.join(args.errors_dir, '*' + suffix)))
-        if not error_files:
-            raise FileNotFoundError(f'No *{suffix} files found in {args.errors_dir}')
+        fig, ax = plt.subplots(figsize=(10, 5))
+        for s in sims:
+            error = np.load(os.path.join(args.errors_dir, f'{s}_maximum_fuel_temperature_RMSE_divided_by_{which_division}_per_time_step.npy'))
+            time_hours = np.load(os.path.join(args.errors_dir, f'{s}{time_suffix}'))
+            ax.plot(time_hours, error, lw=0.7, alpha=0.7, color=colors[s], label=s)
 
-        plt.figure(figsize=(10, 5))
-        for error_file in error_files:
-            trajectory = os.path.basename(error_file)[:-len(suffix)]
-            error = np.load(error_file)
-            time_hours = np.load(os.path.join(args.errors_dir, f'{trajectory}_maximum_fuel_temperature_Time.npy'))
-            plt.plot(time_hours, error, label=f'Trajectory {trajectory}', alpha=0.7)
+        ax.set_xlabel('Time, h', fontsize=args.fontsize)
+        ax.set_ylabel(f'RMSE$_{{{which_division}}}$', fontsize=args.fontsize)
+        ax.set_yscale('log')
+        ax.grid(True, alpha=0.3)
+        ax.margins(x=0)
 
-        plt.title('Maximum fuel temperature', fontsize=args.fontsize)
-        plt.xlabel('Time, h', fontsize=args.fontsize)
-        plt.ylabel(f'RMSE divided by {which_division}', fontsize=args.fontsize)
-        plt.yscale('log')
-        if len(error_files) <= 20:
-            plt.legend(fontsize=9, ncol=2)
-        plt.savefig(os.path.join(args.where_to_save, f'all_trajectories_maximum_fuel_temperature_RMSE_divided_by_{which_division}_per_time_step.png'),
+        #one shared legend with the simulation numbers, outside the panel, as in plot_aggregated_errors
+        handles = [plt.Line2D([0], [0], color=colors[s], lw=2) for s in sims]
+        fig.tight_layout(rect=(0, 0, 0.85, 1.0))
+        fig.legend(handles, sims, title='Simulation', loc='center left',
+                   bbox_to_anchor=(0.85, 0.5), ncol=2, frameon=False, borderaxespad=0.0)
+
+        fig.savefig(os.path.join(args.where_to_save, f'all_trajectories_maximum_fuel_temperature_RMSE_divided_by_{which_division}_per_time_step.png'),
                     dpi=300, bbox_inches='tight')
-        plt.close()
-        print(f'Saved RMSE divided by {which_division} figure ({len(error_files)} trajectories)')
+        plt.close(fig)
+        print(f'Saved RMSE divided by {which_division} figure ({len(sims)} trajectories)')
 
 if __name__ == '__main__':
     main()
