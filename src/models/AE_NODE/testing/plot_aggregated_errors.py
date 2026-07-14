@@ -53,13 +53,13 @@ METRIC_ORDER = [
 
 # Pretty (mathtext) labels for the metrics, used in titles / axis labels.
 METRIC_LABELS = {
-    "RMSE": "RMSE",
-    "RMSE_divided_by_max": "RMSE$_{max}$",
-    "RMSE_divided_by_mean": "RMSE$_{mean}$",
-    "RMSE_divided_by_std": "RMSE$_{std}$",
-    "MSE": "MSE",
-    "MSE_normalized_by_mean": "MSE$_{mean}$",
-    "L2_error_norm": "$L_2$ error",
+    "RMSE": "RMSE$^i(t)$",
+    "RMSE_divided_by_max": "RMSE$^i_{max}(t)$",
+    "RMSE_divided_by_mean": "RMSE$^i_{mean}(t)$",
+    "RMSE_divided_by_std": "RMSE$^i_{std}(t)$",
+    "MSE": "MSE$^i(t)$",
+    "MSE_normalized_by_mean": "MSE$^i_{mean}(t)$",
+    "L2_error_norm": "$L^i_2(t)$ error",
 }
 
 
@@ -169,7 +169,7 @@ def spaghetti(data, groupby, outdir, logy, max_points):
         fig.tight_layout(rect=(0, 0, 0.88, 1.0))
         # Anchor the legend flush against the right edge of the panel grid.
         fig.legend(
-            handles, sims, title="Simulation", loc="center left",
+            handles, sims, title=r"Simulation $i$", loc="center left",
             bbox_to_anchor=(0.88, 0.5), ncol=2, frameon=False,
             borderaxespad=0.0,
         )

@@ -154,6 +154,8 @@ class Baseline_Test:
         reshaped_dict = self.astec_dataset.reshape_dataset(single_simulation[index])
         fields = [reshaped_dict[key].to(dtype=tc.float32, device=self.device).unsqueeze(0) for key in self.field_keys]
         time_training = tc.tensor(extract_time_of_simulation(self.path_to_hdf5, index, 1), dtype=tc.float32, device=self.device)
+        if fields[0].size(1) != time_training.size(0):
+            raise TypeError(f'Simulation {index}: fields have {fields[0].size(1)} time steps but time grid has {time_training.size(0)}')
         return fields, time_training
 
     def interpolate_in_time(self, data: tc.tensor, time_source: tc.tensor, time_target: tc.tensor):

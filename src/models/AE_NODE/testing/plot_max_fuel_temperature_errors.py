@@ -48,7 +48,7 @@ def main():
             ax.plot(time_hours, error, lw=0.7, alpha=0.7, color=colors[s], label=s)
 
         ax.set_xlabel('Time, h', fontsize=args.fontsize)
-        ax.set_ylabel(f'RMSE$_{{{which_division}}}$', fontsize=args.fontsize)
+        ax.set_ylabel(f'RMSE$^i_{{{which_division}}}(t)$', fontsize=args.fontsize)
         ax.set_yscale('log')
         ax.grid(True, alpha=0.3)
         ax.margins(x=0)
@@ -56,7 +56,7 @@ def main():
         #one shared legend with the simulation numbers, outside the panel, as in plot_aggregated_errors
         handles = [plt.Line2D([0], [0], color=colors[s], lw=2) for s in sims]
         fig.tight_layout(rect=(0, 0, 0.85, 1.0))
-        fig.legend(handles, sims, title='Simulation', loc='center left',
+        fig.legend(handles, sims, title=r'Simulation $i$', loc='center left',
                    bbox_to_anchor=(0.85, 0.5), ncol=2, frameon=False, borderaxespad=0.0)
 
         fig.savefig(os.path.join(args.where_to_save, f'all_trajectories_maximum_fuel_temperature_RMSE_divided_by_{which_division}_per_time_step.png'),
