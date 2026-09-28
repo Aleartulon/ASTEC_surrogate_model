@@ -7,6 +7,7 @@ dependencies:
   - ipykernel
   - pip
   - pip:
+    - --extra-index-url https://download.pytorch.org/whl/cu121
     - torch==2.5.1+cu121
     - torchaudio==2.5.1+cu121
     - torchvision==0.20.1+cu121
@@ -24,3 +25,4 @@ dependencies:
     - derivative==0.6.3
     - tqdm==4.67.3
     - pyyaml==6.0.3
+    - requests==2.32.5
